@@ -124,7 +124,7 @@ void gpu_print_free_mem(const struct engine* e, const int cpuid) {
 
 #ifdef WITH_MPI
   if (n_devices != 1) {
-    dev_id = engine_rank;
+    dev_id = engine_rank % n_devices;
   }
 #endif
 
