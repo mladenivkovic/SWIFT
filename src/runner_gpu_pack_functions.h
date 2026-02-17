@@ -78,7 +78,6 @@ __attribute__((always_inline)) INLINE static void runner_gpu_pack(
   /* Get how many particles we've packed until now */
   int pack_ind = md->count_parts;
 
-#ifdef SWIFT_DEBUG_CHECKS
   int last_ind = pack_ind + count_ci;
   if (ci != cj) last_ind += count_cj; /* packing pair interaction */
   if (last_ind >= md->params.part_buffer_size) {
@@ -90,7 +89,6 @@ __attribute__((always_inline)) INLINE static void runner_gpu_pack(
         pack_ind, count_ci, count_cj, md->params.part_buffer_size,
         subtaskID_names[task_subtype], ci == cj);
   }
-#endif
 
   /* Get first and last particles of cell i */
   const int cis = pack_ind;
