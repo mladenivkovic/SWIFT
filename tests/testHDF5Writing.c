@@ -173,3 +173,8 @@ int main(int argc, char *argv[]) {
   select_output_engine_clean(&e);
   select_output_space_clean(&s);
   cosmology_clean(&cosmo);
+  free(parts);
+  free(gparts);
+
+  return 0;
+}
