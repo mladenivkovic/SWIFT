@@ -35,6 +35,8 @@ JUNK_PATTERNS=(
     "sodShock_*.hdf5"
 )
 
+SCHEMES=(sphenix minimal)
+
 mkdir -p "$BUILD_LOG_DIR" "$BINARY_DIR" "$RESULTS_DIR" 
 
 #logs a time based message
@@ -67,30 +69,31 @@ load_modules() {
 #skips rebuild if the binary already exists unless FORCE_REBUILD=1
 build_binary() {
     local dim="$1"
-    local binary_path="${BINARY_DIR}/swift_${dim}d"
+    local scheme="$2"
+    local binary_path="${BINARY_DIR}/swift_${scheme}_${dim}d"
 
     if [ -e "$binary_path" ] && [ "${FORCE_REBUILD:-0}" != "1" ]; then
-        log "Binary for ${dim}D already exists at ${binary_path}, skipping build."
+        log "Binary for ${scheme}/${dim}D already exists at ${binary_path}, skipping build."
         return 0
     fi
 
     cd "$SWIFT_ROOT" || return 1
     load_modules
 
-    log "Configuring SWIFT for hydro-dimension=${dim}..."
-    if ! ./configure --with-hydro-dimension="${dim}" > "${BUILD_LOG_DIR}/configure_${dim}d.log" 2>&1; then
-        log "Configuration failed for ${dim}D. Check ${BUILD_LOG_DIR}/configure_${dim}d.log for details."
+    log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}..."
+    if ! ./configure --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
+        log "Configuration failed for ${scheme}/${dim}D. Check ${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log for details."
         return 1
     fi
 
-    log "Building SWIFT (${dim}D) with make -j${MAKE_JOBS}... (this takes a while)"
-    if ! make -j"${MAKE_JOBS}" > "${BUILD_LOG_DIR}/make_${dim}d.log" 2>&1; then
-        log "ERRPR: make failed for ${dim}D. See ${BUILD_LOG_DIR}/make_${dim}d.log"
+    log "Building SWIFT (${scheme}/${dim}D) with make -j ${MAKE_JOBS}... (this takes a while)"
+    if ! make -j"${MAKE_JOBS}" > "${BUILD_LOG_DIR}/make_${scheme}_${dim}d.log" 2>&1; then
+        log "ERROR: make failed for ${scheme}/${dim}D. See ${BUILD_LOG_DIR}/make_${scheme}_${dim}d.log"
         return 1
     fi
 
     cp "${SWIFT_ROOT}/swift" "$binary_path"
-    log "Stashed ${dim}D binary at ${binary_path}"
+    log "Stashed ${scheme}/${dim}D binary at ${binary_path}"
     return 0
     
 }
@@ -99,15 +102,16 @@ build_binary() {
 #since each run.sh referes to ./swift as as a relative path
 activate_binary() {
     local dim="$1"
-    local binary_path="${BINARY_DIR}/swift_${dim}d"
+    local scheme="$2"
+    local binary_path="${BINARY_DIR}/swift_${scheme}_${dim}d"
 
     if [ ! -e "$binary_path" ]; then
-        log "ERROR: no stashed binary for ${dim}D at ${binary_path}"
+        log "ERROR: no stashed binary for ${scheme}/${dim}D at ${binary_path}"
         return 1
     fi
 
     cp "$binary_path" "${SWIFT_ROOT}/swift"
-    log "Actiavted ${dim}D binary as ${SWIFT_ROOT}/swift"
+    log "Actiavted ${scheme}/${dim}D binary as ${SWIFT_ROOT}/swift"
     return 0
 }
 
@@ -195,38 +199,57 @@ cleanup_example() {
 
 # =======MAIN========
 
-FAILED_DIMS=()
+SUMMARY_FILE="${AUTOMATION_DIR}/run_summary_$(date +%Y%m%d_%H%M%S).csv"
+echo "dimension,scheme,build,activate,run,status" > "$SUMMARY_FILE"
+
+FAILED_COMBOS=()
 
 for dim in 2 3; do
-    log "=== Processing${dim}D ==="
-    example_dir="${SWIFT_ROOT}/${EXAMPLES[$dim]}"
-    example_name="$(basename "${EXAMPLES[$dim]}")"
+    for scheme in "${SCHEMES[@]}"; do
+        log "=== Processing ${scheme} / ${dim}D ==="
+        example_dir="${SWIFT_ROOT}/${EXAMPLES[$dim]}"
+        example_name="$(basename "${EXAMPLES[$dim]}")"
 
-    if ! build_binary "$dim"; then
-        FAILED_DIMS+=("${dim}D (build)")
-        continue
-    fi
+        build_status="ok"
+        activate_status="skipped"
+        run_status="skipped"
 
-    if ! activate_binary "$dim"; then
-        FAILED_DIMS+=("${dim}D (activate)")
-        continue
-    fi
-    
-    if ! run_example "$dim"; then
-        FAILED_DIMS+=("${dim}D (run)")
-        continue
-    fi
-    
-    collect_outputs "$example_dir" "$example_name"
-    cleanup_example "$example_dir" "$example_name"
+        if ! build_binary "$dim" "$scheme"; then
+            build_status="FAILED"
+            FAILED_COMBOS+=("${scheme}/${dim}D (build)")
+            echo "${dim},${scheme},${build_status},${activate_status},${run_status},FAILED" >> "$SUMMARY_FILE"
+            continue
+        fi
+
+        if ! activate_binary "$dim" "$scheme"; then
+            activate_status="FAILED"
+            FAILED_COMBOS+=("${scheme}/${dim}D (activate)")
+            echo "${dim},${scheme},${build_status},${activate_status},${run_status},FAILED" >> "$SUMMARY_FILE"
+            continue
+        fi
+        activate_status="ok"
+
+        if ! run_example "$dim"; then
+            run_status="FAILED"
+            FAILED_COMBOS+=("${scheme}/${dim}D (run)")
+            echo "${dim},${scheme},${build_status},${activate_status},${run_status},FAILED" >> "$SUMMARY_FILE"
+            continue
+        fi
+        run_status="ok"
+        
+        collect_outputs "$example_dir" "${example_name}_${scheme}"
+        cleanup_example "$example_dir" "${example_name}_${scheme}"
+
+        echo "${dim},${scheme},${build_status},${activate_status},${run_status},OK" >> "$SUMMARY_FILE"
+
+    done
 done
 
 log "=== Done ==="
-
-if [ "${#FAILED_DIMS[@]}" -eq 0 ]; then
-    log "All dimensions completed successfully"
+log "Summary written to ${SUMMARY_FILE}"
+if [ "${#FAILED_COMBOS[@]}" -eq 0 ]; then
+    log "All scheme/dimension combinations completed successfully"
 else
-    log "The following steps failed: ${FAILED_DIMS[*]}"
-    log "Check ${BUILD_LOG_DIR} and each example's run_automation.log for details."
+    log "The following combinations failed: ${FAILED_COMBOS[*]}"
     exit 1
 fi
