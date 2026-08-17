@@ -193,4 +193,40 @@ cleanup_example() {
     return 0
 }
 
-cleanup_example "${SWIFT_ROOT}/${EXAMPLES[2]}" "SodShock_2D"
+# =======MAIN========
+
+FAILED_DIMS=()
+
+for dim in 2 3; do
+    log "=== Processing${dim}D ==="
+    example_dir="${SWIFT_ROOT}/${EXAMPLES[$dim]}"
+    example_name="$(basename "${EXAMPLES[$dim]}")"
+
+    if ! build_binary "$dim"; then
+        FAILED_DIMS+=("${dim}D (build)")
+        continue
+    fi
+
+    if ! activate_binary "$dim"; then
+        FAILED_DIMS+=("${dim}D (activate)")
+        continue
+    fi
+    
+    if ! run_example "$dim"; then
+        FAILED_DIMS+=("${dim}D (run)")
+        continue
+    fi
+    
+    collect_outputs "$example_dir" "$example_name"
+    cleanup_example "$example_dir" "$example_name"
+done
+
+log "=== Done ==="
+
+if [ "${#FAILED_DIMS[@]}" -eq 0 ]; then
+    log "All dimensions completed successfully"
+else
+    log "The following steps failed: ${FAILED_DIMS[*]}"
+    log "Check ${BUILD_LOG_DIR} and each example's run_automation.log for details."
+    exit 1
+fi
