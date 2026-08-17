@@ -26,15 +26,6 @@ declare -A EXAMPLES=(
 
 KEEP_FILES=(SodShock.png output.log used_parameters.yml unused_parameters.yml)
 
-JUNK_PATTERNS=(
-    "dependency_graph_*.csv"
-    "task_level_*.txt"
-    "statistics.txt"
-    "timesteps.txt"
-    "*.xmf"
-    "sodShock_*.hdf5"
-)
-
 SCHEMES=(sphenix minimal)
 
 mkdir -p "$BUILD_LOG_DIR" "$BINARY_DIR" "$RESULTS_DIR" 
