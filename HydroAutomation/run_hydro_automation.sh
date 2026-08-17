@@ -1,6 +1,7 @@
 #! /bin/bash
 
 set -u #Treat unset variables as errors
+set -o pipefail # tee has different exit codes to bash
 
 
 #Get the swift directory
@@ -22,6 +23,8 @@ declare -A EXAMPLES=(
     [2]="examples/HydroTests/SodShock_2D"
     [3]="examples/HydroTests/SodShock_3D"
 )
+
+KEEP_FILES=(SodShock.png output.log used_parameters.yml unused_parameters.yml)
 
 mkdir -p "$BUILD_LOG_DIR" "$BINARY_DIR" "$RESULTS_DIR" 
 
@@ -123,7 +126,7 @@ run_example() {
     fi
 
     log "Running ${example_name} (${dim}D).."
-    if ! ./run.sh > run_automation.log 2>&1; then
+    if ! ./run.sh 2>&1 | tee run_automation.log; then
         log "ERROR: run.sh faield for ${example_name}. Last 20 lines of log:"
         tail -n 20 run_automation.log
         return 1
@@ -135,5 +138,32 @@ run_example() {
     return 0
 }
 
+#Copies the keep files for one example into a folder under results
+collect_outputs() {
+    local example_dir="$1"
+    local example_name="$2"
+    local ts
+    ts="$(date +%Y%m%d_%H%M%S)"
+    local out_dir="${RESULTS_DIR}/${example_name}_${ts}"
+
+    cd "$example_dir" || return 1
+    mkdir -p "$out_dir"
+    log "Collecting outputs for ${example_name} into ${out_dir}"
+
+    for f in "${KEEP_FILES[@]}"; do
+        if [ -e "$f" ]; then
+            cp -f "$f" "$out_dir"/
+        else
+            log "Expected file '${f}' Not found, skipping"
+        fi
+    done
+
+    cp -f run_automation.log "$out_dir"/
+    cd "$SWIFT_ROOT" || return 1
+    return 0
+
+}
+
 activate_binary 2
 run_example 2
+collect_outputs "${SWIFT_ROOT}/${EXAMPLES[2]}" "SodShock_2D"
