@@ -177,24 +177,56 @@ collect_outputs() {
 
 }
 
+# Extract a value from a top-level YAML section (e.g. yaml_get file.yml Snapshots basename)
+yaml_get() {
+    local file="$1" section="$2" key="$3"
+    awk -v section="$section" -v key="$key" '
+        $0 ~ "^"section":[ \t]*$" { in_section=1; next }
+        in_section && /^[^ \t#]/ { in_section=0 }
+        in_section && $0 ~ "^[ \t]+"key":" {
+            line=$0
+            sub("^[ \t]+"key":[ \t]*", "", line)
+            sub(/[ \t]*#.*/, "", line)
+            gsub(/^[ \t"'"'"']+|[ \t"'"'"']+$/, "", line)
+            print line; exit
+        }
+    ' "$file"
+}
+
 cleanup_example() {
-    local example_dir="$1"
-    local example_name="$2"
-
+    local example_dir="$1" example_name="$2"
     cd "$example_dir" || return 1
-
     log "Cleaning up run generated files for ${example_name}"
-    for pattern in "${JUNK_PATTERNS[@]}"; do
-        find . -maxdepth 1 -name "$pattern" -exec rm -f {} \;
-    done
-    rm -f run_automation.log
-    rm -rf restart
 
+    # Names that never vary between examples
+    local -a static_junk=("dependency_graph_*.csv" "task_level_*.txt" "timesteps.txt" "*.xmf")
+    for pattern in "${static_junk[@]}"; do
+        find . -maxdepth 2 -name "$pattern" -exec rm -f {} \;
+    done
+
+    # Snapshot/statistics/restart names come from each yml's own basename —
+    # loop over all .yml files, since a dir can hold more than one (res variants etc.)
+    local yml
+    for yml in *.yml; do
+        [ -f "$yml" ] || continue
+        local snap_base snap_subdir stats_base restart_subdir
+        snap_base=$(yaml_get "$yml" "Snapshots" "basename")
+        snap_subdir=$(yaml_get "$yml" "Snapshots" "subdir")
+        stats_base=$(yaml_get "$yml" "Statistics" "basename")
+        restart_subdir=$(yaml_get "$yml" "Restarts" "subdir")
+        stats_base="${stats_base:-statistics.txt}"
+        restart_subdir="${restart_subdir:-restart}"
+
+        local snap_dir="."; [ -n "$snap_subdir" ] && snap_dir="$snap_subdir"
+        [ -n "$snap_base" ] && find "$snap_dir" -maxdepth 1 -name "${snap_base}_[0-9]*.hdf5" -exec rm -f {} \;
+        [ -f "$stats_base" ] && rm -f "$stats_base"
+        [ -d "$restart_subdir" ] && rm -rf "$restart_subdir"
+    done
+
+    rm -f run_automation.log
     log "Directory listing for ${example_name} after cleanup:"
     ls -la
-
     cd "$SWIFT_ROOT" || return 1
-    return 0
 }
 
 # =======MAIN========
