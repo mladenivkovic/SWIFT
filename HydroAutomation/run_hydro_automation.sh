@@ -26,6 +26,15 @@ declare -A EXAMPLES=(
 
 KEEP_FILES=(SodShock.png output.log used_parameters.yml unused_parameters.yml)
 
+JUNK_PATTERNS=(
+    "dependency_graph_*.csv"
+    "task_level_*.txt"
+    "statistics.txt"
+    "timesteps.txt"
+    "*.xmf"
+    "sodShock_*.hdf5"
+)
+
 mkdir -p "$BUILD_LOG_DIR" "$BINARY_DIR" "$RESULTS_DIR" 
 
 #logs a time based message
@@ -164,6 +173,24 @@ collect_outputs() {
 
 }
 
-activate_binary 2
-run_example 2
-collect_outputs "${SWIFT_ROOT}/${EXAMPLES[2]}" "SodShock_2D"
+cleanup_example() {
+    local example_dir="$1"
+    local example_name="$2"
+
+    cd "$example_dir" || return 1
+
+    log "Cleaning up run generated files for ${example_name}"
+    for pattern in "${JUNK_PATTERNS[@]}"; do
+        find . -maxdepth 1 -name "$pattern" -exec rm -f {} \;
+    done
+    rm -f run_automation.log
+    rm -rf restart
+
+    log "Directory listing for ${example_name} after cleanup:"
+    ls -la
+
+    cd "$SWIFT_ROOT" || return 1
+    return 0
+}
+
+cleanup_example "${SWIFT_ROOT}/${EXAMPLES[2]}" "SodShock_2D"
