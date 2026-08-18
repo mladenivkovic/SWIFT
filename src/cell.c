@@ -651,7 +651,7 @@ void cell_sanitize(struct cell *c, int treated) {
 
     /* Apply it */
     for (int i = 0; i < count; ++i) {
-      if (part_get_h(&parts[i]) == 0.f || part_get_h(&parts[i]) > upper_h_max)
+      if (part_get_h(&parts[i]) == 0.f || part_get_h(&parts[i]) > upper_h_max) {
         part_set_h(&parts[i], upper_h_max);
         part_set_depth_h(&parts[i], c->depth);
       }

@@ -1592,7 +1592,7 @@ void runner_do_sync(struct runner *r, struct cell *c, int force,
         /* Old time-step length in physical units, computed before
          * timestep_process_sync_part changes p->time_bin. */
         const integertime_t ti_old_beg =
-            get_integer_time_begin(ti_current, p->time_bin);
+            get_integer_time_begin(ti_current, part_get_time_bin(p));
         const integertime_t ti_old_step = ti_current - ti_old_beg;
         double old_time_step_length;
         if (with_cosmology) {
