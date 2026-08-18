@@ -416,8 +416,8 @@ struct counts_mapper_data {
  * memory required is precalculated by an additional loop determining the range
  * of cell IDs. */
 #define ACCUMULATE_SIZES_GETTERS_MAPPER(TYPE)                                  \
-  partition_accumulate_sizes_getters_mapper_##TYPE(void *map_data, int num_elements,   \
-                                           void *extra_data) {                 \
+  partition_accumulate_sizes_getters_mapper_##TYPE(                            \
+      void *map_data, int num_elements, void *extra_data) {                    \
     struct TYPE *parts = (struct TYPE *)map_data;                              \
     struct counts_mapper_data *mydata =                                        \
         (struct counts_mapper_data *)extra_data;                               \
@@ -438,8 +438,8 @@ struct counts_mapper_data {
           TYPE##_set_x_ind(p, j, TYPE##_get_x_ind(p, j) - dim[j]);             \
       }                                                                        \
       const int cid = cell_getid(cdim, TYPE##_get_x_ind(p, 0) * iwidth[0],     \
-                     TYPE##_get_x_ind(p, 1) * iwidth[1],                       \
-                     TYPE##_get_x_ind(p, 2) * iwidth[2]);                      \
+                                 TYPE##_get_x_ind(p, 1) * iwidth[1],           \
+                                 TYPE##_get_x_ind(p, 2) * iwidth[2]);          \
       if (cid > ucid) ucid = cid;                                              \
       if (cid < lcid) lcid = cid;                                              \
     }                                                                          \
@@ -447,8 +447,8 @@ struct counts_mapper_data {
     if ((lcounts = (double *)calloc(nused, sizeof(double))) == NULL)           \
       error("Failed to allocate counts thread-specific buffer");               \
     for (int k = 0; k < num_elements; k++) {                                   \
-      const int cid = cell_getid(cdim,                                         \
-                     TYPE##_get_x_ind(&parts[k], 0) * iwidth[0],               \
+      const int cid =                                                          \
+          cell_getid(cdim, TYPE##_get_x_ind(&parts[k], 0) * iwidth[0],         \
                      TYPE##_get_x_ind(&parts[k], 1) * iwidth[1],               \
                      TYPE##_get_x_ind(&parts[k], 2) * iwidth[2]);              \
       lcounts[cid - lcid] += size;                                             \
@@ -457,7 +457,6 @@ struct counts_mapper_data {
       atomic_add_d(&mydata->counts[k + lcid], lcounts[k]);                     \
     free(lcounts);                                                             \
   }
-
 
 /* Generic function for accumulating sized counts for TYPE parts. Note uses
  * local memory to reduce contention, the amount of memory required is
@@ -606,8 +605,9 @@ void partition_accumulate_sizes(struct space *s, int verbose, double *counts) {
     mapper_data.counts = counts;
     hsize = (double)sizeof(struct part);
     mapper_data.size = hsize;
-    threadpool_map(&s->e->threadpool, partition_accumulate_sizes_getters_mapper_part,
-                   s->parts, s->nr_parts, sizeof(struct part), space_splitsize,
+    threadpool_map(&s->e->threadpool,
+                   partition_accumulate_sizes_getters_mapper_part, s->parts,
+                   s->nr_parts, sizeof(struct part), space_splitsize,
                    &mapper_data);
   }
 

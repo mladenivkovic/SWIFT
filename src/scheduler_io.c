@@ -160,8 +160,8 @@ static void task_dependency_define(MPI_Datatype *tstype) {
  * @param in_p The #task_dependency to add.
  * @param out_p The #task_dependency where in_p is added.
  * @param len The length of the arrays.
- * @param type The MPI datatype. We don't use it here, but creating an MPI operation
- * (which is what we do with this function) requires it.
+ * @param type The MPI datatype. We don't use it here, but creating an MPI
+ * operation (which is what we do with this function) requires it.
  */
 static void task_dependency_sum(void *in_p, void *out_p, int *len,
                                 MPI_Datatype *type) {
@@ -261,7 +261,7 @@ static void task_dependency_sum(void *in_p, void *out_p, int *len,
   return;
 }
 
-#endif // WITH_MPI
+#endif  // WITH_MPI
 
 /**
  * @brief Write a csv file with the task dependencies.
