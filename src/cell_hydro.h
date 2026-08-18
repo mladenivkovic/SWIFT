@@ -39,11 +39,8 @@ struct cell_hydro {
   union {
 #endif
 
-    /*! Pointer to the #part data. */
-    struct part *parts;
-
-    /*! Pointer to the #xpart data. */
-    struct xpart *xparts;
+    /*! Pointer to particle data. */
+    struct part_arrays *part_arrs;
 
     /*! Pointer for the sorted indices. */
     struct sort_entry *sort;

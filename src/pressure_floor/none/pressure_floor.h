@@ -19,6 +19,12 @@
 #ifndef SWIFT_PRESSURE_FLOOR_NONE_H
 #define SWIFT_PRESSURE_FLOOR_NONE_H
 
+#include <stddef.h>
+
+#include "error.h"
+#include "inline.h"
+#include "io_properties.h"
+
 /* Pre-declarations */
 struct cosmology;
 struct hydro_props;
@@ -54,7 +60,7 @@ struct pressure_floor_props {};
  * @return The comoving pressure with the floor.
  */
 static INLINE float pressure_floor_get_comoving_pressure(
-    const struct part *p, const struct pressure_floor_props *pfloor,
+    size_t pind, const struct pressure_floor_props *pfloor,
     const float comoving_pressure, const struct cosmology *cosmo) {
   return comoving_pressure;
 }

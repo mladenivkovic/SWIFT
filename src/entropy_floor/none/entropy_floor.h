@@ -25,6 +25,12 @@
  * floors.
  */
 
+#include <stddef.h>
+
+#include "inline.h"
+#include "io_properties.h"
+
+
 struct cosmology;
 struct hydro_props;
 struct part;
@@ -63,7 +69,7 @@ static INLINE float entropy_floor_gas_pressure(
  * @param props The properties of the entropy floor.
  */
 static INLINE float entropy_floor(
-    const struct part *p, const struct cosmology *cosmo,
+    size_t pind, const struct cosmology *cosmo,
     const struct entropy_floor_properties *props) {
 
   return 0.f;

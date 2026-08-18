@@ -347,10 +347,10 @@ __attribute__((always_inline)) INLINE static int cell_is_active_black_holes(
  * @return 1 if the #part is active, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int part_is_active(
-    const struct part *p, const struct engine *e) {
+    const size_t pind, const struct engine *e) {
 
   const timebin_t max_active_bin = e->max_active_bin;
-  const timebin_t part_bin = part_get_time_bin(p);
+  const timebin_t part_bin = part_get_time_bin(pind);
 
 #ifdef SWIFT_DEBUG_CHECKS
   const integertime_t ti_current = e->ti_current;
@@ -366,9 +366,9 @@ __attribute__((always_inline)) INLINE static int part_is_active(
 }
 
 __attribute__((always_inline)) INLINE static int part_is_active_no_debug(
-    const struct part *p, const timebin_t max_active_bin) {
+    const size_t pind, const timebin_t max_active_bin) {
 
-  const timebin_t part_bin = part_get_time_bin(p);
+  const timebin_t part_bin = part_get_time_bin(pind);
 
   return (part_bin <= max_active_bin);
 }
@@ -381,10 +381,10 @@ __attribute__((always_inline)) INLINE static int part_is_active_no_debug(
  * @return 1 if the #part is active, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int part_is_rt_active(
-    const struct part *p, const struct engine *e) {
+    const size_t pind, const struct engine *e) {
 
   const timebin_t max_active_bin = e->max_active_bin_subcycle;
-  const timebin_t part_bin = part_get_rt_time_bin(p);
+  const timebin_t part_bin = part_get_rt_time_bin(pind);
 
 #ifdef SWIFT_DEBUG_CHECKS
   const integertime_t ti_current_subcycle = e->ti_current_subcycle;
@@ -516,8 +516,8 @@ __attribute__((always_inline)) INLINE static int bpart_is_active(
  * @return 1 if the #part is inhibited, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int part_is_inhibited(
-    const struct part *p, const struct engine *e) {
-  return part_get_time_bin(p) == time_bin_inhibited;
+    const size_t pind, const struct engine *e) {
+  return part_get_time_bin(pind) == time_bin_inhibited;
 }
 
 /**
@@ -700,10 +700,10 @@ __attribute__((always_inline)) INLINE static int cell_is_starting_black_holes(
  * @return 1 if the #part is active, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int part_is_starting(
-    const struct part *p, const struct engine *e) {
+    const size_t pind, const struct engine *e) {
 
   const timebin_t max_active_bin = e->max_active_bin;
-  const timebin_t part_bin = part_get_time_bin(p);
+  const timebin_t part_bin = part_get_time_bin(pind);
 
 #ifdef SWIFT_DEBUG_CHECKS
   const integertime_t ti_current = e->ti_current;

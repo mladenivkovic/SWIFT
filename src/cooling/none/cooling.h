@@ -78,8 +78,8 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
     const struct pressure_floor_props *pressure_floor,
-    const struct cooling_function_data *cooling, struct part *p,
-    struct xpart *xp, const float dt, const float dt_therm, const double time) {
+    const struct cooling_function_data *cooling, size_t pind,
+    const float dt, const float dt_therm, const double time) {
 }
 
 /**
@@ -100,8 +100,7 @@ __attribute__((always_inline)) INLINE static float cooling_timestep(
     const struct phys_const *restrict phys_const,
     const struct cosmology *restrict cosmo,
     const struct unit_system *restrict us,
-    const struct hydro_props *hydro_props, const struct part *restrict p,
-    const struct xpart *restrict xp) {
+    const struct hydro_props *hydro_props, const size_t pind) {
 
   return FLT_MAX;
 }
@@ -125,7 +124,7 @@ __attribute__((always_inline)) INLINE static void cooling_first_init_part(
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *data, const struct part *restrict p,
+    const struct cooling_function_data *data, const size_t pind,
     struct xpart *restrict xp) {}
 
 /**
@@ -147,7 +146,7 @@ __attribute__((always_inline)) INLINE static void cooling_post_init_part(
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *cooling, const struct part *restrict p,
+    const struct cooling_function_data *cooling, const size_t pind,
     struct xpart *restrict xp) {}
 
 /**
@@ -167,7 +166,7 @@ INLINE static float cooling_get_temperature(
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, const struct xpart *restrict xp) {
+    const size_t pind) {
 
   /* Physical constants */
   const double m_H = phys_const->const_proton_mass;
@@ -179,7 +178,7 @@ INLINE static float cooling_get_temperature(
   const double mu_ionised = hydro_props->mu_ionised;
 
   /* Particle temperature */
-  const double u = hydro_get_physical_internal_energy(p, xp, cosmo);
+  const double u = hydro_get_physical_internal_energy(pind, cosmo);
 
   /* Temperature over mean molecular weight */
   const double T_over_mu = hydro_gamma_minus_one * u * m_H / k_B;
@@ -210,7 +209,7 @@ INLINE static float cooling_get_temperature(
 INLINE static double cooling_get_electron_pressure(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const struct part *p,
+    const struct cooling_function_data *cooling, const size_t pind,
     const struct xpart *xp) {
 
   return 0.;
@@ -233,7 +232,7 @@ INLINE static double cooling_get_electron_pressure(
 INLINE static double cooling_get_ycompton(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const struct part *p,
+    const struct cooling_function_data *cooling, const size_t pind,
     const struct xpart *xp) {
   return 0.f;
 }
@@ -246,7 +245,7 @@ INLINE static double cooling_get_ycompton(
  * @param p The particle.
  * @param xp The extended particle data.
  */
-INLINE static float cooling_get_subgrid_temperature(const struct part *p,
+INLINE static float cooling_get_subgrid_temperature(const size_t pind,
                                                     const struct xpart *xp) {
   return -1.f;
 }
@@ -259,7 +258,7 @@ INLINE static float cooling_get_subgrid_temperature(const struct part *p,
  * @param p The particle.
  * @param xp The extended particle data.
  */
-INLINE static float cooling_get_subgrid_density(const struct part *p,
+INLINE static float cooling_get_subgrid_density(const size_t pind,
                                                 const struct xpart *xp) {
   return -1.f;
 }
@@ -286,7 +285,7 @@ __attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(
  * @param xp Pointer to the #xpart data.
  * @param time The time when the cooling was switched off.
  */
-INLINE static void cooling_set_part_time_cooling_off(struct part *p,
+INLINE static void cooling_set_part_time_cooling_off(size_t pind,
                                                      struct xpart *xp,
                                                      const double time) {}
 
@@ -299,8 +298,7 @@ INLINE static void cooling_set_part_time_cooling_off(struct part *p,
  * @param xp The #xpart.
  * @param n The number of pieces to split into.
  */
-static INLINE void cooling_split_part(struct part *p, struct xpart *xp,
-                                      double n) {}
+static INLINE void cooling_split_part(size_t pind, double n) {}
 
 /**
  * @brief Initialises the cooling properties.

@@ -33,53 +33,67 @@
 /* Import the right hydro particle definition */
 #if defined(NONE_SPH)
 #include "./hydro/None/hydro_part.h"
+#include "./hydro/None/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(MINIMAL_SPH)
 #include "./hydro/Minimal/hydro_part.h"
+#include "./hydro/Minimal/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(GADGET2_SPH)
 #include "./hydro/Gadget2/hydro_part.h"
+#include "./hydro/Gadget2/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(HOPKINS_PE_SPH)
 #include "./hydro/PressureEntropy/hydro_part.h"
+#include "./hydro/PressureEntropy/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 1
 #elif defined(HOPKINS_PU_SPH)
 #include "./hydro/PressureEnergy/hydro_part.h"
+#include "./hydro/PressureEnergy/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(HOPKINS_PU_SPH_MONAGHAN)
 #include "./hydro/PressureEnergyMorrisMonaghanAV/hydro_part.h"
+#include "./hydro/PressureEnergyMorrisMonaghanAV/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(PHANTOM_SPH)
 #include "./hydro/Phantom/hydro_part.h"
+#include "./hydro/Phantom/hydro_part_arrays_struct.h"
 #define EXTRA_HYDRO_LOOP
 #define hydro_need_extra_init_loop 0
 #elif defined(GIZMO_MFV_SPH) || defined(GIZMO_MFM_SPH)
 #include "./hydro/Gizmo/hydro_part.h"
+#include "./hydro/Gizmo/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #define MPI_SYMMETRIC_FORCE_INTERACTION
 #elif defined(SHADOWSWIFT)
 #include "./hydro/Shadowswift/hydro_part.h"
+#include "./hydro/Shadowswift/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #elif defined(PLANETARY_SPH)
 #include "./hydro/Planetary/hydro_part.h"
+#include "./hydro/Planetary/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #elif defined(REMIX_SPH)
 #include "./hydro/REMIX/hydro_part.h"
+#include "./hydro/REMIX/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #define EXTRA_HYDRO_LOOP_TYPE2
 #elif defined(SPHENIX_SPH)
 #include "./hydro/SPHENIX/hydro_part.h"
+#include "./hydro/SPHENIX/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #elif defined(GASOLINE_SPH)
 #include "./hydro/Gasoline/hydro_part.h"
+#include "./hydro/Gasoline/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #elif defined(ANARCHY_PU_SPH)
 #include "./hydro/AnarchyPU/hydro_part.h"
+#include "./hydro/AnarchyPU/hydro_part_arrays_struct.h"
 #define hydro_need_extra_init_loop 0
 #define EXTRA_HYDRO_LOOP
 #else
@@ -93,47 +107,47 @@
  * ---------------------------------------- */
 
 static __attribute__((always_inline)) INLINE timebin_t
-part_get_timestep_limiter_wakeup(const struct part *restrict p) {
-  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(p);
+part_get_timestep_limiter_wakeup(size_t pind) {
+  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(pind);
   return timestep_limiter_get_wakeup(d);
 }
 
 static __attribute__((always_inline)) INLINE timebin_t *
-part_get_timestep_limiter_wakeup_p(struct part *restrict p) {
-  struct timestep_limiter_data *d = part_get_limiter_data_p(p);
+part_get_timestep_limiter_wakeup_p(size_t pind) {
+  struct timestep_limiter_data *d = part_get_limiter_data_p(pind);
   return timestep_limiter_get_wakeup_p(d);
 }
 
 static __attribute__((always_inline)) INLINE void
-part_set_timestep_limiter_wakeup(struct part *restrict p,
+part_set_timestep_limiter_wakeup(size_t pind,
                                  const timebin_t wakeup) {
-  struct timestep_limiter_data *d = part_get_limiter_data_p(p);
+  struct timestep_limiter_data *d = part_get_limiter_data_p(pind);
   timestep_limiter_set_wakeup(d, wakeup);
 }
 
 static __attribute__((always_inline)) INLINE timebin_t
-part_get_timestep_limiter_min_ngb_time_bin(const struct part *restrict p) {
-  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(p);
+part_get_timestep_limiter_min_ngb_time_bin(size_t pind) {
+  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(pind);
   return timestep_limiter_get_min_ngb_time_bin(d);
 }
 
 static __attribute__((always_inline)) INLINE void
-part_set_timestep_limiter_min_ngb_time_bin(struct part *restrict p,
+part_set_timestep_limiter_min_ngb_time_bin(size_t pind,
                                            const timebin_t min_ngb_time_bin) {
-  struct timestep_limiter_data *d = part_get_limiter_data_p(p);
+  struct timestep_limiter_data *d = part_get_limiter_data_p(pind);
   timestep_limiter_set_min_ngb_time_bin(d, min_ngb_time_bin);
 }
 
 static __attribute__((always_inline)) INLINE char
-part_get_timestep_limiter_to_be_synchronized(const struct part *restrict p) {
-  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(p);
+part_get_timestep_limiter_to_be_synchronized(size_t pind) {
+  const struct timestep_limiter_data *d = part_get_const_limiter_data_p(pind);
   return timestep_limiter_get_to_be_synchronized(d);
 }
 
 static __attribute__((always_inline)) INLINE void
-part_set_timestep_limiter_to_be_synchronized(struct part *restrict p,
+part_set_timestep_limiter_to_be_synchronized(size_t pind,
                                              const char to_be_synchronized) {
-  struct timestep_limiter_data *d = part_get_limiter_data_p(p);
+  struct timestep_limiter_data *d = part_get_limiter_data_p(pind);
   timestep_limiter_set_to_be_synchronized(d, to_be_synchronized);
 }
 
@@ -142,28 +156,28 @@ part_set_timestep_limiter_to_be_synchronized(struct part *restrict p,
  * ---------------------------------------------- */
 
 static __attribute__((always_inline)) INLINE timebin_t
-part_get_rt_time_bin(const struct part *restrict p) {
+part_get_rt_time_bin(size_t pind) {
   const struct rt_timestepping_data *const rtd =
-      part_get_const_rt_time_data_p(p);
+      part_get_const_rt_time_data_p(pind);
   return rt_timestepping_data_get_time_bin(rtd);
 }
 
 static __attribute__((always_inline)) INLINE void part_set_rt_time_bin(
-    struct part *restrict p, const timebin_t time_bin) {
-  struct rt_timestepping_data *rtd = part_get_rt_time_data_p(p);
+    size_t pind, const timebin_t time_bin) {
+  struct rt_timestepping_data *rtd = part_get_rt_time_data_p(pind);
   rt_timestepping_data_set_time_bin(rtd, time_bin);
 }
 
 static __attribute__((always_inline)) INLINE timebin_t
-part_get_rt_min_ngb_time_bin(const struct part *restrict p) {
+part_get_rt_min_ngb_time_bin(size_t pind) {
   const struct rt_timestepping_data *const rtd =
-      part_get_const_rt_time_data_p(p);
+      part_get_const_rt_time_data_p(pind);
   return rt_timestepping_data_get_min_ngb_time_bin(rtd);
 }
 
 static __attribute__((always_inline)) INLINE void part_set_rt_min_ngb_time_bin(
-    struct part *restrict p, const timebin_t min_ngb_time_bin) {
-  struct rt_timestepping_data *rtd = part_get_rt_time_data_p(p);
+    size_t pind, const timebin_t min_ngb_time_bin) {
+  struct rt_timestepping_data *rtd = part_get_rt_time_data_p(pind);
   rt_timestepping_data_set_min_ngb_time_bin(rtd, min_ngb_time_bin);
 }
 

@@ -67,8 +67,8 @@ adaptive_softening_add_correction_term(struct part *pi, const float ui,
  * @param r_inv the inverse of the distance linking the particles.
  */
 __attribute__((always_inline)) INLINE static float
-adaptive_softening_get_acc_term(const struct part *restrict pi,
-                                const struct part *restrict pj,
+adaptive_softening_get_acc_term(const size_t pindi,
+                                const size_t pindj,
                                 const float wi_dr, const float wj_dr,
                                 const float f_ij, const float f_ji,
                                 const float r_inv) {
@@ -105,7 +105,7 @@ adaptive_softening_get_acc_term(const struct part *restrict pi,
  * @param mj The mass of the other particle.
  */
 __attribute__((always_inline)) INLINE static void
-adaptive_softening_add_correction_term(struct part *restrict pi, const float ui,
+adaptive_softening_add_correction_term(size_t pindi, const float ui,
                                        const float hi_inv, const float mj) {}
 
 /**
@@ -122,8 +122,7 @@ adaptive_softening_add_correction_term(struct part *restrict pi, const float ui,
  * @param r_inv the inverse of the distance linking the particles.
  */
 __attribute__((always_inline)) INLINE static float
-adaptive_softening_get_acc_term(const struct part *restrict pi,
-                                const struct part *restrict pj,
+adaptive_softening_get_acc_term(const size_t pindi, const size_t pindj,
                                 const float wi_dr, const float wj_dr,
                                 const float f_ij, const float f_ji,
                                 const float r_inv) {

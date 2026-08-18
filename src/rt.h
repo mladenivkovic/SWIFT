@@ -56,10 +56,10 @@
  * @param p The #part.
  */
 __attribute__((always_inline)) INLINE static void rt_first_init_timestep_data(
-    struct part *restrict p) {
+    size_t pind) {
 
-  part_set_rt_min_ngb_time_bin(p, num_time_bins + 1);
-  part_set_rt_time_bin(p, 0);
+  part_set_rt_min_ngb_time_bin(pind, num_time_bins + 1);
+  part_set_rt_time_bin(pind, 0);
 }
 
 /**
@@ -68,9 +68,9 @@ __attribute__((always_inline)) INLINE static void rt_first_init_timestep_data(
  * @param p The #part.
  */
 __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
-    struct part *restrict p) {
+    size_t pind) {
 
-  part_set_rt_min_ngb_time_bin(p, num_time_bins + 1);
+  part_set_rt_min_ngb_time_bin(pind, num_time_bins + 1);
 }
 
 /**
@@ -90,7 +90,7 @@ __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
 #ifndef RT_NONE
@@ -127,7 +127,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_rt_timebin(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, const struct part *restrict pj, const float a,
+    size_t pindi, const size_t pindj, const float a,
     const float H) {
 
 #ifndef RT_NONE
