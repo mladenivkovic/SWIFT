@@ -73,6 +73,12 @@ void select_output_space_init(struct space *s, double *dim, int periodic,
   bzero(s->xparts, Ngas * sizeof(struct xpart));
 };
 
+void select_output_space_clean(struct space *s) { free(s->xparts); };
+
+void select_output_engine_clean(struct engine *e) {
+  threadpool_clean(&e->threadpool);
+}
+
 int main(int argc, char *argv[]) {
 
   /* Initialize CPU frequency, this also starts time. */
@@ -114,7 +120,7 @@ int main(int argc, char *argv[]) {
 
   /* Read data */
   message("Reading initial conditions.");
-  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, // TODO write input.hdf5 st the test will run
+  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, 
                  &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
                  &Nspart, &Nbpart, &flag_entropy_ICs,
                  /*with_hydro=*/1,
