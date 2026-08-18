@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
   /* Read data */
   message("Reading initial conditions.");
-  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts,
+  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, // TODO File name needs changing to a different file (that we made)
                  &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
                  &Nspart, &Nbpart, &flag_entropy_ICs,
                  /*with_hydro=*/1,
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
                  /*cleanup_h=*/0,
                  /*cleanup_sqrt_a=*/0,
                  /*h=*/1., /*a=*/1., /*n_threads=*/1, /*dry_run=*/0,
-                 /*remap_ids=*/0, &ics_metadata); // TODO File name needs changing to a different file (that we made)
+                 /*remap_ids=*/0, &ics_metadata); 
 
   /* pseudo initialization of the space */
   message("Initialization of the space.");
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
   message("Initialization of the engine.");
   struct engine e;
   e.physical_constants = &prog_const;
-  sprintf(e.snapshot_base_name, "testHDF5Write");
+  sprintf(e.snapshot_base_name, "testHDF5Writing");
   sprintf(e.run_name, "HDF5 writing test");
   select_output_engine_init(&e, &s, &cosmo, &param_file, &output_options,
                             &cooling, &hydro_properties);
