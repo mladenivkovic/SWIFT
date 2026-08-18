@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   /* parse parameters */
   message("Reading parameters.");
   struct swift_params param_file;
-  const char *input_file = "selectOutputParameters.yml"; // TODO this input file needs changing
+  const char *input_file = "HDF5WritingParameters.yml"; 
   parser_read_file(input_file, &param_file);
 
   struct output_options output_options;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
   /* Read data */
   message("Reading initial conditions.");
-  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, // TODO File name needs changing to a different file (that we made)
+  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, // TODO write input.hdf5 st the test will run
                  &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
                  &Nspart, &Nbpart, &flag_entropy_ICs,
                  /*with_hydro=*/1,
