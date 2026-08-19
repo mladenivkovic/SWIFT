@@ -10,7 +10,7 @@ echo "Generating output"
 # echo "Checking output"
 # python3 ./testSelectOutput.py
 
-# Do we want to clean up?
-# rm -f testHDF5Writing.hdf5 testHDF5Writing.xmf HDF5_writing.log 
+# NOTE Do we want to clean up?
+rm -f testHDF5Writing*.hdf5 testHDF5Writing.xmf HDF5_writing.log 
 
 echo "Test passed"
