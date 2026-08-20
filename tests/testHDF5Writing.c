@@ -19,9 +19,230 @@
 
 /* Some standard headers. */
 #include <config.h>
+#include <hdf5.h>
+#include <math.h>
+#include <stdlib.h>
 
 /* Includes. */
 #include "swift.h"
+
+// Generates a SWIFT IC file, replicating makeInput.py
+// L is the number of particles along one axis
+// filename is the path to write to
+void generate_input_hdf5(size_t L, const char *filename) {
+
+  const double boxSize = 1.0;
+  const int periodic = 1;
+  const double density = 2.0;
+  const double P = 1.0;
+  const double gamma_val = 5.0 / 3.0;
+  const int material = 0;
+
+  const size_t numPart = L * L * L;
+  const double mass = boxSize * boxSize * boxSize * density / (double)numPart;
+  const double internalEnergy = P / ((gamma_val - 1.0) * density);
+  const double he_density = density * 0.24;
+
+  /* Allocate flat buffers matching each dataset's shape */
+  double *coords = malloc(numPart * 3 * sizeof(double));
+  float *v = malloc(numPart * 3 * sizeof(float));
+  float *m = malloc(numPart * sizeof(float));
+  float *h = malloc(numPart * sizeof(float));
+  float *u = malloc(numPart * sizeof(float));
+  float *rho = malloc(numPart * sizeof(float));
+  unsigned long *ids = malloc(numPart * sizeof(unsigned long));
+  int *mat = malloc(numPart * sizeof(int));
+  float *he = malloc(numPart * sizeof(float));
+
+  for (size_t i = 0; i < L; ++i) {
+    for (size_t j = 0; j < L; ++j) {
+      for (size_t k = 0; k < L; ++k) {
+        size_t index = i * L * L + j * L + k;
+
+        coords[index * 3 + 0] = i * boxSize / L + boxSize / (2 * L);
+        coords[index * 3 + 1] = j * boxSize / L + boxSize / (2 * L);
+        coords[index * 3 + 2] = k * boxSize / L + boxSize / (2 * L);
+
+        v[index * 3 + 0] = 0.0f;
+        v[index * 3 + 1] = 0.0f;
+        v[index * 3 + 2] = 0.0f;
+
+        m[index] = (float)mass;
+        h[index] = (float)(2.251 * boxSize / L);
+        u[index] = (float)internalEnergy;
+        rho[index] = (float)density;
+        ids[index] = index;
+        mat[index] = material;
+        he[index] = (float)he_density;
+      }
+    }
+  }
+
+  hid_t file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+  /* ---- /Header ---- */
+  hid_t header =
+      H5Gcreate2(file_id, "/Header", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+  hid_t scalar = H5Screate(H5S_SCALAR);
+  hid_t attr;
+
+  attr = H5Acreate2(header, "BoxSize", H5T_NATIVE_DOUBLE, scalar, H5P_DEFAULT,
+                    H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_DOUBLE, &boxSize);
+  H5Aclose(attr);
+
+  double time_val = 0.0;
+  attr = H5Acreate2(header, "Time", H5T_NATIVE_DOUBLE, scalar, H5P_DEFAULT,
+                    H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_DOUBLE, &time_val);
+  H5Aclose(attr);
+
+  int num_files = 1;
+  attr = H5Acreate2(header, "NumFilesPerSnapshot", H5T_NATIVE_INT, scalar,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_INT, &num_files);
+  H5Aclose(attr);
+  H5Sclose(scalar);
+
+  hsize_t six = 6;
+  hid_t vec6 = H5Screate_simple(1, &six, NULL);
+
+  long long numpart_total[6] = {(long long)numPart, 0, 0, 0, 0, 0};
+  long long numpart_highword[6] = {0, 0, 0, 0, 0, 0};
+  long long numpart_thisfile[6] = {(long long)numPart, 0, 0, 0, 0, 0};
+  double mass_table[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  int flag_entropy[6] = {0, 0, 0, 0, 0, 0};
+
+  attr = H5Acreate2(header, "NumPart_Total", H5T_NATIVE_LLONG, vec6,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_LLONG, numpart_total);
+  H5Aclose(attr);
+
+  attr = H5Acreate2(header, "NumPart_Total_HighWord", H5T_NATIVE_LLONG, vec6,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_LLONG, numpart_highword);
+  H5Aclose(attr);
+
+  attr = H5Acreate2(header, "NumPart_ThisFile", H5T_NATIVE_LLONG, vec6,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_LLONG, numpart_thisfile);
+  H5Aclose(attr);
+
+  attr = H5Acreate2(header, "MassTable", H5T_NATIVE_DOUBLE, vec6, H5P_DEFAULT,
+                    H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_DOUBLE, mass_table);
+  H5Aclose(attr);
+
+  attr = H5Acreate2(header, "Flag_Entropy_ICs", H5T_NATIVE_INT, vec6,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_INT, flag_entropy);
+  H5Aclose(attr);
+
+  H5Sclose(vec6);
+  H5Gclose(header);
+
+  /* ---- /RuntimePars ---- */
+  hid_t runtime = H5Gcreate2(file_id, "/RuntimePars", H5P_DEFAULT, H5P_DEFAULT,
+                             H5P_DEFAULT);
+  scalar = H5Screate(H5S_SCALAR);
+  attr = H5Acreate2(runtime, "PeriodicBoundariesOn", H5T_NATIVE_INT, scalar,
+                    H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attr, H5T_NATIVE_INT, &periodic);
+  H5Aclose(attr);
+  H5Sclose(scalar);
+  H5Gclose(runtime);
+
+  /* ---- /Units ---- */
+  hid_t units =
+      H5Gcreate2(file_id, "/Units", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  scalar = H5Screate(H5S_SCALAR);
+  double one = 1.0;
+  const char *unit_names[5] = {
+      "Unit length in cgs (U_L)", "Unit mass in cgs (U_M)",
+      "Unit time in cgs (U_t)", "Unit current in cgs (U_I)",
+      "Unit temperature in cgs (U_T)"};
+  for (int n = 0; n < 5; ++n) {
+    attr = H5Acreate2(units, unit_names[n], H5T_NATIVE_DOUBLE, scalar,
+                      H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_DOUBLE, &one);
+    H5Aclose(attr);
+  }
+  H5Sclose(scalar);
+  H5Gclose(units);
+
+  /* ---- /PartType0 ---- */
+  hid_t part0 =
+      H5Gcreate2(file_id, "/PartType0", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+  hsize_t dims3[2] = {numPart, 3};
+  hsize_t dims1[1] = {numPart};
+
+  hid_t space3 = H5Screate_simple(2, dims3, NULL);
+  hid_t space1 = H5Screate_simple(1, dims1, NULL);
+
+  hid_t ds;
+
+  ds = H5Dcreate2(part0, "Coordinates", H5T_NATIVE_DOUBLE, space3, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, coords);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "Velocities", H5T_NATIVE_FLOAT, space3, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "Masses", H5T_NATIVE_FLOAT, space1, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, m);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "SmoothingLength", H5T_NATIVE_FLOAT, space1,
+                  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, h);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "InternalEnergy", H5T_NATIVE_FLOAT, space1,
+                  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, u);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "Density", H5T_NATIVE_FLOAT, space1, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, rho);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "ParticleIDs", H5T_NATIVE_ULONG, space1, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ids);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "MaterialIDs", H5T_NATIVE_INT, space1, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, mat);
+  H5Dclose(ds);
+
+  ds = H5Dcreate2(part0, "HeDensity", H5T_NATIVE_FLOAT, space1, H5P_DEFAULT,
+                  H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(ds, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, he);
+  H5Dclose(ds);
+
+  H5Sclose(space3);
+  H5Sclose(space1);
+  H5Gclose(part0);
+  H5Fclose(file_id);
+
+  free(coords);
+  free(v);
+  free(m);
+  free(h);
+  free(u);
+  free(rho);
+  free(ids);
+  free(mat);
+  free(he);
+}
 
 void select_output_engine_init(struct engine *e, struct space *s,
                                struct cosmology *cosmo,
@@ -87,6 +308,24 @@ int main(int argc, char *argv[]) {
   unsigned long long cpufreq = 0;
   clocks_set_cpufreq(cpufreq);
 
+  // get number of particles
+  int numberOfParticles = 10; // default amount
+
+  if (argc > 1) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+      fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
+      return 1;
+    }
+    fscanf(file, "numberOfParticles = %d", &numberOfParticles);
+    fclose(file);
+  }
+  message("Number of particles requested: %d", numberOfParticles);
+
+  size_t L = (size_t)ceil(cbrt((double)numberOfParticles));
+  message("Generating IC with L=%zu (%zu particles).", L, L * L * L);
+  generate_input_hdf5(L, "input.hdf5");
+
   // const char *base_name = "testSelectOutput";
   size_t Ngas = 0, Ngpart = 0, Ngpart_background = 0, Nspart = 0, Nbpart = 0,
          Nsink = 0, Nnupart = 0;
@@ -104,7 +343,7 @@ int main(int argc, char *argv[]) {
   /* parse parameters */
   message("Reading parameters.");
   struct swift_params param_file;
-  const char *input_file = "HDF5WritingParameters.yml"; 
+  const char *input_file = "HDF5WritingParameters.yml";
   parser_read_file(input_file, &param_file);
 
   struct output_options output_options;
@@ -136,6 +375,7 @@ int main(int argc, char *argv[]) {
                  /*h=*/1., /*a=*/1., /*n_threads=*/1, /*dry_run=*/0,
                  /*remap_ids=*/0, &ics_metadata); 
 
+
   /* pseudo initialization of the space */
   message("Initialization of the space.");
   struct space s;
@@ -163,7 +403,7 @@ int main(int argc, char *argv[]) {
   sprintf(e.snapshot_base_name, "testHDF5Writing");
   sprintf(e.run_name, "HDF5 writing test");
   select_output_engine_init(&e, &s, &cosmo, &param_file, &output_options,
-      &cooling, &hydro_properties, &ics_metadata);
+                            &cooling, &hydro_properties, &ics_metadata);
 
   /* check output selection */
   message("Checking output parameters.");
@@ -174,7 +414,7 @@ int main(int argc, char *argv[]) {
 
   /* write output file */
   message("Writing output.");
-  write_output_single(&e, &us, &us, /*fof=*/0); // TODO does this need timing or smth?
+  write_output_single(&e, &us, &us, /*fof=*/0);
 
   /* Clean-up */
   message("Cleaning memory.");
@@ -186,3 +426,4 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
