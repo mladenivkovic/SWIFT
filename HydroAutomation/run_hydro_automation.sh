@@ -209,10 +209,23 @@ cleanup_example() {
     # Prepare the working directory
     local example_dir="$1" example_name="$2"
     cd "$example_dir" || return 1
-    log "Cleaning up all files except .png for ${example_name}"
+    log "Cleaning up run generated files for ${example_name}"
 
-    find . -maxdepth 2 -type f ! -name "*.png" -delete
-    
+    # Remove SWIFT output files and logs (leaves .png, .sh, .py, and main .yml untouched)
+    find . -maxdepth 2 -type f \( \
+        -name "*.hdf5" -o \
+        -name "*.xmf" -o \
+        -name "dependency_graph_*.csv" -o \
+        -name "task_level_*.txt" -o \
+        -name "timesteps.txt" -o \
+        -name "statistics*.txt" -o \
+        -name "used_parameters.yml" -o \
+        -name "unused_parameters.yml" \
+    \) -delete
+
+    # Remove temporary directories created during runs
+    rm -rf restart
+
     log "Directory listing for ${example_name} after cleanup:"
     ls -la
     cd "$SWIFT_ROOT" || return 1
