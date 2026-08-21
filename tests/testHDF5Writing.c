@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
 
   size_t L = (size_t)ceil(cbrt((double)numberOfParticles));
   message("Generating IC with L=%zu (%zu particles).", L, L * L * L);
-  generate_input_hdf5(L, "input.hdf5");
+  generate_input_hdf5(L, "HDF5input.hdf5");
 
   // const char *base_name = "testSelectOutput";
   size_t Ngas = 0, Ngpart = 0, Ngpart_background = 0, Nspart = 0, Nbpart = 0,
