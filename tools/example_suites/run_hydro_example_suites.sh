@@ -89,7 +89,7 @@ build_binary() {
 
 
     log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}..."
-    if ! ./configure --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
+    if ! ./configure --with-riemann-solver=exact --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
         log "Configuration failed for ${scheme}/${dim}D. Check ${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log for details."
         return 1
     fi
