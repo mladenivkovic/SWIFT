@@ -8,10 +8,10 @@ set -u # Treat unset variables as errors
 set -o pipefail # tee has different exit codes to bash
 
 # Get the swift directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SWIFT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="."
+SWIFT_ROOT="../.."
 
-AUTOMATION_DIR="${SWIFT_ROOT}/HydroAutomation"
+AUTOMATION_DIR="${SCRIPT_DIR}"
 BUILD_LOG_DIR="${AUTOMATION_DIR}/build_logs"
 BINARY_DIR="${AUTOMATION_DIR}/binaries"
 RESULTS_DIR="${AUTOMATION_DIR}/results"
