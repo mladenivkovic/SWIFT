@@ -118,7 +118,7 @@ activate_binary() {
         return 1
     fi
 
-    ln -sf "$("$binary_path")" "${SWIFT_ROOT}/swift"
+    ln -sf "$binary_path" "${SWIFT_ROOT}/swift"
 
     log "Activated ${scheme}/${dim}D binary as ${SWIFT_ROOT}/swift -> ${binary_path}"
     return 0
