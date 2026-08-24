@@ -1,10 +1,7 @@
 #!/bin/bash
 
-echo "Creating initial conditions"
-python3 ./makeInput.py
-
 echo "Generating output"
-./testHDF5Writing 2>&1 | tee HDF5_writing.log
+./testHDF5Writing testHDF5Writing.ini 2>&1 | tee HDF5_writing.log
 
 # Clean up
 rm -f testHDF5Writing*.hdf5 testHDF5Writing.xmf HDF5_writing.log 

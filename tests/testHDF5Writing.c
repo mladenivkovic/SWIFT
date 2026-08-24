@@ -25,6 +25,7 @@
 
 /* Includes. */
 #include "swift.h"
+#include "testHDF5WritingStubs.c"
 
 // Generates a SWIFT IC file, replicating makeInput.py
 // L is the number of particles along one axis
@@ -322,11 +323,10 @@ int main(int argc, char *argv[]) {
   }
   message("Number of particles requested: %d", numberOfParticles);
 
-  size_t L = (size_t)ceil(cbrt((double)numberOfParticles));
+  size_t L = (size_t)ceil(cbrt((double)numberOfParticles)); // get the approx cube root of number of particles for side length of cube
   message("Generating IC with L=%zu (%zu particles).", L, L * L * L);
   generate_input_hdf5(L, "HDF5input.hdf5");
 
-  // const char *base_name = "testSelectOutput";
   size_t Ngas = 0, Ngpart = 0, Ngpart_background = 0, Nspart = 0, Nbpart = 0,
          Nsink = 0, Nnupart = 0;
   int flag_entropy_ICs = -1;
@@ -337,14 +337,17 @@ int main(int argc, char *argv[]) {
   struct spart *sparts = NULL;
   struct bpart *bparts = NULL;
   struct sink *sinks = NULL;
-  struct ic_info ics_metadata;
-  strcpy(ics_metadata.group_name, "NoSUCH");
+  // struct ic_info ics_metadata;
+  // strcpy(ics_metadata.group_name, "NoSUCH");
 
   /* parse parameters */
   message("Reading parameters.");
   struct swift_params param_file;
   const char *input_file = "HDF5WritingParameters.yml";
   parser_read_file(input_file, &param_file);
+
+  struct ic_info ics_metadata;
+  ic_info_init(&ics_metadata, &param_file);
 
   struct output_options output_options;
   output_options_init(&param_file, 0, &output_options);
@@ -361,7 +364,7 @@ int main(int argc, char *argv[]) {
 
   /* Read data */
   message("Reading initial conditions.");
-  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, 
+  read_ic_single("HDF5input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, 
                  &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
                  &Nspart, &Nbpart, &flag_entropy_ICs,
                  /*with_hydro=*/1,
