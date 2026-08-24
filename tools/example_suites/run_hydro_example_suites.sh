@@ -18,7 +18,7 @@ RESULTS_DIR="${AUTOMATION_DIR}/results"
 MAKE_JOBS=32
 
 # Add the schemes for compilation here
-SCHEMES=(sphenix)
+SCHEMES=(gadget2 minimal pressure-entropy pressure-energy pressure-energy-monaghan phantom gizmo-mfv gizmo-mfm planetary remix sphenix gasoline anarchy-pu)
 
 # example name -> relative path. Dimension is inferred from the folder's
 # own _1D/_2D/_3D suffix rather than tracked separately, so adding a new
@@ -105,7 +105,7 @@ build_binary() {
     cd "$SWIFT_ROOT" || return 1
 
 
-    log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}..."
+    log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}, riemann-solver=exact..."
     if ! ./configure --with-riemann-solver=exact --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
         log "Configuration failed for ${scheme}/${dim}D. Check ${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log for details."
         return 1
