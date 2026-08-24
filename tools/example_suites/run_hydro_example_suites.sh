@@ -118,20 +118,11 @@ activate_binary() {
         return 1
     fi
 
-    cp "$binary_path" "${SWIFT_ROOT}/swift"
-    sync
-    local src_hash dst_hash
-    src_hash=$(md5sum "$binary_path" | awk '{print $1}')
-    dst_hash=$(md5sum "${SWIFT_ROOT}/swift" | awk '{print $1}')
-    if [ "$src_hash" != "$dst_hash" ]; then
-        log "ERROR: copied binary hash mismatch for ${scheme}/${dim}D (expected ${src_hash}, got ${dst_hash})"
-        return 1
-    fi
+    ln -sf "$("$binary_path")" "${SWIFT_ROOT}/swift"
 
-    log "Activated ${scheme}/${dim}D binary as ${SWIFT_ROOT}/swift (verified ${dst_hash})"
+    log "Activated ${scheme}/${dim}D binary as ${SWIFT_ROOT}/swift -> ${binary_path}"
     return 0
 }
-
 
 # Runs a single example's run.sh
 # By default reuses any initial conditions FRESH_IC=1 to force regeneration
