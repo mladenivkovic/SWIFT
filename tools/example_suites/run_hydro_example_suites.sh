@@ -11,7 +11,7 @@ set -o pipefail # tee has different exit codes to bash
 SCRIPT_DIR="."
 SWIFT_ROOT="../.."
 
-AUTOMATION_DIR="${SCRIPT_DIR}"
+AUTOMATION_DIR="/tmp/HydroAutomation"
 BUILD_LOG_DIR="${AUTOMATION_DIR}/build_logs"
 BINARY_DIR="${AUTOMATION_DIR}/binaries"
 RESULTS_DIR="${AUTOMATION_DIR}/results"
