@@ -17,11 +17,11 @@
  #
  ###############################################################################
 
-noinst_LTLIBRARIES = libwritehdf5outputtest.la
+noinst_LTLIBRARIES = libwritehdf5output.la
 
-libwritehdf5outputtest_la_CFLAGS = -I$(top_srcdir)/src $(HDF5_CPPFLAGS)
+libwritehdf5output_la_CFLAGS = -I$(top_srcdir)/src $(HDF5_CPPFLAGS)
 
-libwritehdf5outputtest_la_SOURCES = \
+libwritehdf5output_la_SOURCES = \
     $(top_srcdir)/src/threadpool.c \
     $(top_srcdir)/src/clocks.c \
     $(top_srcdir)/src/parser.c \
@@ -47,4 +47,14 @@ libwritehdf5outputtest_la_SOURCES = \
     $(top_srcdir)/src/xmf.c \
     $(top_srcdir)/src/common_io_cells.c \
     $(top_srcdir)/src/equation_of_state.c \
-    hdf5_writing_stubs.c
+    write-hdf5-output-stubs.c
+
+
+noinst_PROGRAMS = write-hdf5-output
+write_hdf5_output_SOURCES = write-hdf5-output.c
+write_hdf5_output_CFLAGS  = -I$(top_srcdir)/src $(HDF5_CPPFLAGS) $(GSL_INCS)
+write_hdf5_output_LDADD   = libwritehdf5output.la
+write_hdf5_output_LDFLAGS = $(HDF5_LDFLAGS) $(HDF5_LIBS) $(GSL_LIBS) -lm
+
+EXTRA_DIST = write-hdf5-output.sh write-hdf5-output-input.ini \
+             HDF5WritingParameters.yml HDF5input.hdf5
