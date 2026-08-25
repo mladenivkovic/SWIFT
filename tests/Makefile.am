@@ -166,6 +166,21 @@ testTimeline_SOURCES = testTimeline.c
 
 testHydroMPIrules = testHydroMPIrules.c
 
+# Custom build for minimal writing test
+testHDF5Writing_SOURCES = testHDF5Writing.c \
+    ../src/threadpool.c ../src/clocks.c ../src/parser.c \
+    ../src/output_options.c ../src/units.c ../src/physical_constants.c \
+    ../src/single_io.c ../src/cosmology.c ../src/hydro_properties.c \
+    ../src/common_io_fields.c ../src/lightcone/lightcone_map_types.c \
+    ../src/common_io.c ../src/common_io_copy.c ../src/ic_info.c \
+    ../src/output_list.c ../src/gravity_properties.c \
+    ../src/hdf5_object_to_blob.c ../src/tools.c ../src/version.c \
+    ../src/restart.c ../src/part_type.c ../src/io_compression.c \
+    ../src/xmf.c ../src/common_io_cells.c ../src/equation_of_state.c testHDF5WritingStubs.c
+
+testHDF5Writing_CFLAGS  = -I$(top_srcdir)/src -I.. $(HDF5_CPPFLAGS) $(GSL_INCS) $(FFTW_INCS) $(NUMA_INCS)
+testHDF5Writing_LDFLAGS = $(HDF5_LDFLAGS) $(HDF5_LIBS) $(GSL_LIBS) $(FFTW_LIBS) $(NUMA_LIBS) -lm
+
 # Files necessary for distribution
 EXTRA_DIST = testReading.sh makeInput.py testActivePair.sh \
              test27cells.sh test27cellsPerturbed.sh testParser.sh testPeriodicBC.sh \
@@ -174,7 +189,7 @@ EXTRA_DIST = testReading.sh makeInput.py testActivePair.sh \
              tolerance_27_normal.dat tolerance_27_perturbed.dat tolerance_27_perturbed_h.dat tolerance_27_perturbed_h2.dat \
              tolerance_testInteractions.dat tolerance_pair_active.dat tolerance_pair_force_active.dat \
              fft_params.yml tolerance_periodic_BC_normal.dat tolerance_periodic_BC_perturbed.dat \
-             testEOS_plot.sh testSelectOutput.sh selectOutput.yml \
+             testEOS_plot.sh testSelectOutput.sh testHDF5Writing.sh selectOutput.yml \
              output_list_params.yml output_list_time.txt output_list_redshift.txt \
              output_list_scale_factor.txt testEOS_plot.sh \
              test27cellsStars.sh test27cellsStarsPerturbed.sh star_tolerance_27_normal.dat \

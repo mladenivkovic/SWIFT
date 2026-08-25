@@ -25,7 +25,6 @@
 
 /* Includes. */
 #include "swift.h"
-#include "testHDF5WritingStubs.c"
 
 // Generates a SWIFT IC file, replicating makeInput.py
 // L is the number of particles along one axis

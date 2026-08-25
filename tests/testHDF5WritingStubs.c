@@ -1,3 +1,14 @@
+#include <stdio.h>
+#include <stdint.h>
+
+struct engine;
+struct space;
+struct neutrino_model;
+struct gpart;
+struct cosmology;
+struct lightcone_props;
+struct lightcone_map;
+
 void engine_struct_dump(struct engine *e, FILE *stream) {
   (void)e;
   (void)stream;
