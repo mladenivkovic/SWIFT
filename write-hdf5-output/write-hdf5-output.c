@@ -25,11 +25,12 @@
 
 /* Includes. */
 #include "swift.h"
+#include "write-hdf5-output.h"
 
-// Generates a SWIFT IC file, replicating makeInput.py
-// L is the number of particles along one axis
-// filename is the path to write to
-void generate_input_hdf5(size_t L, const char *filename) {
+/* Generates a SWIFT IC file, replicating makeInput.py
+ * L is the number of particles along one axis
+ * filename is the path to write to */
+static void generate_input_hdf5(size_t L, const char *filename) {
 
   const double boxSize = 1.0;
   const int periodic = 1;
@@ -244,13 +245,13 @@ void generate_input_hdf5(size_t L, const char *filename) {
   free(he);
 }
 
-void select_output_engine_init(struct engine *e, struct space *s,
-                               struct cosmology *cosmo,
-                               struct swift_params *params,
-                               struct output_options *output,
-                               struct cooling_function_data *cooling,
-                               struct hydro_props *hydro_properties,
-                               struct ic_info *ics_metadata) {
+static void select_output_engine_init(struct engine *e, struct space *s,
+                                      struct cosmology *cosmo,
+                                      struct swift_params *params,
+                                      struct output_options *output,
+                                      struct cooling_function_data *cooling,
+                                      struct hydro_props *hydro_properties,
+                                      struct ic_info *ics_metadata) {
   /* set structures */
   e->s = s;
   e->cooling_func = cooling;
@@ -271,10 +272,11 @@ void select_output_engine_init(struct engine *e, struct space *s,
   e->snapshot_compression = 0;
 };
 
-void select_output_space_init(struct space *s, double *dim, int periodic,
-                              size_t Ngas, size_t Nspart, size_t Ngpart,
-                              struct part *parts, struct spart *sparts,
-                              struct gpart *gparts) {
+static void select_output_space_init(struct space *s, double *dim,
+                                     int periodic, size_t Ngas,
+                                     size_t Nspart, size_t Ngpart,
+                                     struct part *parts, struct spart *sparts,
+                                     struct gpart *gparts) {
   s->periodic = periodic;
   for (int i = 0; i < 3; i++) {
     s->dim[i] = dim[i];
@@ -296,33 +298,23 @@ void select_output_space_init(struct space *s, double *dim, int periodic,
   bzero(s->xparts, Ngas * sizeof(struct xpart));
 };
 
-void select_output_space_clean(struct space *s) { free(s->xparts); };
+static void select_output_space_clean(struct space *s) { free(s->xparts); };
 
-void select_output_engine_clean(struct engine *e) {
+static void select_output_engine_clean(struct engine *e) {
   threadpool_clean(&e->threadpool);
 }
 
-int main(int argc, char *argv[]) {
+int write_hdf5_output_run(int numberOfParticles, const char *param_filename) {
 
   /* Initialize CPU frequency, this also starts time. */
   unsigned long long cpufreq = 0;
   clocks_set_cpufreq(cpufreq);
 
-  // get number of particles
-  int numberOfParticles = 10; // default amount
-
-  if (argc > 1) {
-    FILE *file = fopen(argv[1], "r");
-    if (file == NULL) {
-      fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
-      return 1;
-    }
-    fscanf(file, "numberOfParticles = %d", &numberOfParticles);
-    fclose(file);
-  }
   message("Number of particles requested: %d", numberOfParticles);
 
-  size_t L = (size_t)ceil(cbrt((double)numberOfParticles)); // get the approx cube root of number of particles for side length of cube
+ // get the approx cube root of number of particles for side length of cube
+  size_t L = (size_t)ceil(cbrt((double)numberOfParticles));
+
   message("Generating IC with L=%zu (%zu particles).", L, L * L * L);
   generate_input_hdf5(L, "write-hdf5-output.hdf5");
 
@@ -342,8 +334,7 @@ int main(int argc, char *argv[]) {
   /* parse parameters */
   message("Reading parameters.");
   struct swift_params param_file;
-  const char *input_file = "HDF5WritingParameters.yml";
-  parser_read_file(input_file, &param_file);
+  parser_read_file(param_filename, &param_file);
 
   struct ic_info ics_metadata;
   ic_info_init(&ics_metadata, &param_file);
@@ -363,9 +354,9 @@ int main(int argc, char *argv[]) {
 
   /* Read data */
   message("Reading initial conditions.");
-  read_ic_single("write-hdf5-output.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts, 
-                 &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
-                 &Nspart, &Nbpart, &flag_entropy_ICs,
+  read_ic_single("write-hdf5-output.hdf5", &us, dim, &parts, &gparts, &sinks,
+                 &sparts, &bparts, &Ngas, &Ngpart, &Ngpart_background,
+                 &Nnupart, &Nsink, &Nspart, &Nbpart, &flag_entropy_ICs,
                  /*with_hydro=*/1,
                  /*with_gravity=*/0,
                  /*with_sink=*/0,
@@ -375,8 +366,7 @@ int main(int argc, char *argv[]) {
                  /*cleanup_h=*/0,
                  /*cleanup_sqrt_a=*/0,
                  /*h=*/1., /*a=*/1., /*n_threads=*/1, /*dry_run=*/0,
-                 /*remap_ids=*/0, &ics_metadata); 
-
+                 /*remap_ids=*/0, &ics_metadata);
 
   /* pseudo initialization of the space */
   message("Initialization of the space.");
@@ -429,3 +419,19 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
+int main(int argc, char *argv[]) {
+
+  int numberOfParticles = 10; // default amount
+
+  if (argc > 1) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+      fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
+      return 1;
+    }
+    fscanf(file, "numberOfParticles = %d", &numberOfParticles);
+    fclose(file);
+  }
+
+  return write_hdf5_output_run(numberOfParticles, "HDF5WritingParameters.yml");
+}
