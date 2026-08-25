@@ -178,8 +178,8 @@ testHDF5Writing_SOURCES = testHDF5Writing.c \
     ../src/restart.c ../src/part_type.c ../src/io_compression.c \
     ../src/xmf.c ../src/common_io_cells.c ../src/equation_of_state.c testHDF5WritingStubs.c
 
-testHDF5Writing_CFLAGS  = -I$(top_srcdir)/src -I.. $(HDF5_CPPFLAGS) $(GSL_INCS) $(FFTW_INCS) $(NUMA_INCS)
-testHDF5Writing_LDFLAGS = $(HDF5_LDFLAGS) $(HDF5_LIBS) $(GSL_LIBS) $(FFTW_LIBS) $(NUMA_LIBS) -lm
+testHDF5Writing_CFLAGS  = -I$(top_srcdir)/src -I.. $(HDF5_CPPFLAGS) $(GSL_INCS) -ffunction-sections -fdata-sections
+testHDF5Writing_LDFLAGS = $(HDF5_LDFLAGS) $(HDF5_LIBS) $(GSL_LIBS) -lm -Wl,--gc-sections
 
 # Files necessary for distribution
 EXTRA_DIST = testReading.sh makeInput.py testActivePair.sh \
