@@ -1,5 +1,0 @@
-#!/bin/bash
-INCLUDES="-I../src -I.."    
-LIBS="-lhdf5 -lm -lgsl -lgslcblas -lnuma -lfftw3_threads -lfftw3"
-
-gcc $INCLUDES testHDF5Writing.c $(cat "${1:-testHDF5WritingIncludeFiles.txt}") -o "${2:-testHDF5Writing}" $LIBS
