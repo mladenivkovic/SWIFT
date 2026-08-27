@@ -420,18 +420,20 @@ int write_hdf5_output_run(int numberOfParticles, const char *param_filename) {
 }
 
 int main(int argc, char *argv[]) {
-
-  int numberOfParticles = 10; // default amount
+  int numberOfParticles = 16; // default amount
+  const char *param_filename = "HDF5WritingParameters.yml"; // default
 
   if (argc > 1) {
-    FILE *file = fopen(argv[1], "r");
-    if (file == NULL) {
-      fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
+    numberOfParticles = atoi(argv[1]);
+    if (numberOfParticles <= 0) {
+      fprintf(stderr, "Error: invalid numberOfParticles '%s'\n", argv[1]);
       return 1;
     }
-    fscanf(file, "numberOfParticles = %d", &numberOfParticles);
-    fclose(file);
   }
 
-  return write_hdf5_output_run(numberOfParticles, "HDF5WritingParameters.yml");
+  if (argc > 2) {
+    param_filename = argv[2];
+  }
+
+  return write_hdf5_output_run(numberOfParticles, param_filename);
 }
