@@ -40,4 +40,7 @@ struct hydro_space {};
 
 void hydro_space_init(struct hydro_space *hs, const struct space *s);
 
+/* Below are functions in source files generated depending on particle layout */
+void space_reorder_extra_parts_mapper(void *map_data, int num_cells, void *extra_data);
+
 #endif /* SWIFT_HYDRO_SPACE_H */

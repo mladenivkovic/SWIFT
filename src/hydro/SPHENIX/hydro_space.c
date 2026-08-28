@@ -1,0 +1,20 @@
+#include "hydro_space.h"
+#include "cell.h"
+#include "space.h"
+
+#if defined(SPHENIX_SPH)
+
+void space_reorder_extra_parts_mapper(void *map_data, int num_cells,
+                                      void *extra_data) {
+  int *local_cells = (int *)map_data;
+  struct space *s = (struct space *)extra_data;
+  struct cell *cells_top = s->cells_top;
+
+  for (int ind = 0; ind < num_cells; ind++) {
+    struct cell *c = &cells_top[local_cells[ind]];
+    /* cell_reorder_extra_parts(c, c->hydro.parts - s->parts); */
+    printf("Cell %p\n", c);
+  }
+}
+
+#endif

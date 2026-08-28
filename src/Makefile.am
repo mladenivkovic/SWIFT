@@ -271,6 +271,7 @@ AM_SOURCES += $(SPHM1RT_RT_SOURCES)
 AM_SOURCES += $(GEAR_RT_SOURCES)
 AM_SOURCES += swift_lustre_api.c
 AM_SOURCES += gpu_pack_params.c # we need this here so we can still compile without GPU support enabled.
+AM_SOURCES += hydro/SPHENIX/hydro_space.c
 
 # Include files for distribution, not installation.
 nobase_noinst_HEADERS = align.h approx_math.h atomic.h barrier.h cycle.h error.h inline.h kernel_hydro.h kernel_gravity.h

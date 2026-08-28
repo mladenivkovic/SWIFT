@@ -47,6 +47,7 @@
 #include "cooling.h"
 #include "engine.h"
 #include "error.h"
+#include "hydro_space.h"
 #include "kernel_hydro.h"
 #include "lock.h"
 #include "mhd.h"
@@ -180,18 +181,6 @@ void space_free_foreign_parts(struct space *s, const int clear_cell_pointers) {
     }
   }
 #endif
-}
-
-void space_reorder_extra_parts_mapper(void *map_data, int num_cells,
-                                      void *extra_data) {
-  int *local_cells = (int *)map_data;
-  struct space *s = (struct space *)extra_data;
-  struct cell *cells_top = s->cells_top;
-
-  for (int ind = 0; ind < num_cells; ind++) {
-    struct cell *c = &cells_top[local_cells[ind]];
-    cell_reorder_extra_parts(c, c->hydro.parts - s->parts);
-  }
 }
 
 void space_reorder_extra_gparts_mapper(void *map_data, int num_cells,
