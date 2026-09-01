@@ -613,7 +613,7 @@ __attribute__((always_inline)) INLINE static void hydro_end_density(
   wcount_dh *= h_inv_dim_plus_one;
 
   part_set_rho(pind, rho);
-  part_set_rho_dh(pind, rho_pd);
+  part_set_rho_dh(pind, rho_dh);
   part_set_pressure_bar(pind, pressure_bar);
   part_set_pressure_bar_dh(pind, pressure_bar_dh);
   part_set_wcount(pind, wcount);
