@@ -749,9 +749,9 @@ __attribute__((always_inline)) INLINE static void hydro_reset_acceleration(
 #endif
 
   /* Reset the acceleration. */
-  part_set_a_hydro_ind(pind, 0, 0.f);
-  part_set_a_hydro_ind(pind, 1, 0.f);
-  part_set_a_hydro_ind(pind, 2, 0.f);
+  part_set_a_hydro_ind(pind, 0, 0.0f);
+  part_set_a_hydro_ind(pind, 1, 0.0f);
+  part_set_a_hydro_ind(pind, 2, 0.0f);
   
   /* Reset the time derivatives. */
   part_set_entropy_dt(pind, 0.0f);
