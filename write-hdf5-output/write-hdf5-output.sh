@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "Generating output"
 ./write-hdf5-output 1000 HDF5WritingParameters.yml 2>&1 | tee HDF5_writing.log
