@@ -1,5 +1,18 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+
+/* This test only links a subset of SWIFT's .c files (see Makefile.am)
+ * instead of the whole engine. But that subset still needs a few symbols that 
+ * normally come from engine.c and the neutrino code, so we stub them out here 
+ * instead of pulling those in.
+ *
+ * - neutrino_* / lightcone_map_neutrino_* : called from common_io.c
+ *   when writing neutrino particles. We never have any, so these can
+ *   just do nothing.
+ * - engine_rank, engine_policy_names: these are normal global
+ *   variables from engine.c, not functions. The message()/error()
+ *   macros use them, so something needs to define them even though
+ *   we never run the real engine start-up code. */
 
 struct engine;
 struct space;
@@ -26,42 +39,42 @@ void gpart_neutrino_weight_mesh_only(const struct gpart *gp,
                                      const struct neutrino_model *nm,
                                      double *weight) {
   (void)gp;
-  (void) nm;
-  (void) weight;
+  (void)nm;
+  (void)weight;
 }
 
 double lightcone_map_neutrino_baseline_value(
     const struct cosmology *c, const struct lightcone_props *lightcone_props,
     const struct lightcone_map *map) {
-(void)c;
-(void)lightcone_props;
-(void)map;
-return 0;
+  (void)c;
+  (void)lightcone_props;
+  (void)map;
+  return 0;
 }
 
 double neutrino_seed_to_fermi_dirac(uint64_t seed) {
-(void)seed;
-return 0;
+  (void)seed;
+  return 0;
 }
 
 void gpart_neutrino_mass_weight(const struct gpart *gp,
                                 const struct neutrino_model *nm, double *mass,
                                 double *weight) {
-(void)gp;
-(void)nm;
-(void)mass;
-(void)weight;
+  (void)gp;
+  (void)nm;
+  (void)mass;
+  (void)weight;
 }
 
 double lightcone_map_neutrino_mass_get_value(
     const struct engine *e, const struct lightcone_props *lightcone_props,
     const struct gpart *gp, const double a_cross, const double x_cross[3]) {
-(void)e;
-(void)lightcone_props;
-(void)gp;
-(void)a_cross;
-(void)x_cross;
-return 0;
+  (void)e;
+  (void)lightcone_props;
+  (void)gp;
+  (void)a_cross;
+  (void)x_cross;
+  return 0;
 }
 
 int lightcone_map_neutrino_mass_type_contributes(int ptype) { return 0; }
