@@ -24,7 +24,7 @@ SUBDIRS = csds
 else
 SUBDIRS =
 endif
-SUBDIRS += src argparse examples doc tests tools
+SUBDIRS += src argparse examples doc tests tools write-hdf5-output
 if HAVEEAGLECOOLING
 SUBDIRS += examples/Cooling/CoolingRates
 DIST_SUBDIRS = $(SUBDIRS)
