@@ -105,8 +105,8 @@ build_binary() {
     cd "$SWIFT_ROOT" || return 1
 
 
-    log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}, riemann-solver=exact..."
-    if ! ./configure --with-riemann-solver=exact --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
+    log "Configuring SWIFT for hydro-dimension=${dim}, hydro=${scheme}, riemann-solver=exact, --disable-hand-vec..."
+    if ! ./configure --with-riemann-solver=exact --disable-hand-vec --with-hydro-dimension="${dim}" --with-hydro="${scheme}"> "${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log" 2>&1; then
         log "Configuration failed for ${scheme}/${dim}D. Check ${BUILD_LOG_DIR}/configure_${scheme}_${dim}d.log for details."
         return 1
     fi
