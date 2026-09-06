@@ -56,4 +56,4 @@ write_hdf5_output_CFLAGS  = -I$(top_srcdir)/src $(HDF5_CPPFLAGS) $(GSL_INCS)
 write_hdf5_output_LDADD   = libwritehdf5output.la
 write_hdf5_output_LDFLAGS = $(HDF5_LDFLAGS) $(HDF5_LIBS) $(GSL_LIBS) -lm
 
-EXTRA_DIST = write-hdf5-output.sh HDF5WritingParameters.yml HDF5input.hdf5
+EXTRA_DIST = write-hdf5-output.sh HDF5WritingParameters.yml
