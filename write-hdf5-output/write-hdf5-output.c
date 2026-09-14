@@ -1,6 +1,6 @@
 /*******************************************************************************
  * This file is part of SWIFT.
- * Copyright (C) 2015 Matthieu Schaller (schaller@strw.leidenuniv.nl).
+ * Copyright (C) 2026 Elijah Cann (e.a.cann72@gmail.com).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -19,17 +19,54 @@
 
 /* Some standard headers. */
 #include <config.h>
+#include <stdlib.h>
 
 /* Includes. */
 #include "swift.h"
 
-void select_output_engine_init(struct engine *e, struct space *s,
-                               struct cosmology *cosmo,
-                               struct swift_params *params,
-                               struct output_options *output,
-                               struct cooling_function_data *cooling,
-                               struct hydro_props *hydro_properties,
-                               struct ic_info *ics_metadata) {
+/* Box size for the test lattice. Used by both generate_particles()
+ * and write_hdf5_output_run(). */
+static const double kBoxSize = 1.0;
+
+/* Builds numPart gas particles directly in memory
+ * Returns an array of numPart particles. Caller must free it. */
+static struct part *generate_particles(size_t numPart) {
+
+  struct part *parts = NULL;
+  if (swift_memalign("parts", (void **)&parts, part_align,
+                     numPart * sizeof(struct part)) != 0)
+    error("Failed to allocate parts.");
+  bzero(parts, numPart * sizeof(struct part));
+
+  for (size_t i = 0; i < numPart; ++i) {
+    struct part *p = &parts[i];
+
+    p->id = (long long)i;
+
+    p->x[0] = 0.5 * kBoxSize;
+    p->x[1] = 0.5 * kBoxSize;
+    p->x[2] = 0.5 * kBoxSize;
+
+    p->v[0] = 0.0f;
+    p->v[1] = 0.0f;
+    p->v[2] = 0.0f;
+
+    p->mass = 1.0f;
+    p->h = 0.1f;
+    p->u = 1.0f;
+    p->rho = 1.0f;
+  }
+
+  return parts;
+}
+
+static void hdf5_output_engine_init(struct engine *e, struct space *s,
+                                    struct cosmology *cosmo,
+                                    struct swift_params *params,
+                                    struct output_options *output,
+                                    struct cooling_function_data *cooling,
+                                    struct hydro_props *hydro_properties,
+                                    struct ic_info *ics_metadata) {
   /* set structures */
   e->s = s;
   e->cooling_func = cooling;
@@ -50,10 +87,13 @@ void select_output_engine_init(struct engine *e, struct space *s,
   e->snapshot_compression = 0;
 };
 
-void select_output_space_init(struct space *s, double *dim, int periodic,
-                              size_t Ngas, size_t Nspart, size_t Ngpart,
-                              struct part *parts, struct spart *sparts,
-                              struct gpart *gparts) {
+static void hdf5_output_space_init(struct space *s, double *dim, int periodic,
+                                   size_t Ngas, size_t Nspart, size_t Ngpart,
+                                   struct part *parts, struct spart *sparts,
+                                   struct gpart *gparts) {
+  // zero everything first
+  bzero(s, sizeof(struct space));
+
   s->periodic = periodic;
   for (int i = 0; i < 3; i++) {
     s->dim[i] = dim[i];
@@ -75,37 +115,45 @@ void select_output_space_init(struct space *s, double *dim, int periodic,
   bzero(s->xparts, Ngas * sizeof(struct xpart));
 };
 
-void select_output_space_clean(struct space *s) { free(s->xparts); };
+static void hdf5_output_space_clean(struct space *s) { free(s->xparts); };
 
-void select_output_engine_clean(struct engine *e) {
+static void hdf5_output_engine_clean(struct engine *e) {
   threadpool_clean(&e->threadpool);
 }
 
-int main(int argc, char *argv[]) {
+/**
+ * @brief Builds gas particles in memory and writes them out with
+ *        write_output_single()
+ *
+ * @param numberOfParticles How many particles to make.
+ * @param param_filename Path to the SWIFT parameter file
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+static int write_hdf5_output_run(int numberOfParticles,
+                                 const char *param_filename) {
 
   /* Initialize CPU frequency, this also starts time. */
   unsigned long long cpufreq = 0;
   clocks_set_cpufreq(cpufreq);
 
-  // const char *base_name = "testSelectOutput";
-  size_t Ngas = 0, Ngpart = 0, Ngpart_background = 0, Nspart = 0, Nbpart = 0,
-         Nsink = 0, Nnupart = 0;
-  int flag_entropy_ICs = -1;
+  message("Number of particles requested: %d", numberOfParticles);
+
+  size_t Ngas = (size_t)numberOfParticles;
+
+  message("Generating %zu particles directly in memory.", Ngas);
+  struct part *parts = generate_particles(Ngas);
+
   int periodic = 1;
-  double dim[3];
-  struct part *parts = NULL;
-  struct gpart *gparts = NULL;
-  struct spart *sparts = NULL;
-  struct bpart *bparts = NULL;
-  struct sink *sinks = NULL;
-  struct ic_info ics_metadata;
-  strcpy(ics_metadata.group_name, "NoSUCH");
+  double dim[3] = {kBoxSize, kBoxSize, kBoxSize};
 
   /* parse parameters */
   message("Reading parameters.");
   struct swift_params param_file;
-  const char *input_file = "selectOutputParameters.yml";
-  parser_read_file(input_file, &param_file);
+  parser_read_file(param_filename, &param_file);
+
+  struct ic_info ics_metadata;
+  ic_info_init(&ics_metadata, &param_file);
 
   struct output_options output_options;
   output_options_init(&param_file, 0, &output_options);
@@ -120,27 +168,11 @@ int main(int argc, char *argv[]) {
   struct phys_const prog_const;
   phys_const_init(&us, &param_file, &prog_const);
 
-  /* Read data */
-  message("Reading initial conditions.");
-  read_ic_single("input.hdf5", &us, dim, &parts, &gparts, &sinks, &sparts,
-                 &bparts, &Ngas, &Ngpart, &Ngpart_background, &Nnupart, &Nsink,
-                 &Nspart, &Nbpart, &flag_entropy_ICs,
-                 /*with_hydro=*/1,
-                 /*with_gravity=*/0,
-                 /*with_sink=*/0,
-                 /*with_stars=*/0,
-                 /*with_black_holes=*/0,
-                 /*with_cosmology=*/0,
-                 /*cleanup_h=*/0,
-                 /*cleanup_sqrt_a=*/0,
-                 /*h=*/1., /*a=*/1., /*n_threads=*/1, /*dry_run=*/0,
-                 /*remap_ids=*/0, &ics_metadata);
-
   /* pseudo initialization of the space */
   message("Initialization of the space.");
   struct space s;
-  select_output_space_init(&s, dim, periodic, Ngas, Nspart, Ngpart, parts,
-                           sparts, gparts);
+  hdf5_output_space_init(&s, dim, periodic, Ngas, /*Nspart=*/0, /*Ngpart=*/0,
+                         parts, /*sparts=*/NULL, /*gparts=*/NULL);
 
   /* initialization of cosmology */
   message("Initialization of the cosmology.");
@@ -159,11 +191,13 @@ int main(int argc, char *argv[]) {
   /* pseudo initialization of the engine */
   message("Initialization of the engine.");
   struct engine e;
+
+  bzero(&e, sizeof(struct engine));
   e.physical_constants = &prog_const;
-  sprintf(e.snapshot_base_name, "testSelectOutput");
-  sprintf(e.run_name, "Select Output Test");
-  select_output_engine_init(&e, &s, &cosmo, &param_file, &output_options,
-                            &cooling, &hydro_properties, &ics_metadata);
+  sprintf(e.snapshot_base_name, "write-hdf5-output");
+  sprintf(e.run_name, "HDF5 writing test");
+  hdf5_output_engine_init(&e, &s, &cosmo, &param_file, &output_options,
+                          &cooling, &hydro_properties, &ics_metadata);
 
   /* check output selection */
   message("Checking output parameters.");
@@ -178,11 +212,29 @@ int main(int argc, char *argv[]) {
 
   /* Clean-up */
   message("Cleaning memory.");
-  select_output_engine_clean(&e);
-  select_output_space_clean(&s);
+  hdf5_output_engine_clean(&e);
+  hdf5_output_space_clean(&s);
   cosmology_clean(&cosmo);
-  free(parts);
-  free(gparts);
+  swift_free("parts", parts);
 
   return 0;
+}
+
+int main(int argc, char *argv[]) {
+  int numberOfParticles = 16;                               // default amount
+  const char *param_filename = "HDF5WritingParameters.yml"; // default
+
+  if (argc > 1) {
+    numberOfParticles = atoi(argv[1]);
+    if (numberOfParticles <= 0) {
+      fprintf(stderr, "Error: invalid numberOfParticles '%s'\n", argv[1]);
+      return 1;
+    }
+  }
+
+  if (argc > 2) {
+    param_filename = argv[2];
+  }
+
+  return write_hdf5_output_run(numberOfParticles, param_filename);
 }
