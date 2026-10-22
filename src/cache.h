@@ -641,8 +641,6 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
   /* Get some local pointers */
   const int first_pi_align = *first_pi;
   const int last_pj_align = *last_pj;
-  const struct part *restrict parts_i = ci->hydro.parts;
-  const struct part *restrict parts_j = cj->hydro.parts;
 
   /* Shift particles to the local frame and account for boundary conditions.*/
   const double total_ci_shift[3] = {
@@ -670,10 +668,10 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
   /* Shift the particles positions to a local frame (ci frame) so single
    * precision can be used instead of double precision.  */
   for (int i = 0; i < ci_cache_count; i++) {
-    const int idx = sort_i[i + first_pi_align].i;
+    const size_t idx = ci->hydro.first + sort_i[i + first_pi_align].i;
 
     /* Put inhibited particles out of range. */
-    if (part_get_time_bin(&parts_i[idx]) >= time_bin_inhibited) {
+    if (part_get_time_bin(idx) >= time_bin_inhibited) {
       x[i] = pos_padded_i[0];
       y[i] = pos_padded_i[1];
       z[i] = pos_padded_i[2];
@@ -687,13 +685,13 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
       continue;
     }
 
-    x[i] = (float)(part_get_x_ind(&parts_i[idx], 0) - total_ci_shift[0]);
-    y[i] = (float)(part_get_x_ind(&parts_i[idx], 1) - total_ci_shift[1]);
-    z[i] = (float)(part_get_x_ind(&parts_i[idx], 2) - total_ci_shift[2]);
-    h[i] = part_get_h(&parts_i[idx]);
-    vx[i] = part_get_v_ind(&parts_i[idx], 0);
-    vy[i] = part_get_v_ind(&parts_i[idx], 1);
-    vz[i] = part_get_v_ind(&parts_i[idx], 2);
+    x[i] = (float)(part_get_x_ind(idx, 0) - total_ci_shift[0]);
+    y[i] = (float)(part_get_x_ind(idx, 1) - total_ci_shift[1]);
+    z[i] = (float)(part_get_x_ind(idx, 2) - total_ci_shift[2]);
+    h[i] = part_get_h(idx);
+    vx[i] = part_get_v_ind(idx, 0);
+    vy[i] = part_get_v_ind(idx, 1);
+    vz[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
     m[i] = part_get_mass(&parts_i[idx]);
 #endif
@@ -772,10 +770,10 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
   const float h_padded_j = cj->hydro.h_max / 4.;
 
   for (int i = 0; i <= last_pj_align; i++) {
-    const int idx = sort_j[i].i;
+    const size_t idx = cj->hydro.first + sort_j[i].i;
 
     /* Put inhibited particles out of range. */
-    if (part_get_time_bin(&parts_j[idx]) >= time_bin_inhibited) {
+    if (part_get_time_bin(idx) >= time_bin_inhibited) {
       xj[i] = pos_padded_j[0];
       yj[i] = pos_padded_j[1];
       zj[i] = pos_padded_j[2];
@@ -789,13 +787,13 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
       continue;
     }
 
-    xj[i] = (float)(part_get_x_ind(&parts_j[idx], 0) - total_cj_shift[0]);
-    yj[i] = (float)(part_get_x_ind(&parts_j[idx], 1) - total_cj_shift[1]);
-    zj[i] = (float)(part_get_x_ind(&parts_j[idx], 2) - total_cj_shift[2]);
-    hj[i] = part_get_h(&parts_j[idx]);
-    vxj[i] = part_get_v_ind(&parts_j[idx], 0);
-    vyj[i] = part_get_v_ind(&parts_j[idx], 1);
-    vzj[i] = part_get_v_ind(&parts_j[idx], 2);
+    xj[i] = (float)(part_get_x_ind(idx, 0) - total_cj_shift[0]);
+    yj[i] = (float)(part_get_x_ind(idx, 1) - total_cj_shift[1]);
+    zj[i] = (float)(part_get_x_ind(idx, 2) - total_cj_shift[2]);
+    hj[i] = part_get_h(idx);
+    vxj[i] = part_get_v_ind(idx, 0);
+    vyj[i] = part_get_v_ind(idx, 1);
+    vzj[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
     mj[i] = part_get_mass(&parts_j[idx]);
 #endif
@@ -893,8 +891,6 @@ cache_read_two_partial_cells_sorted_force(
   /* Get some local pointers */
   const int first_pi_align = *first_pi;
   const int last_pj_align = *last_pj;
-  const struct part *restrict parts_i = ci->hydro.parts;
-  const struct part *restrict parts_j = cj->hydro.parts;
 
   /* Shift particles to the local frame and account for boundary conditions.*/
   const double total_ci_shift[3] = {
@@ -932,10 +928,10 @@ cache_read_two_partial_cells_sorted_force(
    * precision can be  used instead of double precision.  */
   for (int i = 0; i < ci_cache_count; i++) {
 
-    const int idx = sort_i[i + first_pi_align].i;
+    const int idx = ci->hydro.first + sort_i[i + first_pi_align].i;
 
     /* Put inhibited particles out of range. */
-    if (part_get_time_bin(&parts_i[idx]) >= time_bin_inhibited) {
+    if (part_get_time_bin(idx) >= time_bin_inhibited) {
       x[i] = pos_padded_i[0];
       y[i] = pos_padded_i[1];
       z[i] = pos_padded_i[2];
@@ -953,13 +949,13 @@ cache_read_two_partial_cells_sorted_force(
       continue;
     }
 
-    x[i] = (float)(part_get_x_ind(&parts_i[idx], 0) - total_ci_shift[0]);
-    y[i] = (float)(part_get_x_ind(&parts_i[idx], 1) - total_ci_shift[1]);
-    z[i] = (float)(part_get_x_ind(&parts_i[idx], 2) - total_ci_shift[2]);
-    h[i] = part_get_h(&parts_i[idx]);
-    vx[i] = part_get_v_ind(&parts_i[idx], 0);
-    vy[i] = part_get_v_ind(&parts_i[idx], 1);
-    vz[i] = part_get_v_ind(&parts_i[idx], 2);
+    x[i] = (float)(part_get_x_ind(idx, 0) - total_ci_shift[0]);
+    y[i] = (float)(part_get_x_ind(idx, 1) - total_ci_shift[1]);
+    z[i] = (float)(part_get_x_ind(idx, 2) - total_ci_shift[2]);
+    h[i] = part_get_h(idx);
+    vx[i] = part_get_v_ind(idx, 0);
+    vy[i] = part_get_v_ind(idx, 1);
+    vz[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
     error(
         "Double-check this once getters/setters are implemented for gadget2 "
@@ -1019,10 +1015,10 @@ cache_read_two_partial_cells_sorted_force(
   const float h_padded_j = cj->hydro.h_max / 4.;
 
   for (int i = 0; i <= last_pj_align; i++) {
-    const int idx = sort_j[i].i;
+    const int idx = cj->hydro.first + sort_j[i].i;
 
     /* Put inhibited particles out of range. */
-    if (part_get_time_bin(&parts_j[idx]) == time_bin_inhibited) {
+    if (part_get_time_bin(idx) == time_bin_inhibited) {
       xj[i] = pos_padded_j[0];
       yj[i] = pos_padded_j[1];
       zj[i] = pos_padded_j[2];
@@ -1040,13 +1036,13 @@ cache_read_two_partial_cells_sorted_force(
       continue;
     }
 
-    xj[i] = (float)(part_get_x_ind(&parts_j[idx], 0) - total_cj_shift[0]);
-    yj[i] = (float)(part_get_x_ind(&parts_j[idx], 1) - total_cj_shift[1]);
-    zj[i] = (float)(part_get_x_ind(&parts_j[idx], 2) - total_cj_shift[2]);
-    hj[i] = part_get_h(&parts_j[idx]);
-    vxj[i] = part_get_v_ind(&parts_j[idx], 0);
-    vyj[i] = part_get_v_ind(&parts_j[idx], 1);
-    vzj[i] = part_get_v_ind(&parts_j[idx], 2);
+    xj[i] = (float)(part_get_x_ind(idx, 0) - total_cj_shift[0]);
+    yj[i] = (float)(part_get_x_ind(idx, 1) - total_cj_shift[1]);
+    zj[i] = (float)(part_get_x_ind(idx, 2) - total_cj_shift[2]);
+    hj[i] = part_get_h(idx);
+    vxj[i] = part_get_v_ind(idx, 0);
+    vyj[i] = part_get_v_ind(idx, 1);
+    vzj[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
     mj[i] = parts_j[idx].mass;
     rhoj[i] = parts_j[idx].rho;

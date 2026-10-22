@@ -80,10 +80,10 @@ INLINE static void cooling_update(
  */
 __attribute__((always_inline)) INLINE static double cooling_rate_cgs(
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
-    const struct cooling_function_data *cooling, const struct part *p) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
   /* Get particle density [g * cm^-3] */
-  const double rho = hydro_get_physical_density(p, cosmo);
+  const double rho = hydro_get_physical_density(pind, cosmo);
   const double rho_cgs = rho * cooling->conv_factor_density_to_cgs;
 
   /* Get Hydrogen mass fraction */
@@ -121,22 +121,22 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
     const struct pressure_floor_props *pressure_floor,
-    const struct cooling_function_data *cooling, struct part *p,
-    struct xpart *xp, const float dt, const float dt_therm, const double time) {
+    const struct cooling_function_data *cooling, const size_t pind,
+    const float dt, const float dt_therm, const double time) {
 
   /* Nothing to do here? */
   if (dt == 0.) return;
 
   /* Current energy (in internal units) */
-  const float u_old_com = hydro_get_comoving_internal_energy(p, xp);
+  const float u_old_com = hydro_get_comoving_internal_energy(pind);
 
   /* Y' = RHS of the comoving equation for du/dt that will be integrated
      forward in time using dt_therm */
-  const float hydro_du_dt_com = hydro_get_comoving_internal_energy_dt(p);
+  const float hydro_du_dt_com = hydro_get_comoving_internal_energy_dt(pind);
 
   /* Calculate cooling du_dt (in cgs units) */
   const double cooling_du_dt_cgs =
-      cooling_rate_cgs(cosmo, hydro_props, cooling, p);
+      cooling_rate_cgs(cosmo, hydro_props, cooling, pind);
 
   /* Convert to internal units */
   const float cooling_du_dt_physical =
@@ -153,8 +153,8 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
 
   /* Limit imposed by the entropy floor (comoving)
    * (Recall entropy is the same in physical and comoving frames) */
-  const float A_floor_com = entropy_floor(p, cosmo, floor_props);
-  const float rho_com = hydro_get_comoving_density(p);
+  const float A_floor_com = entropy_floor(pind, cosmo, floor_props);
+  const float rho_com = hydro_get_comoving_density(pind);
   const float u_floor_com =
       gas_internal_energy_from_entropy(rho_com, A_floor_com);
 
@@ -183,13 +183,13 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
   if (cooling->rapid_cooling) {
     const float u_new_com = u_old_com + total_du_dt * dt_therm;
     const float u_new_phys = u_new_com * cosmo->a_factor_internal_energy;
-    hydro_set_physical_internal_energy(p, xp, cosmo, u_new_phys);
-    hydro_set_drifted_physical_internal_energy(p, cosmo, pressure_floor,
+    hydro_set_physical_internal_energy(pind, cosmo, u_new_phys);
+    hydro_set_drifted_physical_internal_energy(pind, cosmo, pressure_floor,
                                                u_new_phys);
-    hydro_set_physical_internal_energy_dt(p, cosmo, 0.);
+    hydro_set_physical_internal_energy_dt(pind, cosmo, 0.);
   } else {
     /* Update the internal energy time derivative */
-    hydro_set_comoving_internal_energy_dt(p, total_du_dt);
+    hydro_set_comoving_internal_energy_dt(pind, total_du_dt);
   }
 
   const float actual_cooling_du_dt = total_du_dt - hydro_du_dt_com;
@@ -197,8 +197,8 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
                                               cosmo->a *
                                               cosmo->a_factor_internal_energy;
   /* Store the radiated energy (assuming dt will not change) */
-  xp->cooling_data.radiated_energy +=
-      -hydro_get_mass(p) * actual_cooling_du_dt_physical * dt;
+  struct cooling_xpart_data* cd = part_get_cooling_data_p(pind);
+  cd->radiated_energy += -hydro_get_mass(pind) * actual_cooling_du_dt_physical * dt;
 }
 
 /**

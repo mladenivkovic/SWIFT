@@ -39,9 +39,6 @@ struct cell_hydro {
   union {
 #endif
 
-    /*! Pointer to particle data. */
-    struct part_arrays *part_arrs;
-
     /*! Pointer for the sorted indices. */
     struct sort_entry *sort;
 
@@ -168,6 +165,9 @@ struct cell_hydro {
 
   /*! Is the #part data of this cell being used in a sub-cell? */
   int hold;
+
+  /*! Index of first particle in global particle arrays */
+  size_t first;
 
   /*! Nr of #part in this cell. */
   int count;
