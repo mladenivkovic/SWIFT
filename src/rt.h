@@ -90,8 +90,7 @@ __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
     const float r2, const float dx[3], const float hi, const float hj,
-    size_t pindi, size_t pindj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
 #ifndef RT_NONE
   /* Update the minimal time-bin */
@@ -127,8 +126,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_rt_timebin(
     const float r2, const float dx[3], const float hi, const float hj,
-    size_t pindi, const size_t pindj, const float a,
-    const float H) {
+    size_t pindi, const size_t pindj, const float a, const float H) {
 
 #ifndef RT_NONE
   /* Update the minimal time-bin */

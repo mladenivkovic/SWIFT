@@ -19,11 +19,11 @@
 #ifndef SWIFT_PRESSURE_FLOOR_NONE_H
 #define SWIFT_PRESSURE_FLOOR_NONE_H
 
-#include <stddef.h>
-
 #include "error.h"
 #include "inline.h"
 #include "io_properties.h"
+
+#include <stddef.h>
 
 /* Pre-declarations */
 struct cosmology;

@@ -68,9 +68,11 @@ fvpm_part_geometry_well_behaved(size_t pind) {
  * @brief Collect the data needed for the matrix construction.
  */
 __attribute__((always_inline)) INLINE static void
-fvpm_accumulate_geometry_and_matrix(size_t pind, const float wi, const float dx[3]) {}
+fvpm_accumulate_geometry_and_matrix(size_t pind, const float wi,
+                                    const float dx[3]) {}
 
-__attribute__((always_inline)) INLINE static void fvpm_geometry_init(size_t pind) {}
+__attribute__((always_inline)) INLINE static void fvpm_geometry_init(
+    size_t pind) {}
 
 /**
  * @brief Finish the computation of the matrix.

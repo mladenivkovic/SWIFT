@@ -119,8 +119,7 @@ part_get_timestep_limiter_wakeup_p(size_t pind) {
 }
 
 static __attribute__((always_inline)) INLINE void
-part_set_timestep_limiter_wakeup(size_t pind,
-                                 const timebin_t wakeup) {
+part_set_timestep_limiter_wakeup(size_t pind, const timebin_t wakeup) {
   struct timestep_limiter_data *d = part_get_limiter_data_p(pind);
   timestep_limiter_set_wakeup(d, wakeup);
 }

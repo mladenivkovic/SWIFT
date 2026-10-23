@@ -35,7 +35,8 @@
 struct cosmology;
 
 /* Pre-declarations to avoid cyclic inclusions */
-static INLINE float hydro_get_physical_density(size_t pind, const struct cosmology *cosmo);
+static INLINE float hydro_get_physical_density(size_t pind,
+                                               const struct cosmology *cosmo);
 static INLINE float hydro_get_comoving_density(size_t pind);
 
 /* Import the right entropy floor definition */

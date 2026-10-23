@@ -236,8 +236,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_density(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    size_t pindi, size_t pindj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
   /* We need to construct the maximal signal velocity between our particle
    * and all of it's neighbours */
@@ -249,9 +248,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_gradient(
   const float fac_mu = pow_three_gamma_minus_five_over_two(a);
   const float a2_Hubble = a * a * H;
 
-  const float dvdr = (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
-                     (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
-                     (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
+  const float dvdr =
+      (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
+      (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
+      (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
 
   /* Add Hubble flow */
 
@@ -326,8 +326,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_gradient(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    size_t pindi, size_t pindj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
   /* We need to construct the maximal signal velocity between our particle
    * and all of it's neighbours */
@@ -339,9 +338,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_gradient(
   const float fac_mu = pow_three_gamma_minus_five_over_two(a);
   const float a2_Hubble = a * a * H;
 
-  const float dvdr = (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
-                     (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
-                     (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
+  const float dvdr =
+      (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
+      (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
+      (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
 
   /* Add Hubble flow */
 
@@ -397,8 +397,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_gradient(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_force(
     const float r2, const float dx[3], const float hi, const float hj,
-    size_t pindi, size_t pindj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
   /* Cosmological factors entering the EoMs */
   const float fac_mu = pow_three_gamma_minus_five_over_two(a);
@@ -434,9 +433,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_force(
   const float wj_dr = hjd_inv * wj_dx;
 
   /* Compute dv dot r. */
-  const float dvdr = (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
-                     (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
-                     (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
+  const float dvdr =
+      (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
+      (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
+      (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
 
   /* Includes the hubble flow term; not used for du/dt */
   const float dvdr_Hubble = dvdr + a2_Hubble * r2;
@@ -446,7 +446,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_force(
   const float mu_ij = fac_mu * r_inv * omega_ij; /* This is 0 or negative */
 
   /* Compute sound speeds and signal velocity */
-  const float v_sig = signal_velocity(dx, pindi, pindj, mu_ij, const_viscosity_beta);
+  const float v_sig =
+      signal_velocity(dx, pindi, pindj, mu_ij, const_viscosity_beta);
 
   /* Variable smoothing length term */
   const float f_ij = 1.f - part_get_f_gradh(pindi) / mj;
@@ -475,8 +476,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_force(
       (P_over_rho2_i * wi_dr + P_over_rho2_j * wj_dr) * r_inv;
 
   /* Adaptive softening acceleration term */
-  const float adapt_soft_acc_term =
-      adaptive_softening_get_acc_term(pindi, pindj, wi_dr, wj_dr, f_ij, f_ji, r_inv);
+  const float adapt_soft_acc_term = adaptive_softening_get_acc_term(
+      pindi, pindj, wi_dr, wj_dr, f_ij, f_ji, r_inv);
 
   /* Assemble the acceleration */
   const float acc = sph_acc_term + visc_acc_term + adapt_soft_acc_term;
@@ -584,9 +585,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_force(
   const float wj_dr = hjd_inv * wj_dx;
 
   /* Compute dv dot r. */
-  const float dvdr = (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
-                     (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
-                     (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
+  const float dvdr =
+      (part_get_v_ind(pindi, 0) - part_get_v_ind(pindj, 0)) * dx[0] +
+      (part_get_v_ind(pindi, 1) - part_get_v_ind(pindj, 1)) * dx[1] +
+      (part_get_v_ind(pindi, 2) - part_get_v_ind(pindj, 2)) * dx[2];
 
   /* Includes the hubble flow term; not used for du/dt */
   const float dvdr_Hubble = dvdr + a2_Hubble * r2;
@@ -596,7 +598,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_force(
   const float mu_ij = fac_mu * r_inv * omega_ij; /* This is 0 or negative */
 
   /* Compute sound speeds and signal velocity */
-  const float v_sig = signal_velocity(dx, pindi, pindj, mu_ij, const_viscosity_beta);
+  const float v_sig =
+      signal_velocity(dx, pindi, pindj, mu_ij, const_viscosity_beta);
 
   /* Variable smoothing length term */
   const float f_ij = 1.f - part_get_f_gradh(pindi) / mj;
@@ -625,8 +628,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_force(
       (P_over_rho2_i * wi_dr + P_over_rho2_j * wj_dr) * r_inv;
 
   /* Adaptive softening acceleration term */
-  const float adapt_soft_acc_term =
-      adaptive_softening_get_acc_term(pindi, pindj, wi_dr, wj_dr, f_ij, f_ji, r_inv);
+  const float adapt_soft_acc_term = adaptive_softening_get_acc_term(
+      pindi, pindj, wi_dr, wj_dr, f_ij, f_ji, r_inv);
 
   /* Assemble the acceleration */
   const float acc = sph_acc_term + visc_acc_term + adapt_soft_acc_term;

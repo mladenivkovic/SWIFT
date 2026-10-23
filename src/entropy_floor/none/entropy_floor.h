@@ -25,11 +25,10 @@
  * floors.
  */
 
-#include <stddef.h>
-
 #include "inline.h"
 #include "io_properties.h"
 
+#include <stddef.h>
 
 struct cosmology;
 struct hydro_props;

@@ -78,9 +78,8 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
     const struct pressure_floor_props *pressure_floor,
-    const struct cooling_function_data *cooling, size_t pind,
-    const float dt, const float dt_therm, const double time) {
-}
+    const struct cooling_function_data *cooling, size_t pind, const float dt,
+    const float dt_therm, const double time) {}
 
 /**
  * @brief Computes the cooling time-step.
@@ -165,8 +164,7 @@ INLINE static float cooling_get_temperature(
     const struct hydro_props *restrict hydro_props,
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *restrict cooling,
-    const size_t pind) {
+    const struct cooling_function_data *restrict cooling, const size_t pind) {
 
   /* Physical constants */
   const double m_H = phys_const->const_proton_mass;

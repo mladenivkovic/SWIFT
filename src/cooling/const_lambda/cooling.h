@@ -197,8 +197,9 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
                                               cosmo->a *
                                               cosmo->a_factor_internal_energy;
   /* Store the radiated energy (assuming dt will not change) */
-  struct cooling_xpart_data* cd = part_get_cooling_data_p(pind);
-  cd->radiated_energy += -hydro_get_mass(pind) * actual_cooling_du_dt_physical * dt;
+  struct cooling_xpart_data *cd = part_get_cooling_data_p(pind);
+  cd->radiated_energy +=
+      -hydro_get_mass(pind) * actual_cooling_du_dt_physical * dt;
 }
 
 /**

@@ -1,6 +1,5 @@
 #pragma once
 
- 
 /*******************************************************************************
  * This file is part of SWIFT.
  * Copyright (c) 2025 Mladen Ivkovic (mladen.ivkovic@durham.ac.uk)
@@ -20,8 +19,6 @@
  *
  ******************************************************************************/
 
-
-
 /* Forward declare all part structs */
 
 struct part;
@@ -37,7 +34,7 @@ struct part_arrays {
 The density and force substructures are used to contain variables only used
 within the density and force loops over neighbours. All more permanent
 variables should be declared in the main part of the part structure,
- */ 
+ */
   struct part *_part;
 
   /*! @brief Particle fields not needed during the SPH loops over neighbours.
@@ -45,8 +42,6 @@ variables should be declared in the main part of the part structure,
 This structure contains the particle fields that are not used in the
 density or force loops. Quantities should be used in the kick, drift and
 potentially ghost tasks only.
- */ 
+ */
   struct xpart *_xpart;
-
 };
-
