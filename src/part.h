@@ -53,6 +53,7 @@ struct threadpool;
 #include "stars_part.h"
 /* Import the right black hole particle definition */
 #include "black_holes_part.h"
+
 /* Import the right sink particle definition */
 #include "sink_part.h"
 
