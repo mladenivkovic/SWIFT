@@ -19,6 +19,13 @@
 #ifndef SWIFT_DEFAULT_BH_IACT_H
 #define SWIFT_DEFAULT_BH_IACT_H
 
+#include "black_holes_part.h"
+#include "inline.h"
+#include "kernel_hydro.h"
+#include "timeline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Density interaction between two particles (non-symmetric).
  *
@@ -28,7 +35,6 @@
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
  * @param pj Second particle (gas, not updated).
- * @param xpj The extended data of the second particle (not updated).
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -38,7 +44,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_density(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct bpart *bi, const struct part *pj, const struct xpart *xpj,
+    struct bpart *bi, const size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -80,7 +86,6 @@ runner_iact_nonsym_bh_gas_density(
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
  * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -91,7 +96,7 @@ runner_iact_nonsym_bh_gas_density(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_repos(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct bpart *bi, const struct part *pj, const struct xpart *xpj,
+    struct bpart *bi, const size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -110,7 +115,6 @@ runner_iact_nonsym_bh_gas_repos(
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
  * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -120,7 +124,7 @@ runner_iact_nonsym_bh_gas_repos(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_swallow(
     const float r2, const float dx[3], const float hi, const float hj,
-    const struct bpart *bi, struct part *pj, struct xpart *xpj,
+    const struct bpart *bi, size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -186,7 +190,6 @@ runner_iact_nonsym_bh_bh_swallow(const float r2, const float dx[3],
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
  * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -196,7 +199,7 @@ runner_iact_nonsym_bh_bh_swallow(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_feedback(
     const float r2, const float dx[3], const float hi, const float hj,
-    const struct bpart *bi, struct part *pj, struct xpart *xpj,
+    const struct bpart *bi, size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,

@@ -55,18 +55,18 @@
  * @ifdef Update the gravity softening based on the gas' smoothing length.
  *
  * @param gp the #gpart to update.
- * @param p The #part.
+ * @param pind Index of the #part.
  * @param grav_props The properties of the gravity scheme.
  */
 INLINE static void gravity_update_softening(
-    struct gpart *restrict gp, const struct part *restrict p,
+    struct gpart *restrict gp, const size_t pind,
     const struct gravity_props *grav_props) {
 
 #ifdef SWIFT_DEBUG_CHECKS
   if (gp != p->gpart) error("Unlinked part and gpart!");
 #endif
 
-  const float new_softening = p->h * kernel_gamma;
+  const float new_softening = part_get_h(pind) * kernel_gamma;
 
   /* Update the softening but respect limits */
   if (new_softening > grav_props->max_adaptive_softening)
@@ -80,11 +80,12 @@ INLINE static void gravity_update_softening(
 /**
  * @brief Prepares a particle for the density calculation.
  *
- * @param p The particle to act upon
+ * @param pind Index of the particle to act upon
  */
-INLINE static void adaptive_softening_init_part(struct part *p) {
+INLINE static void adaptive_softening_init_part(size_t pind) {
 
-  p->adaptive_softening_data.zeta = 0.f;
+  struct* adaptive_softening_part_data add = part_get_adaptive_softening_data_p(pind);
+  add->zeta = 0.f;
 }
 
 /**
@@ -93,21 +94,22 @@ INLINE static void adaptive_softening_init_part(struct part *p) {
  * Finish the equation 26 of Price & Monaghan 2007, MNRAS, 374, 4
  * by adding the pre-factors. Also adds the G/2 factor of eq. 27.
  *
- * @param p The particle to act upon.
+ * @param pind Index of the particle to act upon.
  * @param props The properties of the gravity scheme.
  */
 INLINE static void adaptive_softening_end_density(
-    struct part *p, const struct gravity_props *props) {
+    size_t pind, const struct gravity_props *props) {
 
   /* Finish calculation of the adaptive softening prefactor (zeta)
    * Pre-factor in eq. 26 of Price & Monaghan 2007 */
-  const float rho_inv = 1.f / p->rho;
-  const float h_drho = -p->h * rho_inv * hydro_dimension_inv;
-  p->adaptive_softening_data.zeta *= h_drho;
+  const float rho_inv = 1.f / part_get_rho(pind);
+  const float h_drho = -part_get_h(pind) * rho_inv * hydro_dimension_inv;
+  struct* adaptive_softening_part_data add = part_get_adaptive_softening_data_p(pind);
+  add->zeta *= h_drho;
 
   /* Multiply in the Gravitational constant
    * See the prefactor in eq. 27 of Price & Monaghan 2007 */
-  p->adaptive_softening_data.zeta *= 0.5f * props->G_Newton;
+  add->zeta *= 0.5f * props->G_Newton;
 }
 
 #else
@@ -121,11 +123,11 @@ INLINE static void adaptive_softening_end_density(
  * Softening is fixed: Nothing to do here.
  *
  * @param gp the #gpart to update.
- * @param p The #part.
+ * @param pind Index of the #part.
  * @param grav_props The properties of the gravity scheme.
  */
 INLINE static void gravity_update_softening(
-    struct gpart *restrict gp, const struct part *restrict p,
+    struct gpart *restrict gp, const size_t pind,
     const struct gravity_props *grav_props) {}
 
 /**
@@ -133,20 +135,20 @@ INLINE static void gravity_update_softening(
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
+ * @param pind Index of the particle to act upon
  */
-INLINE static void adaptive_softening_init_part(struct part *p) {}
+INLINE static void adaptive_softening_init_part(size_t pind) {}
 
 /**
  * @brief Finishes the density calculation.
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
+ * @param pind Index of the particle to act upon
  * @param props The properties of the gravity scheme.
  */
 INLINE static void adaptive_softening_end_density(
-    struct part *p, const struct gravity_props *props) {}
+    size_t pind, const struct gravity_props *props) {}
 
 #endif /* ADAPTIVE_SOFTENING */
 

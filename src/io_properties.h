@@ -42,16 +42,15 @@ enum DATA_IMPORTANCE { COMPULSORY = 1, OPTIONAL = 0, UNUSED = -1 };
 /* Helper typedefs */
 typedef void (*conversion_func_part_float)(const struct engine *,
                                            const struct part *,
-                                           const struct xpart *, float *);
+                                           float *);
 typedef void (*conversion_func_part_int)(const struct engine *,
                                          const struct part *,
-                                         const struct xpart *, int *);
+                                         int *);
 typedef void (*conversion_func_part_double)(const struct engine *,
                                             const struct part *,
-                                            const struct xpart *, double *);
+                                            double *);
 typedef void (*conversion_func_part_long_long)(const struct engine *,
                                                const struct part *,
-                                               const struct xpart *,
                                                long long *);
 typedef void (*conversion_func_gpart_float)(const struct engine *,
                                             const struct gpart *, float *);
@@ -149,8 +148,9 @@ struct io_props {
   size_t partSize;
 
   /* The particle arrays */
-  const struct part *parts;
-  const struct xpart *xparts;
+  /* TODO MLADEN: REMOVE */
+  /* const struct part *parts; */
+  /* const struct xpart *xparts; */
   const struct gpart *gparts;
   const struct spart *sparts;
   const struct bpart *bparts;
@@ -502,21 +502,21 @@ INLINE static struct io_props io_make_output_field_(
  * @brief Constructs an #io_props (with conversion) from its parameters
  */
 #define io_make_output_field_convert_part(name, type, dim, units, a_exponent, \
-                                          part, xpart, convert, desc)         \
+                                          convert, desc)                      \
   io_make_output_field_convert_part_(                                         \
-      name, type, dim, units, a_exponent, sizeof(part[0]), part, xpart,       \
+      name, type, dim, units, a_exponent, sizeof(part[0]),                    \
       convert, desc, /*physical=*/0, /*convertible_to_physical=*/1);
 
 #define io_make_comoving_output_field_convert_part(                           \
-    name, type, dim, units, a_exponent, part, xpart, convert, desc)           \
-  io_make_output_field_convert_part(name, type, dim, units, a_exponent, part, \
-                                    xpart, convert, desc)
+    name, type, dim, units, a_exponent, convert, desc)                        \
+  io_make_output_field_convert_part(name, type, dim, units, a_exponent,  \
+                                    convert, desc)
 
 #define io_make_physical_output_field_convert_part(name, type, dim, units,     \
-                                                   a_exponent, part, xpart,    \
+                                                   a_exponent,     \
                                                    convertible, convert, desc) \
   io_make_output_field_convert_part_(name, type, dim, units, a_exponent,       \
-                                     sizeof(part[0]), part, xpart, convert,    \
+                                     sizeof(part[0]), convert,    \
                                      desc, /*physical=*/1, convertible);
 
 /**
@@ -528,8 +528,6 @@ INLINE static struct io_props io_make_output_field_(
  * @param units The units of the dataset
  * @param a_exponent Exponent of the scale-factor to convert to physical units.
  * @param partSize The size in byte of the particle
- * @param parts The particle array
- * @param xparts The xparticle array
  * @param functionPtr The function used to convert a particle to an int
  * @param description Description of the field added to the meta-data.
  *
@@ -538,7 +536,7 @@ INLINE static struct io_props io_make_output_field_(
 INLINE static struct io_props io_make_output_field_convert_part_(
     const char *name, enum IO_DATA_TYPE type, int dimension,
     enum unit_conversion_factor units, float a_exponent, size_t partSize,
-    const struct part *parts, const struct xpart *xparts, void *functionPtr,
+    void *functionPtr,
     const char *description, const int is_physical,
     const int is_convertible_to_comoving) {
 
@@ -560,8 +558,6 @@ INLINE static struct io_props io_make_output_field_convert_part_(
   r.units = units;
   r.scale_factor_exponent = a_exponent;
   r.partSize = partSize;
-  r.parts = parts;
-  r.xparts = xparts;
   r.conversion = 1;
   r.ptr_func = functionPtr;
 

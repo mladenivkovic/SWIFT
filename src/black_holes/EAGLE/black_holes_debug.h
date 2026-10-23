@@ -19,12 +19,18 @@
 #ifndef SWIFT_BLACK_HOLES_EAGLE_DEBUG_H
 #define SWIFT_BLACK_HOLES_EAGLE_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void black_holes_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "inline.h"
+#include "error.h"
+#include "hydro_part.h"
 
-  warning("[PID%lld] black_holes_part_data:", p->id);
-  warning("[PID%lld] swallow_id = %lld, potential = %.3e", p->id,
-          p->black_holes_data.swallow_id, p->black_holes_data.potential);
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void black_holes_debug_particle(
+    const size_t pind) {
+
+  warning("[PID%lld] black_holes_part_data:", part_get_id(pind));
+  warning("[PID%lld] swallow_id = %lld, potential = %.3e", part_get_id(pind),
+          part_get_black_holes_data_p(pind)->swallow_id, part_get_black_holes_data_p(pind)->potential);
 }
 
 #endif /* SWIFT_BLACK_HOLES_EAGLE_DEBUG_H */

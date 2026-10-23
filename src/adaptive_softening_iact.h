@@ -38,17 +38,17 @@
  * Computes equation 26 of Price & Monaghan 2007, MNRAS, 374, 4.
  * without the prefactor. The prefactor gets added in end_density().
  *
- * @param pi The #part for which we compute terms.
+ * @param pind Index of the #part for which we compute terms.
  * @param ui The ratio of the inter-particle distance to the smoothing length.
  * @param hi_inv The inverse the particle's smoothing length.
  * @param mj The mass of the other particle.
  */
 __attribute__((always_inline)) INLINE static void
-adaptive_softening_add_correction_term(struct part *pi, const float ui,
+adaptive_softening_add_correction_term(size_t pind, const float ui,
                                        const float hi_inv, const float mj) {
 
-  struct adaptive_softening_data *adsd = part_get_adaptive_softening_data(pi);
-  adsd->zeta += mj * potential_dh(ui, hi_inv);
+  struct adaptive_softening_part_data *asd = part_get_adaptive_softening_data(pind);
+  asd->zeta += mj * potential_dh(ui, hi_inv);
 }
 
 /**
@@ -58,8 +58,8 @@ adaptive_softening_add_correction_term(struct part *pi, const float ui,
  * without the mass and the distance vector. These are multiplied in
  * by the parent function.
  *
- * @param pi The first #part.
- * @param pj The second #part.
+ * @param pindi Index to the first #part.
+ * @param pindj Index to the second #part.
  * @param wi_dr The norm of the kernel gradient for i.
  * @param wj_dr The norm of the kernel gradient for j.
  * @param f_ij The smoothling-length correction term for i.
@@ -72,10 +72,10 @@ adaptive_softening_get_acc_term(const size_t pindi, const size_t pindj,
                                 const float f_ij, const float f_ji,
                                 const float r_inv) {
 
-  const struct adaptive_softening_data *asdi =
-      part_get_adaptive_softening_data(pi);
-  const struct adaptive_softening_data *asdj =
-      part_get_adaptive_softening_data(pj);
+  const struct adaptive_softening_part_data *asdi =
+      part_get_adaptive_softening_data(pindi);
+  const struct adaptive_softening_part_data *asdj =
+      part_get_adaptive_softening_data(pindj);
 
   /* Recover some data */
   const float zetai = asdi->zeta;
@@ -98,13 +98,13 @@ adaptive_softening_get_acc_term(const size_t pindi, const size_t pindj,
  *
  * No adaptive softening --> Nothing to do.
  *
- * @param pi The #part for which we compute terms.
+ * @param pind Index of the #part for which we compute terms.
  * @param ui The ratio of the inter-particle distance to the smoothing length.
  * @param hi_inv The inverse the particle's smoothing length.
  * @param mj The mass of the other particle.
  */
 __attribute__((always_inline)) INLINE static void
-adaptive_softening_add_correction_term(size_t pindi, const float ui,
+adaptive_softening_add_correction_term(size_t pind, const float ui,
                                        const float hi_inv, const float mj) {}
 
 /**
@@ -112,8 +112,8 @@ adaptive_softening_add_correction_term(size_t pindi, const float ui,
  *
  * No adaptive softening --> Nothing to do --> Return 0.
  *
- * @param pi The first #part.
- * @param pj The second #part.
+ * @param pindi Index of the first #part.
+ * @param pindj Index of the second #part.
  * @param wi_dr The norm of the kernel gradient for i.
  * @param wj_dr The norm of the kernel gradient for j.
  * @param f_ij The smoothling-length correction term for i.

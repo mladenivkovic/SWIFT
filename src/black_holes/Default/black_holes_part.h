@@ -19,9 +19,11 @@
 #ifndef SWIFT_DEFAULT_BLACK_HOLE_PART_H
 #define SWIFT_DEFAULT_BLACK_HOLE_PART_H
 
+#include "black_holes_struct.h"
 #include "chemistry_struct.h"
 #include "particle_splitting_struct.h"
 #include "timeline.h"
+#include "tracers_struct.h"
 
 /**
  * @brief Particle fields for the black hole particles.

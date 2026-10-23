@@ -19,6 +19,8 @@
 #ifndef SWIFT_BLACK_HOLES_STRUCT_DEFAULT_H
 #define SWIFT_BLACK_HOLES_STRUCT_DEFAULT_H
 
+#include "inline.h"
+
 /**
  * @brief Black holes-related fields carried by each *gas* particle.
  */
