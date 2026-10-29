@@ -167,8 +167,7 @@ void cell_drift_part(struct cell *c, const struct engine *e, int force,
   const float hydro_h_min = e->hydro_properties->h_min;
   const integertime_t ti_old_part = c->hydro.ti_old_part;
   const integertime_t ti_current = e->ti_current;
-  struct part *const parts = c->hydro.parts;
-  struct xpart *const xparts = c->hydro.xparts;
+  const size_t first = c->hydro.first;
 
   float dx_max = 0.f;
   float dx2_max = 0.f;
@@ -261,38 +260,36 @@ void cell_drift_part(struct cell *c, const struct engine *e, int force,
 
     /* Loop over all the gas particles in the cell */
     const size_t nr_parts = c->hydro.count;
-    for (size_t k = 0; k < nr_parts; k++) {
+    for (size_t pind = first; pind < first+nr_parts; pind++) {
       /* Get a handle on the part. */
-      struct part *const p = &parts[k];
-      struct xpart *const xp = &xparts[k];
 
       /* Ignore inhibited particles */
-      if (part_is_inhibited(p, e)) continue;
+      if (part_is_inhibited(pind, e)) continue;
 
       /* Apply the effects of feedback on this particle
        * (Note: Only used in schemes that have a delayed feedback mechanism
        * otherwise just an empty function) */
-      feedback_update_part(p, xp, e);
+      feedback_update_part(pind, e);
 
       /* Drift... */
-      drift_part(p, xp, dt_drift, dt_kick_hydro, dt_kick_grav, dt_therm,
+      drift_part(pind, dt_drift, dt_kick_hydro, dt_kick_grav, dt_therm,
                  ti_old_part, ti_current, e, replication_list, c->loc);
 
       /* Update the tracers properties */
-      tracers_after_drift(p, xp, e->internal_units, e->physical_constants,
+      tracers_after_drift(pind, e->internal_units, e->physical_constants,
                           with_cosmology, e->cosmology, e->hydro_properties,
                           e->cooling_func, e->time);
 
 #ifdef SWIFT_DEBUG_CHECKS
       /* Make sure the particle does not drift by more than a box length. */
-      if (fabs(xp->v_full[0] * dt_drift) > e->s->dim[0] ||
-          fabs(xp->v_full[1] * dt_drift) > e->s->dim[1] ||
-          fabs(xp->v_full[2] * dt_drift) > e->s->dim[2]) {
+      if (fabs(part_get_v_full_ind(pind, 0) * dt_drift) > e->s->dim[0] ||
+          fabs(part_get_v_full_ind(pind, 1) * dt_drift) > e->s->dim[1] ||
+          fabs(part_get_v_full_ind(pind, 2) * dt_drift) > e->s->dim[2]) {
         error(
             "Particle drifts by more than a box length! id %llu xp->v_full "
             "%.5e %.5e %.5e p->v %.5e %.5e %.5e",
-            part_get_id(p), xp->v_full[0], xp->v_full[1], xp->v_full[2],
-            part_get_v_ind(p, 0), part_get_v_ind(p, 1), part_get_v_ind(p, 2));
+            part_get_id(pind), part_get_v_full_ind(pind, 0), part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2),
+            part_get_v_ind(pind, 0), part_get_v_ind(pind, 1), part_get_v_ind(pind, 2));
       }
 #endif
 
@@ -300,7 +297,7 @@ void cell_drift_part(struct cell *c, const struct engine *e, int force,
       if (!periodic) {
 
         /* Did the particle leave the box?  */
-        const double *x = part_get_x(p);
+        const double x[3] = {part_get_x_ind(pind, 0), part_get_x_ind(pind, 1), part_get_x_ind(pind,2)};
         if ((x[0] > dim[0]) || (x[0] < 0.) ||  // x
             (x[1] > dim[1]) || (x[1] < 0.) ||  // y
             (x[2] > dim[2]) || (x[2] < 0.)) {  // z
@@ -309,21 +306,21 @@ void cell_drift_part(struct cell *c, const struct engine *e, int force,
 
           /* Re-check that the particle has not been removed
            * by another thread before we do the deed. */
-          if (!part_is_inhibited(p, e)) {
+          if (!part_is_inhibited(pind, e)) {
 
 #ifdef WITH_CSDS
             if (e->policy & engine_policy_csds) {
               /* Log the particle one last time. */
-              csds_log_part(e->csds, p, xp, e, /* log_all */ 1,
+              csds_log_part(e->csds, p, e, /* log_all */ 1,
                             csds_flag_delete, /* data */ 0);
             }
 #endif
 
             /* One last action before death? */
-            hydro_remove_part(p, xp, e->time);
+            hydro_remove_part(pind, e->time);
 
             /* Remove the particle entirely */
-            cell_remove_part(e, c, p, xp);
+            cell_remove_part(e, c, pind);
           }
 
           if (lock_unlock(&e->s->lock) != 0)
@@ -334,42 +331,42 @@ void cell_drift_part(struct cell *c, const struct engine *e, int force,
       }
 
       /* Limit h to within the allowed range */
-      part_set_h(p, min(part_get_h(p), hydro_h_max));
-      part_set_h(p, max(part_get_h(p), hydro_h_min));
+      part_set_h(pind, min(part_get_h(pind), hydro_h_max));
+      part_set_h(pind, max(part_get_h(pind), hydro_h_min));
 
       /* Set the appropriate depth level for this particle */
-      cell_set_part_h_depth(p, c);
+      cell_set_part_h_depth(pind, c);
 
       /* Compute (square of) motion since last cell construction */
-      const float dx2 = xp->x_diff[0] * xp->x_diff[0] +
-                        xp->x_diff[1] * xp->x_diff[1] +
-                        xp->x_diff[2] * xp->x_diff[2];
+      const float dx2 = part_get_x_diff_ind(pind, 0) * part_get_x_diff_ind(pind, 0) +
+                        part_get_x_diff_ind(pind, 1) * part_get_x_diff_ind(pind, 1) +
+                        part_get_x_diff_ind(pind, 2) * part_get_x_diff_ind(pind, 2);
       dx2_max = max(dx2_max, dx2);
-      const float dx2_sort = xp->x_diff_sort[0] * xp->x_diff_sort[0] +
-                             xp->x_diff_sort[1] * xp->x_diff_sort[1] +
-                             xp->x_diff_sort[2] * xp->x_diff_sort[2];
+      const float dx2_sort = part_get_x_diff_sort_ind(pind, 0) * part_get_x_diff_sort_ind(pind, 0) +
+                             part_get_x_diff_sort_ind(pind, 1) * part_get_x_diff_sort_ind(pind, 1) +
+                             part_get_x_diff_sort_ind(pind, 2) * part_get_x_diff_sort_ind(pind, 2);
       dx2_max_sort = max(dx2_max_sort, dx2_sort);
 
       /* Update the maximal smoothing length in the cell */
-      cell_h_max = max(cell_h_max, part_get_h(p));
+      cell_h_max = max(cell_h_max, part_get_h(pind));
 
       /* Mark the particle has not being swallowed */
-      black_holes_mark_part_as_not_swallowed(part_get_black_holes_data_p(p));
+      black_holes_mark_part_as_not_swallowed(part_get_black_holes_data_p(pind));
 
       /* Mark the particle has not being swallowed by a sink */
-      sink_mark_part_as_not_swallowed(part_get_sink_data_p(p));
+      sink_mark_part_as_not_swallowed(part_get_sink_data_p(pind));
 
       /* Reset the gas particle-carried feedback fields */
-      feedback_reset_part(p, xp);
+      feedback_reset_part(pind);
 
       /* Get ready for a density calculation */
-      if (init_particles && part_is_active(p, e)) {
-        part_init(p, xp, e);
+      if (init_particles && part_is_active(pind, e)) {
+        part_init(pind, e);
       }
 
-      if (part_is_active(p, e)) {
+      if (part_is_active(pind, e)) {
         /* Update the maximal active smoothing length in the cell */
-        cell_h_max_active = max(cell_h_max_active, part_get_h(p));
+        cell_h_max_active = max(cell_h_max_active, part_get_h(pind));
       }
 
 #ifdef SWIFT_HYDRO_DENSITY_CHECKS

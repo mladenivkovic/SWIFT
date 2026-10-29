@@ -192,22 +192,22 @@ int cell_pack_grid_extra(const struct cell *c,
 void cell_pack_part_swallow(const struct cell *c,
                             struct black_holes_part_data *data) {
 
+  const size_t first = c->hydro.first;
   const size_t count = c->hydro.count;
-  const struct part *parts = c->hydro.parts;
 
   for (size_t i = 0; i < count; ++i) {
-    data[i] = *part_get_const_black_holes_data_p(&parts[i]);
+    data[i] = *part_get_const_black_holes_data_p(first+i);
   }
 }
 
 void cell_unpack_part_swallow(struct cell *c,
                               const struct black_holes_part_data *data) {
 
+  const size_t first = c->hydro.first;
   const size_t count = c->hydro.count;
-  struct part *parts = c->hydro.parts;
 
   for (size_t i = 0; i < count; ++i) {
-    part_set_black_holes_data(&parts[i], data[i]);
+    part_set_black_holes_data(first+i, data[i]);
   }
 }
 
@@ -550,9 +550,10 @@ void cell_pack_timebin(const struct cell *const c, timebin_t *const t) {
 #ifdef WITH_MPI
 
   swift_declare_aligned_ptr(timebin_t, t_align, t, SWIFT_CACHE_ALIGNMENT);
+  const size_t first = c->hydro.first;
 
   for (int i = 0; i < c->hydro.count; ++i)
-    t_align[i] = part_get_time_bin(&c->hydro.parts[i]);
+    t_align[i] = part_get_time_bin(first + i);
 
 #else
   error("SWIFT was not compiled with MPI support.");
@@ -572,9 +573,10 @@ void cell_unpack_timebin(struct cell *const c, timebin_t *const t) {
 #ifdef WITH_MPI
 
   swift_declare_aligned_ptr(timebin_t, t_align, t, SWIFT_CACHE_ALIGNMENT);
+  const size_t first = c->hydro.first;
 
   for (int i = 0; i < c->hydro.count; ++i) {
-    part_set_time_bin(&c->hydro.parts[i], t_align[i]);
+    part_set_time_bin(first + i, t_align[i]);
   }
 
 #else

@@ -53,7 +53,7 @@
  * @brief Initialise RT time step data. This struct should be hidden from users,
  * so we do it for all schemes here.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void rt_first_init_timestep_data(
     size_t pind) {
@@ -65,7 +65,7 @@ __attribute__((always_inline)) INLINE static void rt_first_init_timestep_data(
 /**
  * @brief Prepare the rt *time step* quantities for a *hydro force* calculation.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
     size_t pind) {
@@ -84,7 +84,7 @@ __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param pi First particle.
- * @param pj Second particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
@@ -94,15 +94,15 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
 
 #ifndef RT_NONE
   /* Update the minimal time-bin */
-  if (part_get_rt_time_bin(pj) > 0) {
+  if (part_get_rt_time_bin(pindj) > 0) {
     timebin_t min_ngb_time_bin =
-        min(part_get_rt_min_ngb_time_bin(pi), part_get_rt_time_bin(pj));
+        min(part_get_rt_min_ngb_time_bin(pindi), part_get_rt_time_bin(pindj));
     part_set_rt_min_ngb_time_bin(pi, min_ngb_time_bin);
   }
 
-  if (part_get_rt_time_bin(pi) > 0) {
+  if (part_get_rt_time_bin(pindi) > 0) {
     timebin_t min_ngb_time_bin =
-        min(part_get_rt_min_ngb_time_bin(pj), part_get_rt_time_bin(pi));
+        min(part_get_rt_min_ngb_time_bin(pindj), part_get_rt_time_bin(pindi));
     part_set_rt_min_ngb_time_bin(pj, min_ngb_time_bin);
   }
 #endif
@@ -120,7 +120,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param pi First particle.
- * @param pj Second particle (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
@@ -130,9 +130,9 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_rt_timebin(
 
 #ifndef RT_NONE
   /* Update the minimal time-bin */
-  if (part_get_rt_time_bin(pj) > 0) {
+  if (part_get_rt_time_bin(pindj) > 0) {
     timebin_t min_ngb_time_bin =
-        min(part_get_rt_min_ngb_time_bin(pi), part_get_rt_time_bin(pj));
+        min(part_get_rt_min_ngb_time_bin(pindi), part_get_rt_time_bin(pindj));
     part_set_rt_min_ngb_time_bin(pi, min_ngb_time_bin);
   }
 #endif

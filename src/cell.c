@@ -165,14 +165,15 @@ int cell_get_tree_size(struct cell *c) {
 }
 
 /**
- * @brief Link the cells recursively to the given #part array.
+ * @brief Link the cells recursively to their particle data in global particle
+ * array
  *
  * @param c The #cell.
- * @param parts The #part array.
+ * @param first The first index of this cell's particle
  *
  * @return The number of particles linked.
  */
-int cell_link_parts(struct cell *c, struct part *parts) {
+int cell_link_parts(struct cell *c, size_t first) {
 #ifdef SWIFT_DEBUG_CHECKS
   if (c->nodeID == engine_rank)
     error("Linking foreign particles in a local cell!");
@@ -181,14 +182,14 @@ int cell_link_parts(struct cell *c, struct part *parts) {
     error("Linking parts into a cell that was already linked");
 #endif
 
-  c->hydro.parts = parts;
+  c->hydro.first = first;
 
   /* Fill the progeny recursively, depth-first. */
   if (c->split) {
-    int offset = 0;
+    size_t offset = 0;
     for (int k = 0; k < 8; k++) {
       if (c->progeny[k] != NULL)
-        offset += cell_link_parts(c->progeny[k], &parts[offset]);
+        offset += cell_link_parts(c->progeny[k], first+offset);
     }
   }
 
@@ -369,11 +370,11 @@ int cell_link_sinks(struct cell *c, struct sink *sinks) {
  * level.
  *
  * @param c The #cell.
- * @param parts The #part array.
+ * @param first The index of the first particle of this cell
  *
  * @return The number of particles linked.
  */
-int cell_link_foreign_parts(struct cell *c, struct part *parts) {
+int cell_link_foreign_parts(struct cell *c, size_t first) {
 #ifdef WITH_MPI
 
 #ifdef SWIFT_DEBUG_CHECKS
@@ -385,7 +386,7 @@ int cell_link_foreign_parts(struct cell *c, struct part *parts) {
   if (cell_get_recv(c, task_subtype_xv) != NULL) {
 
     /* Recursively attach the parts */
-    const int counts = cell_link_parts(c, parts);
+    const int counts = cell_link_parts(c, first);
 #ifdef SWIFT_DEBUG_CHECKS
     if (counts != c->hydro.count)
       error("Something is wrong with the foreign counts");
@@ -398,7 +399,7 @@ int cell_link_foreign_parts(struct cell *c, struct part *parts) {
     int count = 0;
     for (int k = 0; k < 8; k++) {
       if (c->progeny[k] != NULL) {
-        count += cell_link_foreign_parts(c->progeny[k], &parts[count]);
+        count += cell_link_foreign_parts(c->progeny[k], first+count);
       }
     }
     return count;
@@ -535,7 +536,7 @@ void cell_unlink_foreign_particles(struct cell *c) {
 #endif
 
   c->grav.parts = NULL;
-  c->hydro.parts = NULL;
+  c->hydro.first = -1;
   c->stars.parts = NULL;
   c->black_holes.parts = NULL;
   c->sinks.parts = NULL;
@@ -638,7 +639,7 @@ int cell_count_gparts_for_tasks(const struct cell *c) {
 void cell_sanitize(struct cell *c, int treated) {
   const int count = c->hydro.count;
   const int scount = c->stars.count;
-  struct part *parts = c->hydro.parts;
+  size_t first = c->hydro.first;
   struct spart *sparts = c->stars.parts;
   float h_max = 0.f;
   float h_max_active = 0.f;
@@ -651,10 +652,10 @@ void cell_sanitize(struct cell *c, int treated) {
     const float upper_h_max = c->dmin / (1.2f * kernel_gamma);
 
     /* Apply it */
-    for (int i = 0; i < count; ++i) {
-      if (part_get_h(&parts[i]) == 0.f || part_get_h(&parts[i]) > upper_h_max) {
-        part_set_h(&parts[i], upper_h_max);
-        part_set_depth_h(&parts[i], c->depth);
+    for (size_t i = first; i < first+count; ++i) {
+      if (part_get_h(i) == 0.f || part_get_h(i) > upper_h_max) {
+        part_set_h(i, upper_h_max);
+        part_set_depth_h(i, c->depth);
       }
     }
     for (int i = 0; i < scount; ++i) {
@@ -682,9 +683,8 @@ void cell_sanitize(struct cell *c, int treated) {
     }
   } else {
     /* Get the new value of h_max (note all particles are active) */
-    for (int i = 0; i < count; ++i) h_max = max(h_max, part_get_h(&parts[i]));
-    for (int i = 0; i < count; ++i)
-      h_max_active = max(h_max_active, part_get_h(&parts[i]));
+    for (size_t i = first; i < first+count; ++i) h_max = max(h_max, part_get_h(i));
+    for (size_t i = first; i < first+count; ++i) h_max_active = max(h_max_active, part_get_h(i));
     for (int i = 0; i < scount; ++i)
       stars_h_max = max(stars_h_max, sparts[i].h);
     for (int i = 0; i < scount; ++i)
@@ -752,18 +752,16 @@ void cell_check_part_drift_point(struct cell *c, void *data) {
     error("Cell in an incorrect time-zone! c->hydro.ti_old=%lld ti_drift=%lld",
           c->hydro.ti_old_part, ti_drift);
 
-  for (int i = 0; i < c->hydro.count; ++i) {
-    const struct part *p = &c->hydro.parts[i];
-    if (part_get_ti_drift(p) != ti_drift &&
-        part_get_time_bin(p) != time_bin_inhibited)
+  for (size_t i = c->hydro.first; i < c->hydro.first + c->hydro.count; ++i) {
+    if (part_get_ti_drift(i) != ti_drift &&
+        part_get_time_bin(i) != time_bin_inhibited)
       error("part in an incorrect time-zone! p->ti_drift=%lld ti_drift=%lld",
-            part_get_ti_drift(p), ti_drift);
+            part_get_ti_drift(i), ti_drift);
   }
 
-  for (int i = 0; i < c->hydro.count; ++i) {
-    const struct part *p = &c->hydro.parts[i];
-    const float h = part_get_h(p);
-    const char depth_h = part_get_depth_h(p);
+  for (size_t i = c->hydro.first; i < c->hydro.first + c->hydro.count; ++i) {
+    const float h = part_get_h(i);
+    const char depth_h = part_get_depth_h(i);
     if (depth_h == c->depth) {
       if (!(h >= c->h_min_allowed && h < c->h_max_allowed) && c->split) {
         error(
@@ -1521,7 +1519,7 @@ void cell_check_timesteps(const struct cell *c, const integertime_t ti_current,
 
   for (int i = 0; i < c->hydro.count; ++i) {
 
-    const struct part *p = &c->hydro.parts[i];
+    const size_t pind = &c->hydro.parts[i];
     const timebin_t time_bin = part_get_time_bin(p);
     if (time_bin == time_bin_inhibited) continue;
     if (time_bin == time_bin_not_created) continue;

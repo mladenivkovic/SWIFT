@@ -41,26 +41,25 @@
 /**
  * @brief Call all the initialisation functions of the start of a step for a gas
  * particle.
- * @param p The #part.
- * @param xp The extended particle data.
+ * @param pind Index of the hydro particle.
  * @param e The #engine.
  */
-static INLINE void part_init(struct part *p, struct xpart *xp,
+static INLINE void part_init(size_t pind,
                              const struct engine *e) {
 
   const int with_cosmology = (e->policy & engine_policy_cosmology);
 
-  hydro_init_part(p, &e->s->hs);
-  adaptive_softening_init_part(p);
-  mhd_init_part(p);
-  black_holes_init_potential(part_get_black_holes_data_p(p));
-  chemistry_init_part(p, e->chemistry);
-  star_formation_init_part(p, e->star_formation);
-  tracers_after_init(p, xp, e->internal_units, e->physical_constants,
+  hydro_init_part(pind, &e->s->hs);
+  adaptive_softening_init_part(pind);
+  mhd_init_part(pind);
+  black_holes_init_potential(part_get_black_holes_data_p(pind));
+  chemistry_init_part(pind, e->chemistry);
+  star_formation_init_part(pind, e->star_formation);
+  tracers_after_init(pind, e->internal_units, e->physical_constants,
                      with_cosmology, e->cosmology, e->hydro_properties,
                      e->cooling_func, e->time);
-  sink_init_part(p, e->sink_properties);
-  rt_init_part(p);
+  sink_init_part(pind, e->sink_properties);
+  rt_init_part(pind);
 }
 
 /**

@@ -19,17 +19,22 @@
 #ifndef SWIFT_CHEMISTRY_GEAR_DEBUG_H
 #define SWIFT_CHEMISTRY_GEAR_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void chemistry_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "inline.h"
 
-  warning("[PID%lld] chemistry_part_data:", p->id);
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void chemistry_debug_particle(
+    const size_t pind) {
+
+  warning("[PID%lld] chemistry_part_data:", part_get_id(pind));
   for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-    warning("[PID%lld] metal_mass[%i]: %.3e", p->id, i,
-            p->chemistry_data.metal_mass[i]);
+    warning("[PID%lld] metal_mass[%i]: %.3e",part_get_id(pind), i,
+           part_get_chemistry_data_p(pind)->metal_mass[i]);
   }
   for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-    warning("[PID%lld] smoothed_metal_mass_fraction[%i]: %.3e", p->id, i,
-            p->chemistry_data.smoothed_metal_mass_fraction[i]);
+    warning("[PID%lld] smoothed_metal_mass_fraction[%i]: %.3e", part_get_id(pind), i,
+           part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction[i]);
   }
 }
 

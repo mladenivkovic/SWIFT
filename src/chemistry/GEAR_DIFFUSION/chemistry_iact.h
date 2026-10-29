@@ -25,6 +25,11 @@
  * version of smooth metalicity.
  */
 
+#include "inline.h"
+
+#include <math.h>
+#include <stddef.h>
+
 /**
  * @brief do chemistry computation after the runner_iact_density (symmetric
  * version)
@@ -33,25 +38,25 @@
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_chemistry(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *restrict chi = part_get_chemistry_data_p(pindi);
+  struct chemistry_part_data *restrict chj = part_get_chemistry_data_p(pindj);
 
   float wi, wi_dx;
   float wj, wj_dx;
 
   /* Get the masses. */
-  const float mj = hydro_get_mass(pj);
-  const float mi = hydro_get_mass(pi);
+  const float mj = hydro_get_mass(pindj);
+  const float mi = hydro_get_mass(pindi);
 
   /* Get r */
   const float r = sqrtf(r2);
@@ -79,13 +84,13 @@ __attribute__((always_inline)) INLINE static void runner_iact_chemistry(
 
   /* Compute the shear tensor */
   for (int i = 0; i < 3; i++) {
-    chi->S[i][0] += (pj->v[0] - pi->v[0]) * dx[i] * mj_wi_dr;
-    chi->S[i][1] += (pj->v[1] - pi->v[1]) * dx[i] * mj_wi_dr;
-    chi->S[i][2] += (pj->v[2] - pi->v[2]) * dx[i] * mj_wi_dr;
+    chi->S[i][0] += (part_get_v_ind(pindj, 0) -part_get_v_ind(pindi, 0)) * dx[i] * mj_wi_dr;
+    chi->S[i][1] += (part_get_v_ind(pindj, 1) -part_get_v_ind(pindi, 1)) * dx[i] * mj_wi_dr;
+    chi->S[i][2] += (part_get_v_ind(pindj, 2) -part_get_v_ind(pindi, 2)) * dx[i] * mj_wi_dr;
 
-    chj->S[i][0] -= (pj->v[0] - pi->v[0]) * dx[i] * mi_wj_dr;
-    chj->S[i][1] -= (pj->v[1] - pi->v[1]) * dx[i] * mi_wj_dr;
-    chj->S[i][2] -= (pj->v[2] - pi->v[2]) * dx[i] * mi_wj_dr;
+    chj->S[i][0] -= (part_get_v_ind(pindj, 0) -part_get_v_ind(pindi, 0)) * dx[i] * mi_wj_dr;
+    chj->S[i][1] -= (part_get_v_ind(pindj, 1) -part_get_v_ind(pindi, 1)) * dx[i] * mi_wj_dr;
+    chj->S[i][2] -= (part_get_v_ind(pindj, 2) -part_get_v_ind(pindi, 2)) * dx[i] * mi_wj_dr;
   }
 }
 
@@ -97,23 +102,23 @@ __attribute__((always_inline)) INLINE static void runner_iact_chemistry(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle (not updated).
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_chemistry(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, const struct part *restrict pj, const float a,
+    size_t pindi, const size_t pindj, const float a,
     const float H) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  const struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *restrict chi = part_get_chemistry_data_p(pindi);
+  const struct chemistry_part_data *restrict chj = part_get_const_chemistry_data_p(pindj);
 
   float wi, wi_dx;
 
   /* Get the masses. */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
 
   /* Get r */
   const float r = sqrtf(r2);
@@ -133,9 +138,9 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_chemistry(
 
   /* Compute the shear tensor */
   for (int i = 0; i < 3; i++) {
-    chi->S[i][0] += (pj->v[0] - pi->v[0]) * dx[i] * mj_wi_dr;
-    chi->S[i][1] += (pj->v[1] - pi->v[1]) * dx[i] * mj_wi_dr;
-    chi->S[i][2] += (pj->v[2] - pi->v[2]) * dx[i] * mj_wi_dr;
+    chi->S[i][0] += (part_get_v_ind(pindj, 0) -part_get_v_ind(pindi, 0)) * dx[i] * mj_wi_dr;
+    chi->S[i][1] += (part_get_v_ind(pindj, 1) -part_get_v_ind(pindi, 1)) * dx[i] * mj_wi_dr;
+    chi->S[i][2] += (part_get_v_ind(pindj, 2) -part_get_v_ind(pindi, 2)) * dx[i] * mj_wi_dr;
   }
 }
 
@@ -147,16 +152,15 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_chemistry(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_gradient_diffusion(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
+                               size_t pindi, size_t pindj, const float a,
                                const float H) {}
 
 /**
@@ -167,16 +171,15 @@ runner_iact_gradient_diffusion(const float r2, const float dx[3],
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
                                       const float hi, const float hj,
-                                      struct part *restrict pi,
-                                      struct part *restrict pj, const float a,
+                                      size_t pindi, size_t pindj, const float a,
                                       const float H) {}
 
 /**
@@ -187,8 +190,8 @@ runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param time_base The time base used in order to convert integer to float
@@ -200,19 +203,19 @@ runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, const float time_base, const integertime_t t_current,
     const struct cosmology *cosmo, const int with_cosmology) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *restrict chi = part_get_chemistry_data_p(pindi);
+  struct chemistry_part_data *restrict chj = part_get_chemistry_data_p(pindj);
 
   /* No need to diffuse if both particles are not diffusing. */
   if (chj->diff_coef > 0 && chi->diff_coef > 0) {
 
     /* Get mass */
-    const float mj = hydro_get_mass(pj);
-    const float mi = hydro_get_mass(pi);
+    const float mj = hydro_get_mass(pindj);
+    const float mi = hydro_get_mass(pindi);
     const float rhoj = hydro_get_physical_density(pj, cosmo);
     const float rhoi = hydro_get_physical_density(pi, cosmo);
 
@@ -253,8 +256,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
     const float coef_j = coef * mi_dw_r;
 
     /* Compute the time derivative */
-    const float inv_mi = 1.f / hydro_get_mass(pi);
-    const float inv_mj = 1.f / hydro_get_mass(pj);
+    const float inv_mi = 1.f / hydro_get_mass(pindi);
+    const float inv_mj = 1.f / hydro_get_mass(pindj);
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
       const double mi_frac = chi->metal_mass[i] * inv_mi;
       const double mj_frac = chj->metal_mass[i] * inv_mj;
@@ -273,8 +276,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param time_base The time base used in order to convert integer to float
@@ -286,17 +289,17 @@ __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_diffusion(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, const float time_base, const integertime_t t_current,
     const struct cosmology *cosmo, const int with_cosmology) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *restrict chi = part_get_chemistry_data_p(pindi);
+  struct chemistry_part_data *restrict chj = part_get_chemistry_data_p(pindj);
 
   if (chj->diff_coef > 0 && chi->diff_coef > 0) {
 
     /* Get mass */
-    const float mj = hydro_get_mass(pj);
+    const float mj = hydro_get_mass(pindj);
     const float rhoj = hydro_get_physical_density(pj, cosmo);
     const float rhoi = hydro_get_physical_density(pi, cosmo);
 
@@ -325,8 +328,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_diffusion(
     const float coef_i = coef * mj_dw_r;
 
     /* Compute the time derivative */
-    const float inv_mi = 1.f / hydro_get_mass(pi);
-    const float inv_mj = 1.f / hydro_get_mass(pj);
+    const float inv_mi = 1.f / hydro_get_mass(pindi);
+    const float inv_mj = 1.f / hydro_get_mass(pindj);
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
       const double mi_frac = chi->metal_mass[i] * inv_mi;
       const double mj_frac = chj->metal_mass[i] * inv_mj;

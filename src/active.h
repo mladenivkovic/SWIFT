@@ -342,7 +342,7 @@ __attribute__((always_inline)) INLINE static int cell_is_active_black_holes(
 /**
  * @brief Is this particle finishing its time-step now ?
  *
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param e The #engine containing information about the current time.
  * @return 1 if the #part is active, 0 otherwise.
  */
@@ -376,7 +376,7 @@ __attribute__((always_inline)) INLINE static int part_is_active_no_debug(
 /**
  * @brief Is this particle finishing its RT time-step now ?
  *
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param e The #engine containing information about the current time.
  * @return 1 if the #part is active, 0 otherwise.
  */
@@ -511,7 +511,7 @@ __attribute__((always_inline)) INLINE static int bpart_is_active(
 /**
  * @brief Has this particle been inhibited?
  *
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param e The #engine containing information about the current time.
  * @return 1 if the #part is inhibited, 0 otherwise.
  */
@@ -695,7 +695,7 @@ __attribute__((always_inline)) INLINE static int cell_is_starting_black_holes(
 /**
  * @brief Is this particle starting its time-step now ?
  *
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param e The #engine containing information about the current time.
  * @return 1 if the #part is active, 0 otherwise.
  */

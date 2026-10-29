@@ -75,7 +75,7 @@ __attribute__((always_inline)) INLINE static void drift_gpart(
   /* Get the ID of the gpart for forcing */
   long long id = 0;
   if (gp->type == swift_type_gas)
-    id = part_get_id(&e->s->parts[-gp->id_or_neg_offset]);
+    id = part_get_id(-gp->id_or_neg_offset);
   else if (gp->type == swift_type_stars)
     id = e->s->sparts[-gp->id_or_neg_offset].id;
   else if (gp->type == swift_type_sink)
@@ -121,10 +121,9 @@ __attribute__((always_inline)) INLINE static void drift_gpart(
 }
 
 /**
- * @brief Perform the 'drift' operation on a #part
+ * @brief Perform the 'drift' operation on a hydro particle
  *
- * @param p The #part to drift.
- * @param xp The #xpart of the particle.
+ * @param pind Index of the hydro particle to drift.
  * @param dt_drift The drift time-step
  * @param dt_kick_grav The kick time-step for gravity accelerations.
  * @param dt_kick_hydro The kick time-step for hydro accelerations.
@@ -136,8 +135,7 @@ __attribute__((always_inline)) INLINE static void drift_gpart(
  * @param floor The properties of the entropy floor.
  */
 __attribute__((always_inline)) INLINE static void drift_part(
-    struct part *restrict p, struct xpart *restrict xp, double dt_drift,
-    double dt_kick_hydro, double dt_kick_grav, double dt_therm,
+    size_t pind, double dt_drift, double dt_kick_hydro, double dt_kick_grav, double dt_therm,
     integertime_t ti_old, integertime_t ti_current, const struct engine *e,
     struct replication_list *replication_list, const double cell_loc[3]) {
 
@@ -157,49 +155,49 @@ __attribute__((always_inline)) INLINE static void drift_part(
 #endif
 
   /* Apply forcing */
-  forcing_part_drift_apply(part_get_id(p), e->forcing_terms, p, xp);
+  forcing_part_drift_apply(part_get_id(pind), e->forcing_terms, pind);
 
 #ifdef WITH_LIGHTCONE
   /* Store initial position and velocity for lightcone check after the drift */
-  const double x[3] = {p->x[0], p->x[1], p->x[2]};
-  const float v_full[3] = {xp->v_full[0], xp->v_full[1], xp->v_full[2]};
+  const double x[3] = part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2)};
+  const float v_full[3] = {part_get_v_full_ind(pind, 0), part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2)};
 #endif
 
   /* Drift... */
-  double *x = part_get_x(p);
-  x[0] += xp->v_full[0] * dt_drift;
-  x[1] += xp->v_full[1] * dt_drift;
-  x[2] += xp->v_full[2] * dt_drift;
+  double *x = part_get_x(pind);
+  x[0] += part_get_v_full_ind(pind, 0) * dt_drift;
+  x[1] += part_get_v_full_ind(pind, 1) * dt_drift;
+  x[2] += part_get_v_full_ind(pind, 2) * dt_drift;
 
   /* Predict velocities (for hydro terms) */
-  float *v = part_get_v(p);
-  const float *a_hydro = part_get_const_a_hydro(p);
+  float *v = part_get_v(pind);
+  const float *a_hydro = part_get_const_a_hydro(pind);
   v[0] += a_hydro[0] * dt_kick_hydro;
   v[1] += a_hydro[1] * dt_kick_hydro;
   v[2] += a_hydro[2] * dt_kick_hydro;
 
   /* Predict velocities (for gravity terms) */
-  struct gpart *gp = part_get_gpart(p);
+  struct gpart *gp = part_get_gpart(pind);
   if (gp != NULL) {
-    v[0] += xp->a_grav[0] * dt_kick_grav;
-    v[1] += xp->a_grav[1] * dt_kick_grav;
-    v[2] += xp->a_grav[2] * dt_kick_grav;
+    v[0] += part_get_a_grav_ind(pind,0) * dt_kick_grav;
+    v[1] += part_get_a_grav_ind(pind,1) * dt_kick_grav;
+    v[2] += part_get_a_grav_ind(pind,2) * dt_kick_grav;
   }
 
   /* Predict the values of the extra fields */
-  hydro_predict_extra(p, xp, dt_drift, dt_therm, dt_kick_grav, cosmo,
+  hydro_predict_extra(pind, dt_drift, dt_therm, dt_kick_grav, cosmo,
                       hydro_props, entropy_floor, pressure_floor);
-  mhd_predict_extra(p, xp, dt_drift, dt_therm, cosmo, hydro_props,
+  mhd_predict_extra(pind, dt_drift, dt_therm, cosmo, hydro_props,
                     entropy_floor);
-  chemistry_predict_extra(p, xp, dt_drift, dt_therm, cosmo, e->chemistry);
-  rt_predict_extra(p, xp, dt_drift);
-  if (gp) gravity_update_softening(gp, p, e->gravity_properties);
+  chemistry_predict_extra(pind, dt_drift, dt_therm, cosmo, e->chemistry);
+  rt_predict_extra(pind, dt_drift);
+  if (gp) gravity_update_softening(gp, pind, e->gravity_properties);
 
   /* Compute offsets since last cell construction */
   for (int k = 0; k < 3; k++) {
-    const float dx = xp->v_full[k] * dt_drift;
-    xp->x_diff[k] -= dx;
-    xp->x_diff_sort[k] -= dx;
+    const float dx = part_get_v_full_ind(pind,k) * dt_drift;
+    part_set_x_diff_ind(pind, k, part_get_x_diff_ind(pind, k) - dx);
+    part_set_x_diff_sort_ind(pind, k, part_get_x_diff_sort_ind(pind, k) - dx);
   }
 
 #ifdef WITH_LIGHTCONE

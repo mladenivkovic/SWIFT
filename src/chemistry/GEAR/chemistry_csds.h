@@ -28,28 +28,26 @@
 /**
  * @brief Write the metallicities.
  *
- * @param p The #part
- * @param xp Its related #xpart
+ * @param pind Index of the hydro particle
  * @param e The #engine
  * @param buffer Allocated buffer for writing the particle.
  *
  * @return Buffer after the bits written.
  */
-INLINE static void *csds_chemistry_write_part(const struct part *p,
-                                              const struct xpart *xp,
+INLINE static void *csds_chemistry_write_part(const size_t pind,
                                               const struct engine *e,
                                               void *buffer) {
 
   /* Add the smoothed metals */
-  const size_t size = sizeof(p->chemistry_data.smoothed_metal_mass_fraction);
-  memcpy(buffer, p->chemistry_data.smoothed_metal_mass_fraction, size);
+  const size_t size = sizeof(part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction);
+  memcpy(buffer, part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction, size);
   buffer += size;
 
   /* Add the metal mass */
   double *metals = buffer;
-  const float m = hydro_get_mass(p);
+  const float m = hydro_get_mass(pind);
   for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-    metals[i] = p->chemistry_data.metal_mass[i] / m;
+    metals[i] = part_get_chemistry_data_p(pind)->metal_mass[i] / m;
   }
 
   return metals + GEAR_CHEMISTRY_ELEMENT_COUNT;

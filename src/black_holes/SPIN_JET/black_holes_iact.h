@@ -37,12 +37,11 @@
  * @brief Density interaction between two particles (non-symmetric).
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas, not updated).
- * @param xpj The extended data of the second particle (not updated).
+ * @param pindj Index of second particle (gas, not updated).
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -54,7 +53,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_density(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct bpart *bi, const struct part *pj, const struct xpart *xpj,
+    struct bpart *bi, const size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -80,7 +79,7 @@ runner_iact_nonsym_bh_gas_density(
   bi->num_ngbs++;
 
   /* Neighbour gas mass */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
 
   /* Contribution to the BH gas density */
   bi->rho_gas += mj * wi;
@@ -91,12 +90,12 @@ runner_iact_nonsym_bh_gas_density(
   /* Neighbour's sound speed */
   float cj;
   if (bh_props->use_subgrid_gas_properties && engine_current_step >= 0) {
-    const float pressure_j = hydro_get_comoving_pressure(pj);
-    const float subgrid_dens = cooling_get_subgrid_density(pj, xpj);
+    const float pressure_j = hydro_get_comoving_pressure(pindj);
+    const float subgrid_dens = cooling_get_subgrid_density(pindj);
     cj = gas_soundspeed_from_pressure(
         subgrid_dens * cosmo->a * cosmo->a * cosmo->a, pressure_j);
   } else {
-    cj = hydro_get_comoving_soundspeed(pj);
+    cj = hydro_get_comoving_soundspeed(pindj);
   }
 
   /* Contribution to the smoothed sound speed */
@@ -108,15 +107,15 @@ runner_iact_nonsym_bh_gas_density(
   }
 
   /* Neighbour internal energy */
-  const float uj = hydro_get_drifted_comoving_internal_energy(pj);
+  const float uj = hydro_get_drifted_comoving_internal_energy(pindj);
 
   /* Contribution to the smoothed internal energy */
   bi->internal_energy_gas += mj * uj * wi;
 
   /* Neighbour's (drifted) velocity in the frame of the black hole
    * (we do include a Hubble term) */
-  const float dv[3] = {pj->v[0] - bi->v[0], pj->v[1] - bi->v[1],
-                       pj->v[2] - bi->v[2]};
+  const float dv[3] = {part_get_v_ind(pindj, 0) - bi->v[0],part_get_v_ind(pindj, 1) - bi->v[1],
+                      part_get_v_ind(pindj, 2) - bi->v[2]};
 
   const float a = cosmo->a;
   const float H = cosmo->H;
@@ -165,7 +164,7 @@ runner_iact_nonsym_bh_gas_density(
       error(
           "Invalid denominator for BH particle %lld and gas particle "
           "%lld in Bondi rate calculation.",
-          bi->id, pj->id);
+          bi->id,part_get_id(pindj));
 #endif
     const double denominator_inv = 1. / sqrt(denominator2);
 
@@ -195,14 +194,14 @@ runner_iact_nonsym_bh_gas_density(
 #ifdef DEBUG_INTERACTIONS_BH
   /* Update ngb counters */
   if (si->num_ngb_density < MAX_NUM_OF_NEIGHBOURS_BH)
-    bi->ids_ngbs_density[si->num_ngb_density] = pj->id;
+    bi->ids_ngbs_density[si->num_ngb_density] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_density;
 #endif
 
   /* Gas particle id */
-  const long long gas_id = pj->id;
+  const long long gas_id =part_get_id(pindj);
 
   /* Choose AGN feedback model */
   switch (bh_props->feedback_model) {
@@ -280,9 +279,9 @@ runner_iact_nonsym_bh_gas_density(
   /* Calculate relative velocity of particle and BH, to be used to see if
      this particle was recently kicked */
   const float relative_velocity =
-      sqrtf((bi->v[0] - pj->v[0]) * (bi->v[0] - pj->v[0]) +
-            (bi->v[1] - pj->v[1]) * (bi->v[1] - pj->v[1]) +
-            (bi->v[2] - pj->v[2]) * (bi->v[2] - pj->v[2])) *
+      sqrtf((bi->v[0] -part_get_v_ind(pindj, 0)) * (bi->v[0] -part_get_v_ind(pindj, 0)) +
+            (bi->v[1] -part_get_v_ind(pindj, 1)) * (bi->v[1] -part_get_v_ind(pindj, 1)) +
+            (bi->v[2] -part_get_v_ind(pindj, 2)) * (bi->v[2] -part_get_v_ind(pindj, 2))) *
       cosmo->a_inv;
 
   /* Choose AGN jet feedback model. Here we calculate the quantities to
@@ -361,15 +360,15 @@ runner_iact_nonsym_bh_gas_density(
          launching velocity. If it is, set the ray correction variable to some
          arbitrarily large value. */
       if (relative_velocity > 0.8 * bi->v_jet) {
-        ray_jet_correction = 1e15 * pj->rho;
+        ray_jet_correction = 1e15 *part_get_rho(pindj);
       }
 
       /* In this case we minimize using particle densities, i.e. we target the
          low-density gas.  */
       if (cosine_theta < 0) {
-        quantity_to_minimize = pj->rho + ray_jet_correction;
+        quantity_to_minimize =part_get_rho(pindj) + ray_jet_correction;
       } else {
-        quantity_to_minimize_pos = pj->rho + ray_jet_correction;
+        quantity_to_minimize_pos =part_get_rho(pindj) + ray_jet_correction;
       }
       break;
     }
@@ -378,10 +377,10 @@ runner_iact_nonsym_bh_gas_density(
   /* Do the actual minimization. */
   if (cosine_theta < 0) {
     ray_minimise_distance(quantity_to_minimize, bi->rays_jet, arr_size_jet,
-                          gas_id, pj->mass);
+                          gas_id,part_get_mass(pindj));
   } else {
     ray_minimise_distance(quantity_to_minimize_pos, bi->rays_jet_pos,
-                          arr_size_jet, gas_id, pj->mass);
+                          arr_size_jet, gas_id,part_get_mass(pindj));
   }
 }
 
@@ -391,12 +390,11 @@ runner_iact_nonsym_bh_gas_density(
  * Function used to identify the gas particle that this BH may move towards.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -408,7 +406,7 @@ runner_iact_nonsym_bh_gas_density(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_repos(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct bpart *bi, const struct part *pj, const struct xpart *xpj,
+    struct bpart *bi, const size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -446,8 +444,8 @@ runner_iact_nonsym_bh_gas_repos(
 
       /* Compute relative peculiar velocity between the two BHs
        * Recall that in SWIFT v is (v_pec * a) */
-      const float delta_v[3] = {bi->v[0] - pj->v[0], bi->v[1] - pj->v[1],
-                                bi->v[2] - pj->v[2]};
+      const float delta_v[3] = {bi->v[0] -part_get_v_ind(pindj, 0), bi->v[1] -part_get_v_ind(pindj, 1),
+                                bi->v[2] -part_get_v_ind(pindj, 2)};
       const float v2 = delta_v[0] * delta_v[0] + delta_v[1] * delta_v[1] +
                        delta_v[2] * delta_v[2];
       const float v2_pec = v2 * cosmo->a2_inv;
@@ -472,7 +470,7 @@ runner_iact_nonsym_bh_gas_repos(
 
     if (neighbour_is_slow_enough) {
 
-      float potential = pj->black_holes_data.potential;
+      float potential = part_get_black_holes_data_p(pindj)->potential;
 
       if (bh_props->correct_bh_potential_for_repositioning) {
         /* Let's not include the contribution of the BH
@@ -516,12 +514,11 @@ runner_iact_nonsym_bh_gas_repos(
  * by the black hole particle.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -533,7 +530,7 @@ runner_iact_nonsym_bh_gas_repos(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_swallow(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct bpart *bi, struct part *pj, struct xpart *xpj,
+    struct bpart *bi, size_t pindj,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -561,7 +558,7 @@ runner_iact_nonsym_bh_gas_swallow(
      * the mass and all associated quantities right here. */
 
     const float bi_mass_orig = bi->mass;
-    const float pj_mass_orig = hydro_get_mass(pj);
+    const float pj_mass_orig = hydro_get_mass(pindj);
 
     /* Don't nibble from particles that are too small already */
     if (pj_mass_orig < bh_props->min_gas_mass_for_nibbling) return;
@@ -585,25 +582,25 @@ runner_iact_nonsym_bh_gas_swallow(
 
     /* Correct for nibbling the particle mass that is stored in rays */
     for (int i = 0; i < spinjet_blackhole_number_of_rays; i++) {
-      if (bi->rays[i].id_min_length == pj->id) bi->rays[i].mass = new_gas_mass;
-      if (bi->rays_jet[i].id_min_length == pj->id) {
+      if (bi->rays[i].id_min_length ==part_get_id(pindj)) bi->rays[i].mass = new_gas_mass;
+      if (bi->rays_jet[i].id_min_length ==part_get_id(pindj)) {
         bi->rays_jet[i].mass = new_gas_mass;
       }
-      if (bi->rays_jet_pos[i].id_min_length == pj->id) {
+      if (bi->rays_jet_pos[i].id_min_length ==part_get_id(pindj)) {
         bi->rays_jet_pos[i].mass = new_gas_mass;
       }
     }
 
     /* Transfer (dynamical) mass from the gas particle to the BH */
     bi->mass += nibble_mass;
-    hydro_set_mass(pj, new_gas_mass);
+    hydro_set_mass(pindj, new_gas_mass);
 
     /* Add the angular momentum of the accreted gas to the BH total.
      * Note no change to gas here. The cosmological conversion factors for
      * velocity (a^-1) and distance (a) cancel out, so the angular momentum
      * is already in physical units. */
-    const float dv[3] = {bi->v[0] - pj->v[0], bi->v[1] - pj->v[1],
-                         bi->v[2] - pj->v[2]};
+    const float dv[3] = {bi->v[0] -part_get_v_ind(pindj, 0), bi->v[1] -part_get_v_ind(pindj, 1),
+                         bi->v[2] -part_get_v_ind(pindj, 2)};
     bi->swallowed_angular_momentum[0] +=
         nibble_mass * (dx[1] * dv[2] - dx[2] * dv[1]);
     bi->swallowed_angular_momentum[1] +=
@@ -612,9 +609,9 @@ runner_iact_nonsym_bh_gas_swallow(
         nibble_mass * (dx[0] * dv[1] - dx[1] * dv[0]);
 
     /* Update the BH momentum and velocity. Again, no change to gas here. */
-    const float bi_mom[3] = {bi_mass_orig * bi->v[0] + nibble_mass * pj->v[0],
-                             bi_mass_orig * bi->v[1] + nibble_mass * pj->v[1],
-                             bi_mass_orig * bi->v[2] + nibble_mass * pj->v[2]};
+    const float bi_mom[3] = {bi_mass_orig * bi->v[0] + nibble_mass *part_get_v_ind(pindj, 0),
+                             bi_mass_orig * bi->v[1] + nibble_mass *part_get_v_ind(pindj, 1),
+                             bi_mass_orig * bi->v[2] + nibble_mass *part_get_v_ind(pindj, 2)};
 
     bi->v[0] = bi_mom[0] / bi->mass;
     bi->v[1] = bi_mom[1] / bi->mass;
@@ -625,7 +622,7 @@ runner_iact_nonsym_bh_gas_swallow(
 
     /* Update the BH and also gas metal masses */
     struct chemistry_bpart_data *bi_chem = &bi->chemistry_data;
-    struct chemistry_part_data *pj_chem = &pj->chemistry_data;
+    struct chemistry_part_data *pj_chem = part_get_chemistry_data_p(pindj);
     chemistry_transfer_part_to_bpart(bi_chem, pj_chem, nibbled_mass,
                                      nibbled_fraction);
 
@@ -638,26 +635,27 @@ runner_iact_nonsym_bh_gas_swallow(
         (bi->subgrid_mass - bi->mass) * hi_inv_dim * wi / bi->rho_gas;
 
     /* Draw a random number (Note mixing both IDs) */
-    const float rand = random_unit_interval(bi->id + pj->id, ti_current,
+    const float rand = random_unit_interval(bi->id +part_get_id(pindj), ti_current,
                                             random_number_BH_swallow);
 
     /* Are we lucky? */
     if (rand < prob) {
 
+      struct black_holes_part_data *restrict bhpd = part_get_black_holes_data_p(pindj);
       /* This particle is swallowed by the BH with the largest ID of all the
        * candidates wanting to swallow it */
-      if (pj->black_holes_data.swallow_id < bi->id) {
+      if (bhpd->swallow_id < bi->id) {
 
-        message("BH %lld wants to swallow gas particle %lld", bi->id, pj->id);
+        message("BH %lld wants to swallow gas particle %lld", bi->id,part_get_id(pindj));
 
-        pj->black_holes_data.swallow_id = bi->id;
+        bhpd->swallow_id = bi->id;
 
       } else {
 
         message(
             "BH %lld wants to swallow gas particle %lld BUT CANNOT (old "
             "swallow id=%lld)",
-            bi->id, pj->id, pj->black_holes_data.swallow_id);
+            bi->id,part_get_id(pindj), bhpd->swallow_id);
       }
     }
   } /* ends section for swallowing */
@@ -669,7 +667,7 @@ runner_iact_nonsym_bh_gas_swallow(
  * Function used to identify the BH particle that this BH may move towards.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - bj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
@@ -776,7 +774,7 @@ runner_iact_nonsym_bh_bh_repos(const float r2, const float dx[3],
  * by the black hole particle.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - bj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
@@ -884,12 +882,11 @@ runner_iact_nonsym_bh_bh_swallow(const float r2, const float dx[3],
  * @brief Feedback interaction between two particles (non-symmetric).
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (bi - bj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
- * @param xpj The extended data of the second particle.
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -901,7 +898,7 @@ runner_iact_nonsym_bh_bh_swallow(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_bh_gas_feedback(
     const float r2, const float dx[3], const float hi, const float hj,
-    const struct bpart *bi, struct part *pj, struct xpart *xpj,
+    const struct bpart *bi, size_t pindj, j,
     const int with_cosmology, const struct cosmology *cosmo,
     const struct gravity_props *grav_props,
     const struct black_holes_props *bh_props,
@@ -921,7 +918,7 @@ runner_iact_nonsym_bh_gas_feedback(
     /* Find out how many rays (= energy injections) this gas particle
      * has received */
     for (int i = 0; i < num_energy_injections_per_BH; i++) {
-      if (pj->id == bi->rays[i].id_min_length)
+      if (part_get_id(pindj) == bi->rays[i].id_min_length)
         num_of_energy_inj_received_by_gas++;
     }
 
@@ -933,30 +930,30 @@ runner_iact_nonsym_bh_gas_feedback(
        * The energy the particle receives is proportional to the number of rays
        * (num_of_energy_inj_received_by_gas) to which the particle was found to
        * be closest. */
-      const double u_init = hydro_get_physical_internal_energy(pj, xpj, cosmo);
+      const double u_init = hydro_get_physical_internal_energy(pindj, cosmo);
       const float delta_u = bi->to_distribute.AGN_delta_u *
                             (float)num_of_energy_inj_received_by_gas;
       const double u_new = u_init + delta_u;
 
-      hydro_set_physical_internal_energy(pj, xpj, cosmo, u_new);
-      hydro_set_drifted_physical_internal_energy(pj, cosmo, /*pfloor=*/NULL,
+      hydro_set_physical_internal_energy(pindj, cosmo, u_new);
+      hydro_set_drifted_physical_internal_energy(pindj, cosmo, /*pfloor=*/NULL,
                                                  u_new);
 
       /* Impose maximal viscosity */
-      hydro_diffusive_feedback_reset(pj);
+      hydro_diffusive_feedback_reset(pindj);
 
       /* Store the feedback energy */
-      const double delta_energy = delta_u * hydro_get_mass(pj);
-      tracers_after_black_holes_feedback(pj, xpj, with_cosmology, cosmo->a,
+      const double delta_energy = delta_u * hydro_get_mass(pindj);
+      tracers_after_black_holes_feedback(pindj, with_cosmology, cosmo->a,
                                          time, delta_energy);
 
       /* message( */
       /*     "We did some AGN heating! id %llu BH id %llu probability " */
       /*     " %.5e  random_num %.5e du %.5e du/ini %.5e", */
-      /*     pj->id, bi->id, prob, rand, delta_u, delta_u / u_init); */
+      /*    part_get_id(pindj), bi->id, prob, rand, delta_u, delta_u / u_init); */
 
       /* Synchronize the particle on the timeline */
-      timestep_sync_part(pj);
+      timestep_sync_part(pindj);
     }
   }
 
@@ -977,7 +974,7 @@ runner_iact_nonsym_bh_gas_feedback(
     /* Find out if this gas particle has received any jet injections (rays).
     Loop through num_jet_injections divided by 2 because of two sets of rays */
     for (int i = 0; i < num_jet_injections_per_BH / 2; i++) {
-      if (pj->id == bi->rays_jet[i].id_min_length) {
+      if (part_get_id(pindj) == bi->rays_jet[i].id_min_length) {
 
         num_of_jet_inj_received_by_gas++;
 
@@ -988,7 +985,7 @@ runner_iact_nonsym_bh_gas_feedback(
     }
 
     for (int i = 0; i < num_jet_injections_per_BH / 2; i++) {
-      if (pj->id == bi->rays_jet_pos[i].id_min_length) {
+      if (part_get_id(pindj) == bi->rays_jet_pos[i].id_min_length) {
 
         num_of_jet_inj_received_by_gas++;
 
@@ -1021,9 +1018,9 @@ runner_iact_nonsym_bh_gas_feedback(
       vel_kick_direction[2] = direction * bi->jet_direction[2];
 
       /* Get the initial velocity in the frame of the black hole */
-      const float v_init[3] = {xpj->v_full[0] - bi->v[0],
-                               xpj->v_full[1] - bi->v[1],
-                               xpj->v_full[2] - bi->v[2]};
+      const float v_init[3] = {part_get_v_full_ind(pindj, 0) - bi->v[0],
+                               part_get_v_full_ind(pindj, 1) - bi->v[1],
+                               part_get_v_full_ind(pindj, 2) - bi->v[2]};
 
       /* We compute this final velocity by requiring that the final energy and
        * the inital one differ by the energy received by the particle, i.e.
@@ -1057,39 +1054,39 @@ runner_iact_nonsym_bh_gas_feedback(
 
       /* Calculate final velocity by adding delta_v in the direction of the kick
        */
-      xpj->v_full[0] += delta_v * vel_kick_direction[0];
-      xpj->v_full[1] += delta_v * vel_kick_direction[1];
-      xpj->v_full[2] += delta_v * vel_kick_direction[2];
+      part_set_v_full_ind(pindj, 0, part_get_v_full_ind(pindj, 0) + delta_v * vel_kick_direction[0]);
+      part_set_v_full_ind(pindj, 1, part_get_v_full_ind(pindj, 1) + delta_v * vel_kick_direction[1]);
+      part_set_v_full_ind(pindj, 2, part_get_v_full_ind(pindj, 2) + delta_v * vel_kick_direction[2]);
 
 #ifdef SWIFT_DEBUG_CHECKS
       message(
           "Black hole with id %lld kicked particle with id %lld , with a final "
           "velocity of (%f, %f, %f).",
-          bi->id, pj->id, xpj->v_full[0], xpj->v_full[1], xpj->v_full[2]);
+          bi->id,part_get_id(pindj)->v_full[0]->v_full[1]->v_full[2]);
 #endif
 
       /* Store the jet energy and other variables of interest */
-      const double delta_energy_jet = delta_u_jet * hydro_get_mass(pj);
-      tracers_after_jet_feedback(pj, xpj, with_cosmology, cosmo->a, time,
+      const double delta_energy_jet = delta_u_jet * hydro_get_mass(pindj);
+      tracers_after_jet_feedback(pindj, with_cosmology, cosmo->a, time,
                                  delta_energy_jet, vel_kick, bi->accretion_mode,
                                  bi->id);
 
       /* Impose maximal viscosity */
-      hydro_diffusive_feedback_reset(pj);
+      hydro_diffusive_feedback_reset(pindj);
 
       /* Update the signal velocity */
-      hydro_set_v_sig_based_on_velocity_kick(pj, cosmo,
+      hydro_set_v_sig_based_on_velocity_kick(pindj, cosmo,
                                              sqrtf(2. * delta_u_jet));
 
       /* Synchronize particle on the time-line */
-      timestep_sync_part(pj);
+      timestep_sync_part(pindj);
     }
   }
 
 #ifdef DEBUG_INTERACTIONS_BH
   /* Update ngb counters */
   if (si->num_ngb_force < MAX_NUM_OF_NEIGHBOURS_BH)
-    bi->ids_ngbs_force[si->num_ngb_force] = pj->id;
+    bi->ids_ngbs_force[si->num_ngb_force] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_force;

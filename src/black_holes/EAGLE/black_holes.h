@@ -388,8 +388,7 @@ __attribute__((always_inline)) INLINE static double black_holes_get_jet_power(
  * a gas particle.
  *
  * @param bp The #bpart to update.
- * @param pind Index of the #part that is swallowed.
- * @param xp The #xpart that is swallowed.
+ * @param pind Index of the hydro particle that is swallowed.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
@@ -397,7 +396,7 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
     const struct cosmology *cosmo) {
 
   /* Get the current dynamical masses */
-  const float gas_mass = hydro_get_mass(p);
+  const float gas_mass = hydro_get_mass(pind);
   const float BH_mass = bp->mass;
 
   /* Increase the dynamical mass of the BH. */
@@ -445,7 +444,7 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
 
   /* Update the BH metal masses */
   struct chemistry_bpart_data *bp_chem = &bp->chemistry_data;
-  const struct chemistry_part_data *p_chem = &p->chemistry_data;
+  const struct chemistry_part_data *p_chem = part_get_chemistry_data_p(pind);
   chemistry_add_part_to_bpart(bp_chem, p_chem, gas_mass);
 
   /* This BH swallowed a gas particle */
@@ -1268,7 +1267,7 @@ black_holes_store_potential_in_part(struct black_holes_part_data *p_data,
  * @param props The properties of the black hole scheme.
  * @param constants The physical constants in internal units.
  * @param cosmo The current cosmological model.
- * @param pind Index of the #part that became a black hole.
+ * @param pind Index of the hydro particle that became a black hole.
  * @param ti_current the current time on the time-line.
  */
 INLINE static void black_holes_create_from_gas(

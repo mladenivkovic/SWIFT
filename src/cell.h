@@ -584,12 +584,12 @@ int cell_unpack_sf_counts(struct cell *c, struct pcell_sf_stars *pcell);
 int cell_pack_grav_counts(struct cell *c, struct pcell_sf_grav *pcell);
 int cell_unpack_grav_counts(struct cell *c, struct pcell_sf_grav *pcell);
 int cell_get_tree_size(struct cell *c);
-int cell_link_parts(struct cell *c, struct part *parts);
+int cell_link_parts(struct cell *c, size_t first);
 int cell_link_gparts(struct cell *c, struct gpart_foreign *gparts);
 int cell_link_sparts(struct cell *c, struct spart *sparts);
 int cell_link_bparts(struct cell *c, struct bpart *bparts);
 int cell_link_sinks(struct cell *c, struct sink *sinks);
-int cell_link_foreign_parts(struct cell *c, struct part *parts);
+int cell_link_foreign_parts(struct cell *c, size_t first);
 int cell_link_foreign_gparts(struct cell *c, struct gpart_foreign *gparts);
 int cell_link_foreign_fof_gparts(struct cell *c,
                                  struct gpart_fof_foreign *gparts);
@@ -699,8 +699,7 @@ void cell_check_sort_flags(const struct cell *c);
 void cell_clear_stars_sort_flags(struct cell *c, const int unused_flags);
 void cell_clear_hydro_sort_flags(struct cell *c, const int unused_flags);
 int cell_has_tasks(struct cell *c);
-void cell_remove_part(const struct engine *e, struct cell *c, struct part *p,
-                      struct xpart *xp);
+void cell_remove_part(const struct engine *e, struct cell *c, size_t pind);
 void cell_remove_gpart(const struct engine *e, struct cell *c,
                        struct gpart *gp);
 void cell_remove_spart(const struct engine *e, struct cell *c,
@@ -712,20 +711,19 @@ void cell_remove_bpart(const struct engine *e, struct cell *c,
 struct spart *cell_add_spart(struct engine *e, struct cell *c);
 struct gpart *cell_add_gpart(struct engine *e, struct cell *c);
 struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
-                                             const struct part *p,
-                                             const struct xpart *xp);
+                                             const size_t pind);
 struct spart *cell_spawn_new_spart_from_sink(struct engine *e, struct cell *c,
                                              const struct sink *s);
 struct gpart *cell_convert_part_to_gpart(const struct engine *e, struct cell *c,
-                                         struct part *p, struct xpart *xp);
+                                         size_t pind);
 struct gpart *cell_convert_spart_to_gpart(const struct engine *e,
                                           struct cell *c, struct spart *sp);
 struct spart *cell_convert_part_to_spart(struct engine *e, struct cell *c,
-                                         struct part *p, struct xpart *xp);
+                                         size_t pind);
 struct sink *cell_convert_part_to_sink(struct engine *e, struct cell *c,
-                                       struct part *p, struct xpart *xp);
+                                       size_t pind);
 void cell_reorder_extra_parts(struct cell *c, const ptrdiff_t parts_offset);
-void cell_reorder_extra_gparts(struct cell *c, struct part *parts,
+void cell_reorder_extra_gparts(struct cell *c, size_t pind,
                                struct spart *sparts, struct sink *sinks,
                                struct bpart *bparts);
 void cell_reorder_extra_sparts(struct cell *c, const ptrdiff_t sparts_offset);
@@ -1781,9 +1779,9 @@ __attribute__((always_inline)) INLINE void cell_assign_cell_index(
 }
 
 /**
- * @brief Set the depth_h field of a #part.
+ * @brief Set the depth_h field of a hydro particle.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param leaf_cell The leaf cell where the particle is located.
  */
 __attribute__((always_inline)) static INLINE void cell_set_part_h_depth(

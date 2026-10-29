@@ -199,7 +199,7 @@ static __attribute__((always_inline)) INLINE int cache_read_particles(
   swift_declare_aligned_ptr(float, vz, ci_cache->vz, SWIFT_CACHE_ALIGNMENT);
 
   const int count = ci->hydro.count;
-  const struct part *restrict parts = ci->hydro.parts;
+  const size_t first = ci->hydro.first;
   const double loc[3] = {ci->loc[0], ci->loc[1], ci->loc[2]};
   const double max_dx = ci->hydro.dx_max_part;
   const float pos_padded[3] = {-(2. * ci->width[0] + max_dx),
@@ -212,7 +212,7 @@ static __attribute__((always_inline)) INLINE int cache_read_particles(
   for (int i = 0; i < count; i++) {
 
     /* Pad inhibited particles. */
-    if (parts[i].time_bin >= time_bin_inhibited) {
+    if (part_get_time_bin(first + i) >= time_bin_inhibited) {
       x[i] = pos_padded[0];
       y[i] = pos_padded[1];
       z[i] = pos_padded[2];
@@ -221,14 +221,14 @@ static __attribute__((always_inline)) INLINE int cache_read_particles(
       continue;
     }
 
-    x[i] = (float)(parts[i].x[0] - loc[0]);
-    y[i] = (float)(parts[i].x[1] - loc[1]);
-    z[i] = (float)(parts[i].x[2] - loc[2]);
-    h[i] = parts[i].h;
-    m[i] = parts[i].mass;
-    vx[i] = parts[i].v[0];
-    vy[i] = parts[i].v[1];
-    vz[i] = parts[i].v[2];
+    x[i] = (float)(part_get_x_ind(first+i,0) - loc[0]);
+    y[i] = (float)(part_get_x_ind(first+i,1) - loc[1]);
+    z[i] = (float)(part_get_x_ind(first+i,2) - loc[2]);
+    h[i] = part_get_h(first+i);
+    m[i] = part_get_mass(first+i);
+    vx[i] = part_get_v_ind(first+i,0);
+    vy[i] = part_get_v_ind(first+i,1);
+    vz[i] = part_get_v_ind(first+i,2);
   }
 
   /* Pad cache if the no. of particles is not a multiple of double the vector
@@ -279,7 +279,7 @@ cache_read_particles_subset_self(const struct cell *restrict const ci,
   swift_declare_aligned_ptr(float, vz, ci_cache->vz, SWIFT_CACHE_ALIGNMENT);
 
   const int count = ci->hydro.count;
-  const struct part *restrict parts = ci->hydro.parts;
+  const size_t first = ci->hydro.first;
   const double loc[3] = {ci->loc[0], ci->loc[1], ci->loc[2]};
   const double max_dx = ci->hydro.dx_max_part;
   const float pos_padded[3] = {-(2. * ci->width[0] + max_dx),
@@ -291,7 +291,7 @@ cache_read_particles_subset_self(const struct cell *restrict const ci,
   for (int i = 0; i < count; i++) {
 
     /* Pad inhibited particles. */
-    if (parts[i].time_bin >= time_bin_inhibited) {
+    if (part_get_time_bin(first+i) >= time_bin_inhibited) {
       x[i] = pos_padded[0];
       y[i] = pos_padded[1];
       z[i] = pos_padded[2];
@@ -299,13 +299,13 @@ cache_read_particles_subset_self(const struct cell *restrict const ci,
       continue;
     }
 
-    x[i] = (float)(parts[i].x[0] - loc[0]);
-    y[i] = (float)(parts[i].x[1] - loc[1]);
-    z[i] = (float)(parts[i].x[2] - loc[2]);
-    m[i] = parts[i].mass;
-    vx[i] = parts[i].v[0];
-    vy[i] = parts[i].v[1];
-    vz[i] = parts[i].v[2];
+    x[i] = (float)(part_get_x_ind(first+i,0) - loc[0]);
+    y[i] = (float)(part_get_x_ind(first+i,1) - loc[1]);
+    z[i] = (float)(part_get_x_ind(first+i,2) - loc[2]);
+    m[i] = part_get_mass(first+i);
+    vx[i] = part_get_v_ind(first+i,0);
+    vy[i] = part_get_v_ind(first+i,1);
+    vz[i] = part_get_v_ind(first+i,2);
   }
 
   /* Pad cache if the no. of particles is not a multiple of double the vector
@@ -363,7 +363,7 @@ cache_read_particles_subset_pair(const struct cell *restrict const ci,
   swift_declare_aligned_ptr(float, vy, ci_cache->vy, SWIFT_CACHE_ALIGNMENT);
   swift_declare_aligned_ptr(float, vz, ci_cache->vz, SWIFT_CACHE_ALIGNMENT);
 
-  const struct part *restrict parts = ci->hydro.parts;
+  const size_t first = ci->hydro.first;
 
   /* The cell is on the right so read the particles
    * into the cache from the start of the cell. */
@@ -384,10 +384,10 @@ cache_read_particles_subset_pair(const struct cell *restrict const ci,
     /* Shift the particles positions to a local frame so single precision can be
      * used instead of double precision. */
     for (int i = 0; i < *last_pi; i++) {
-      const int idx = sort_i[i].i;
+      const size_t idx = first + sort_i[i].i;
 
       /* Put inhibited particles out of range. */
-      if (parts[idx].time_bin >= time_bin_inhibited) {
+      if (part_get_time_bin(idx) >= time_bin_inhibited) {
         x[i] = pos_padded[0];
         y[i] = pos_padded[1];
         z[i] = pos_padded[2];
@@ -399,13 +399,13 @@ cache_read_particles_subset_pair(const struct cell *restrict const ci,
         continue;
       }
 
-      x[i] = (float)(parts[idx].x[0] - loc[0]);
-      y[i] = (float)(parts[idx].x[1] - loc[1]);
-      z[i] = (float)(parts[idx].x[2] - loc[2]);
-      m[i] = parts[idx].mass;
-      vx[i] = parts[idx].v[0];
-      vy[i] = parts[idx].v[1];
-      vz[i] = parts[idx].v[2];
+      x[i] = (float)(part_get_x_ind(idx,0) - loc[0]);
+      y[i] = (float)(part_get_x_ind(idx,1) - loc[1]);
+      z[i] = (float)(part_get_x_ind(idx,2) - loc[2]);
+      m[i] = part_get_mass(idx);
+      vx[i] = part_get_v_ind(idx,0);
+      vy[i] = part_get_v_ind(idx,1);
+      vz[i] = part_get_v_ind(idx,2);
     }
 
     /* Pad cache with fake particles that exist outside the cell so will not
@@ -442,10 +442,10 @@ cache_read_particles_subset_pair(const struct cell *restrict const ci,
     /* Shift the particles positions to a local frame so single precision can be
      * used instead of double precision. */
     for (int i = 0; i < ci_cache_count; i++) {
-      const int idx = sort_i[i + *first_pi].i;
+      const size_t idx = first + sort_i[i + *first_pi].i;
 
       /* Put inhibited particles out of range. */
-      if (parts[idx].time_bin >= time_bin_inhibited) {
+      if (part_get_time_bin(idx) >= time_bin_inhibited) {
         x[i] = pos_padded[0];
         y[i] = pos_padded[1];
         z[i] = pos_padded[2];
@@ -458,13 +458,13 @@ cache_read_particles_subset_pair(const struct cell *restrict const ci,
         continue;
       }
 
-      x[i] = (float)(parts[idx].x[0] - loc[0]);
-      y[i] = (float)(parts[idx].x[1] - loc[1]);
-      z[i] = (float)(parts[idx].x[2] - loc[2]);
-      m[i] = parts[idx].mass;
-      vx[i] = parts[idx].v[0];
-      vy[i] = parts[idx].v[1];
-      vz[i] = parts[idx].v[2];
+      x[i] = (float)(part_get_x_ind(idx, 0) - loc[0]);
+      y[i] = (float)(part_get_x_ind(idx, 1) - loc[1]);
+      z[i] = (float)(part_get_x_ind(idx, 2) - loc[2]);
+      m[i] = part_get_mass(idx);
+      vx[i] = part_get_x_ind(idx, 0);
+      vy[i] = part_get_x_ind(idx, 1);
+      vz[i] = part_get_x_ind(idx, 2);
     }
 
     /* Pad cache with fake particles that exist outside the cell so will not
@@ -521,7 +521,7 @@ static __attribute__((always_inline)) INLINE int cache_read_force_particles(
                             SWIFT_CACHE_ALIGNMENT);
 
   const int count = ci->hydro.count;
-  const struct part *restrict parts = ci->hydro.parts;
+  const size_t first = ci->hydro.first;
   const double loc[3] = {ci->loc[0], ci->loc[1], ci->loc[2]};
   const double max_dx = ci->hydro.dx_max_part;
   const float pos_padded[3] = {-(2. * ci->width[0] + max_dx),
@@ -534,7 +534,7 @@ static __attribute__((always_inline)) INLINE int cache_read_force_particles(
   for (int i = 0; i < count; i++) {
 
     /* Skip inhibited particles. */
-    if (parts[i].time_bin >= time_bin_inhibited) {
+    if (part_get_time_bin(first+i) >= time_bin_inhibited) {
       x[i] = pos_padded[0];
       y[i] = pos_padded[1];
       z[i] = pos_padded[2];
@@ -548,19 +548,19 @@ static __attribute__((always_inline)) INLINE int cache_read_force_particles(
       continue;
     }
 
-    x[i] = (float)(parts[i].x[0] - loc[0]);
-    y[i] = (float)(parts[i].x[1] - loc[1]);
-    z[i] = (float)(parts[i].x[2] - loc[2]);
-    h[i] = parts[i].h;
-    m[i] = parts[i].mass;
-    vx[i] = parts[i].v[0];
-    vy[i] = parts[i].v[1];
-    vz[i] = parts[i].v[2];
-    rho[i] = parts[i].rho;
-    grad_h[i] = parts[i].force.f;
-    pOrho2[i] = parts[i].force.P_over_rho2;
-    balsara[i] = parts[i].force.balsara;
-    soundspeed[i] = parts[i].force.soundspeed;
+    x[i] = (float)(part_get_x_ind(first+i,0) - loc[0]);
+    y[i] = (float)(part_get_x_ind(first+i,1) - loc[1]);
+    z[i] = (float)(part_get_x_ind(first+i,2) - loc[2]);
+    h[i] = part_get_h(first+i);
+    m[i] = part_get_mass(first+i);
+    vx[i] = part_get_v_ind(first+i,0);
+    vy[i] = part_get_v_ind(first+i,1);
+    vz[i] = part_get_v_ind(first+i,2);
+    rho[i] = part_get_rho(first+i);
+    grad_h[i] = part_get_f_gradh(first+i);
+    pOrho2[i] = part_get_P_over_rho2(first + i);
+    balsara[i] = part_get_balsara(first + i);
+    soundspeed[i] = part_get_soundspeed(first + i);
   }
 
   /* Pad cache if there is a serial remainder. */
@@ -693,7 +693,7 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
     vy[i] = part_get_v_ind(idx, 1);
     vz[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
-    m[i] = part_get_mass(&parts_i[idx]);
+    m[i] = part_get_mass(idx);
 #endif
   }
 
@@ -795,7 +795,7 @@ cache_read_two_partial_cells_sorted(const struct cell *restrict const ci,
     vyj[i] = part_get_v_ind(idx, 1);
     vzj[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
-    mj[i] = part_get_mass(&parts_j[idx]);
+    mj[i] = part_get_mass(idx);
 #endif
   }
 
@@ -957,15 +957,12 @@ cache_read_two_partial_cells_sorted_force(
     vy[i] = part_get_v_ind(idx, 1);
     vz[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
-    error(
-        "Double-check this once getters/setters are implemented for gadget2 "
-        "SPH.");
-    m[i] = part_get_mass(&parts_i[idx]);
-    rho[i] = part_get_rho(&parts_i[idx]);
-    grad_h[i] = part_get_force_f(&parts_i[idx]);
-    pOrho2[i] = part_get_P_over_rho2(&parts_i[idx]);
-    balsara[i] = part_get_balsara(&parts_i[idx]);
-    soundspeed[i] = part_get_soundspeed(&parts_i[idx]);
+    m[i] = part_get_mass(idx);
+    rho[i] = part_get_rho(idx);
+    grad_h[i] = part_get_force_f(idx);
+    pOrho2[i] = part_get_P_over_rho2(idx);
+    balsara[i] = part_get_balsara(idx);
+    soundspeed[i] = part_get_soundspeed(idx);
 #endif
   }
 
@@ -1044,12 +1041,12 @@ cache_read_two_partial_cells_sorted_force(
     vyj[i] = part_get_v_ind(idx, 1);
     vzj[i] = part_get_v_ind(idx, 2);
 #ifdef GADGET2_SPH
-    mj[i] = parts_j[idx].mass;
-    rhoj[i] = parts_j[idx].rho;
-    grad_hj[i] = parts_j[idx].force.f;
-    pOrho2j[i] = parts_j[idx].force.P_over_rho2;
-    balsaraj[i] = parts_j[idx].force.balsara;
-    soundspeedj[i] = parts_j[idx].force.soundspeed;
+    mj[i] = part_get_mass(idx);
+    rhoj[i] = part_get_rho(idx);
+    grad_hj[i] = part_get_f_gradh(idx);
+    pOrho2j[i] = part_get_P_over_rho2(idx);
+    balsaraj[i] = part_get_balsara(idx);
+    soundspeedj[i] = part_get_soundspeed(idx);
 #endif
   }
 

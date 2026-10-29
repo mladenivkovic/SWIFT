@@ -39,11 +39,10 @@
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
  * struct).
  */
 static INLINE void tracers_after_init(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time) {}
@@ -59,11 +58,10 @@ static INLINE void tracers_after_init(
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
  * struct).
  */
 static INLINE void tracers_after_drift(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time) {}
@@ -74,9 +72,7 @@ static INLINE void tracers_after_drift(
  *
  * Nothing to do here.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
- * struct).
+ * @param p Index of the particle data.
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
  * @param with_cosmology Are we running a cosmological simulation?
@@ -89,14 +85,14 @@ static INLINE void tracers_after_drift(
  * num_snapshot_triggers_part)
  */
 static INLINE void tracers_after_timestep_part(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time,
     const double time_step_length, const int *const tracers_triggers_started) {}
 
 static INLINE void tracers_after_recording_trigger_part(
-    struct xpart *xp, const int trigger_index, const double time_to_remove) {}
+    const size_t pind, const int trigger_index, const double time_to_remove) {}
 
 /**
  * @brief Update the star particle tracers just after its time-step has been
@@ -176,11 +172,10 @@ static INLINE void tracers_after_recording_trigger_sink(
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
  * struct).
  */
 static INLINE void tracers_first_init_xpart(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling) {}
@@ -236,7 +231,6 @@ static INLINE void tracers_first_init_sink(struct sink *sink,
  *
  * Nothing to do here.
  *
- * @param xp The extended particle data.
  * @param delta_p_magnitude Norm of the momentum received (internal physical
  * units).
  * @param delta_u Specific internal energy received (internal physical units).
@@ -244,7 +238,7 @@ static INLINE void tracers_first_init_sink(struct sink *sink,
  * delta_p_magnitude (internal physical units).
  */
 static INLINE void tracers_after_stellar_winds_feedback_part(
-    struct xpart *xp, const float delta_p_magnitude, const float delta_u,
+    const float delta_p_magnitude, const float delta_u,
     const float kick_velocity) {}
 
 /**
@@ -253,7 +247,6 @@ static INLINE void tracers_after_stellar_winds_feedback_part(
  *
  * Nothing to do here.
  *
- * @param xp The extended particle data.
  * @param delta_p_magnitude Norm of the momentum received (internal physical
  * units).
  * @param delta_u Specific internal energy received (internal physical units).
@@ -261,7 +254,7 @@ static INLINE void tracers_after_stellar_winds_feedback_part(
  * delta_p_magnitude (internal physical units).
  */
 static INLINE void tracers_after_supernovae_feedback_part(
-    struct xpart *xp, const float delta_p_magnitude, const float delta_u,
+    const float delta_p_magnitude, const float delta_u,
     const float kick_velocity) {}
 
 /**
@@ -312,11 +305,10 @@ static INLINE void tracers_after_snia_event_spart(struct spart *sp,
  * Nothing to do here.
  *
  * @param p Pointer to the basic particle data.
- * @param xp The extended particle data.
  * (internal physical units)
  */
 static INLINE void tracers_before_black_holes_feedback(
-    const struct part *p, struct xpart *xp, const float scale_factor) {}
+    const size_t pind, const float scale_factor) {}
 
 /**
  * @brief Update the particles' tracer data after an AGN feedback
@@ -324,8 +316,7 @@ static INLINE void tracers_before_black_holes_feedback(
  *
  * Nothing to do here.
  *
- * @param p The particle data.
- * @param xp The extended particle data.
+ * @param pind Index of the particle data.
  * @param with_cosmology Are we running with cosmology?
  * @param scale_factor The current scale-factor (if running with cosmo)
  * @param time The current time (if running without cosmo)
@@ -333,7 +324,7 @@ static INLINE void tracers_before_black_holes_feedback(
  * units)
  */
 static INLINE void tracers_after_black_holes_feedback(
-    const struct part *p, struct xpart *xp, const int with_cosmology,
+    const size_t pind, const int with_cosmology,
     const float scale_factor, const double time, const double delta_energy) {}
 
 /**
@@ -342,10 +333,8 @@ static INLINE void tracers_after_black_holes_feedback(
  * Nothing to do here.
  *
  * @param p the #part.
- * @param xp the #xpart.
  */
-static INLINE void tracers_after_snapshot_part(const struct part *p,
-                                               struct xpart *xp) {}
+static INLINE void tracers_after_snapshot_part(const size_t pind) {}
 
 /**
  * @brief Tracer event called after a snapshot was written.
@@ -379,10 +368,9 @@ static INLINE void tracers_after_snapshot_sink(struct sink *sink) {}
  *
  * Nothing to do here.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
 __attribute__((always_inline)) INLINE static void tracers_split_part(
-    struct part *p, struct xpart *xp, const double n) {}
+    size_t pind, const double n) {}
 #endif /* SWIFT_TRACERS_NONE_H */

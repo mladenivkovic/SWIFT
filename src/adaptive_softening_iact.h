@@ -38,7 +38,7 @@
  * Computes equation 26 of Price & Monaghan 2007, MNRAS, 374, 4.
  * without the prefactor. The prefactor gets added in end_density().
  *
- * @param pind Index of the #part for which we compute terms.
+ * @param pind Index of the hydro particle for which we compute terms.
  * @param ui The ratio of the inter-particle distance to the smoothing length.
  * @param hi_inv The inverse the particle's smoothing length.
  * @param mj The mass of the other particle.
@@ -98,7 +98,7 @@ adaptive_softening_get_acc_term(const size_t pindi, const size_t pindj,
  *
  * No adaptive softening --> Nothing to do.
  *
- * @param pind Index of the #part for which we compute terms.
+ * @param pind Index of the hydro particle for which we compute terms.
  * @param ui The ratio of the inter-particle distance to the smoothing length.
  * @param hi_inv The inverse the particle's smoothing length.
  * @param mj The mass of the other particle.

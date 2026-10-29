@@ -56,13 +56,11 @@ feedback_compute_spart_timestep(
  *
  * Nothing to do here.
  *
- * @param p The #part to consider.
- * @param xp The #xpart to consider.
+ * @param pind Index of the hydro particle to consider.
  * @param cosmo The #cosmology.
  */
 __attribute__((always_inline)) INLINE static void feedback_update_part(
-    struct part *restrict p, struct xpart *restrict xp,
-    const struct engine *restrict e) {}
+    size_t pind, const struct engine *restrict e) {}
 
 /**
  * @brief Reset the gas particle-carried fields related to feedback at the
@@ -70,11 +68,10 @@ __attribute__((always_inline)) INLINE static void feedback_update_part(
  *
  * Nothing to do here.
  *
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void feedback_reset_part(
-    struct part *p, struct xpart *xp) {}
+    size_t pind) {}
 
 /**
  * @brief Prepares a s-particle for its feedback interactions

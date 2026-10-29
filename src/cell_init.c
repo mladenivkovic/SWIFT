@@ -50,13 +50,10 @@ void cell_init_part(struct cell *c, const struct engine *e) {
 
     /* Loop over all the gas particles in the cell */
     const size_t nr_parts = c->hydro.count;
-    for (size_t k = 0; k < nr_parts; k++) {
-      /* Get a handle on the part. */
-      struct part *const p = &c->hydro.parts[k];
-      struct xpart *const xp = &c->hydro.xparts[k];
-
+    const size_t first = c->hydro.first;
+    for (size_t pind = first; pind < first+nr_parts; pind++) {
       /* Ignore inhibited particles */
-      if (part_is_inhibited(p, e)) continue;
+      if (part_is_inhibited(pind, e)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
       if (p->ti_drift != e->ti_current) {
@@ -65,8 +62,8 @@ void cell_init_part(struct cell *c, const struct engine *e) {
       }
 #endif
 
-      if (part_is_active(p, e)) {
-        part_init(p, xp, e);
+      if (part_is_active(pind, e)) {
+        part_init(pind, e);
       }
     }
   }

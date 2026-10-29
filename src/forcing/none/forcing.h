@@ -48,11 +48,10 @@ struct forcing_terms {};
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
   /* Nothing to do here */
 }
 
@@ -86,11 +85,9 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {}
+    const long long id, const struct forcing_terms *terms, size_t pind) {}
 
 /**
  * @brief Sets the forcing of sparts prior to drift.
@@ -121,12 +118,10 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   /* No time-step size limit */
   return FLT_MAX;

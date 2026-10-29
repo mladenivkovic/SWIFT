@@ -29,6 +29,12 @@
  * al. 2009
  */
 
+#include "hydro.h"
+#include "inline.h"
+
+#include <math.h>
+#include <stddef.h>
+
 /**
  * @brief do chemistry computation after the runner_iact_density (symmetric
  * version)
@@ -37,18 +43,18 @@
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_chemistry(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *restrict chi = part_get_chemistry_data_p(pindi);
+  struct chemistry_part_data *restrict chj = part_get_chemistry_data_p(pindj);
 
   float wi;
   float wj;
@@ -79,18 +85,18 @@ __attribute__((always_inline)) INLINE static void runner_iact_chemistry(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle (not updated).
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_chemistry(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, const struct part *restrict pj, const float a,
+    size_t pindi, const size_t pindj, const float a,
     const float H) {
 
-  struct chemistry_part_data *chi = &pi->chemistry_data;
-  const struct chemistry_part_data *chj = &pj->chemistry_data;
+  struct chemistry_part_data *chi = part_get_chemistry_data_p(pindi);
+  const struct chemistry_part_data *chj = part_get_chemistry_data_p(pindj);
 
   float wi;
 
@@ -115,16 +121,16 @@ __attribute__((always_inline)) INLINE static void runner_iact_nonsym_chemistry(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_gradient_diffusion(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
+                               size_t pindi,
+                               size_t pindj, const float a,
                                const float H) {}
 
 /**
@@ -135,16 +141,16 @@ runner_iact_gradient_diffusion(const float r2, const float dx[3],
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
                                       const float hi, const float hj,
-                                      struct part *restrict pi,
-                                      struct part *restrict pj, const float a,
+                                      size_t pindi,
+                                      size_t pindj, const float a,
                                       const float H) {}
 
 /**
@@ -154,8 +160,8 @@ runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param time_base The time base used in order to convert integer to float
@@ -168,7 +174,7 @@ runner_iact_nonsym_gradient_diffusion(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, const float time_base, const integertime_t t_current,
     const struct cosmology *cosmo, const int with_cosmology,
     const struct chemistry_global_data *chem_data) {}
@@ -181,8 +187,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param time_base The time base used in order to convert integer to float
@@ -195,7 +201,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_diffusion(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_nonsym_diffusion(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, const float time_base, const integertime_t t_current,
     const struct cosmology *cosmo, const int with_cosmology,
     const struct chemistry_global_data *chem_data) {}

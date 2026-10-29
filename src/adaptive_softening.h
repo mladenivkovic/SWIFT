@@ -55,7 +55,7 @@
  * @ifdef Update the gravity softening based on the gas' smoothing length.
  *
  * @param gp the #gpart to update.
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param grav_props The properties of the gravity scheme.
  */
 INLINE static void gravity_update_softening(
@@ -123,7 +123,7 @@ INLINE static void adaptive_softening_end_density(
  * Softening is fixed: Nothing to do here.
  *
  * @param gp the #gpart to update.
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param grav_props The properties of the gravity scheme.
  */
 INLINE static void gravity_update_softening(

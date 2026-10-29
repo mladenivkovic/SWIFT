@@ -20,6 +20,8 @@
 #define SWIFT_DEFAULT_SINK_PART_H
 
 #include "timeline.h"
+#include "chemistry_struct.h"
+#include "sink_struct.h"
 
 #define sink_need_unique_id 1
 

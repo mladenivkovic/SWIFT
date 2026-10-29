@@ -27,11 +27,10 @@
 #include "part.h"
 #include "space.h"
 
-void printParticle(const struct part *parts, const struct xpart *xparts,
-                   long long int id, size_t N);
-void printgParticle(const struct gpart *gparts, const struct part *parts,
+void printParticle(const size_t pind, long long int id, size_t N);
+void printgParticle(const struct gpart *gparts, const size_t pindarts,
                     long long int id, size_t N);
-void printParticle_single(const struct part *p, const struct xpart *xp);
+void printParticle_single(const size_t pind);
 void printgParticle_single(struct gpart *gp);
 
 int checkSpacehmax(struct space *s);

@@ -30,6 +30,9 @@
 /* Config parameters. */
 #include <config.h>
 
+#include "inline.h"
+#include <stddef.h>
+
 #ifdef HYDRO_DOES_MASS_FLUX
 /* Import the right chemistry definition */
 #if defined(CHEMISTRY_AGORA)
@@ -61,7 +64,7 @@
  * @param chem_data #chemistry_global_data containing chemistry properties.
  */
 __attribute__((always_inline)) INLINE static void chemistry_kick_extra(
-    struct part *p, float dt_therm, float dt_grav, float dt_hydro,
+    size_t pind, float dt_therm, float dt_grav, float dt_hydro,
     float dt_kick_corr, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props,
     const struct chemistry_global_data *chem_data) {}
@@ -78,7 +81,7 @@ __attribute__((always_inline)) INLINE static void chemistry_kick_extra(
  * interaction.
  **/
 __attribute__((always_inline)) INLINE static void runner_iact_chemistry_fluxes(
-    struct part *restrict pi, struct part *restrict pj, float mass_flux,
+    size_t pindi, size_t pindj, float mass_flux,
     float flux_dt, int mode) {}
 #endif
 

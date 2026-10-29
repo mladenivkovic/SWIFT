@@ -56,13 +56,13 @@ chemistry_get_element_name(enum chemistry_element elem) {
  * Zeroes all the relevant arrays in preparation for the sums taking place in
  * the various smooth metallicity tasks
  *
- * @param p The particle to act upon
+ * @param pind Index of the particle to act upon
  * @param cd #chemistry_global_data containing chemistry informations.
  */
 __attribute__((always_inline)) INLINE static void chemistry_init_part(
-    struct part *restrict p, const struct chemistry_global_data *cd) {
+    size_t pind, const struct chemistry_global_data *cd) {
 
-  struct chemistry_part_data *cpd = &p->chemistry_data;
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
 
   for (int i = 0; i < chemistry_element_count; i++) {
     cpd->smoothed_metal_mass_fraction[i] = 0.f;
@@ -80,22 +80,22 @@ __attribute__((always_inline)) INLINE static void chemistry_init_part(
  *
  * This function requires the #hydro_end_density to have been called.
  *
- * @param p The particle to act upon.
+ * @param pind Index of the particle to act upon.
  * @param cd #chemistry_global_data containing chemistry informations.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void chemistry_end_density(
-    struct part *restrict p, const struct chemistry_global_data *cd,
+    size_t pind, const struct chemistry_global_data *cd,
     const struct cosmology *cosmo) {
 
   /* Some smoothing length multiples. */
-  const float h = p->h;
+  const float h =part_get_h(pind);
   const float h_inv = 1.0f / h; /* 1/h */
-  const float rho = hydro_get_comoving_density(p);
+  const float rho = hydro_get_comoving_density(pind);
   const float factor = pow_dimension(h_inv) / rho; /* 1 / (h^d * rho) */
-  const float m = hydro_get_mass(p);
+  const float m = hydro_get_mass(pind);
 
-  struct chemistry_part_data *cpd = &p->chemistry_data;
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
 
   for (int i = 0; i < chemistry_element_count; i++) {
     /* Final operation on the density (add self-contribution). */
@@ -122,16 +122,16 @@ __attribute__((always_inline)) INLINE static void chemistry_end_density(
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon.
+ * @param pind Index of the particle to act upon.
  * @param cd The global properties of the chemistry scheme.
  */
 __attribute__((always_inline)) INLINE static void chemistry_end_gradient(
-    struct part *p, const struct chemistry_global_data *cd) {}
+    size_t pind, const struct chemistry_global_data *cd) {}
 
 /**
  * @brief Updates to the chemistry data after the hydro force loop.
  *
- * @param p The particle to act upon.
+ * @param pind Index of the particle to act upon.
  * @param cosmo The current cosmological model.
  * @param with_cosmology Are we running with the cosmology?
  * @param time Current time of the simulation.
@@ -139,7 +139,7 @@ __attribute__((always_inline)) INLINE static void chemistry_end_gradient(
  * @param cd The global properties of the chemistry scheme.
  */
 __attribute__((always_inline)) INLINE static void chemistry_end_force(
-    struct part *restrict p, const struct cosmology *cosmo,
+    size_t pind, const struct cosmology *cosmo,
     const int with_cosmology, const double time, const double dt,
     const struct chemistry_global_data *cd) {}
 
@@ -148,8 +148,7 @@ __attribute__((always_inline)) INLINE static void chemistry_end_force(
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
- * @param xp The extended particle data to act upon
+ * @param pind Index of the particle to act upon
  * @param cosmo The current cosmological model.
  * @param dt_alpha The time-step used to evolve non-cosmological quantities such
  *                 as the artificial viscosity.
@@ -157,26 +156,22 @@ __attribute__((always_inline)) INLINE static void chemistry_end_force(
  * @param cd The global properties of the chemistry scheme.
  */
 __attribute__((always_inline)) INLINE static void chemistry_prepare_force(
-    struct part *restrict p, struct xpart *restrict xp,
-    const struct cosmology *cosmo, const float dt_alpha, const float dt_therm,
+    size_t pind, const struct cosmology *cosmo, const float dt_alpha, const float dt_therm,
     const struct chemistry_global_data *cd) {}
 
 /**
  * @brief Sets all particle fields to sensible values when the #part has 0 ngbs.
  *
- * @param p The particle to act upon
- * @param xp The extended particle data to act upon
+ * @param pind Index of the particle to act upon
  * @param cd #chemistry_global_data containing chemistry informations.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void
-chemistry_part_has_no_neighbours(struct part *restrict p,
-                                 struct xpart *restrict xp,
-                                 const struct chemistry_global_data *cd,
+chemistry_part_has_no_neighbours(size_t pind, const struct chemistry_global_data *cd,
                                  const struct cosmology *cosmo) {
 
   /* Just make all the smoothed fields default to the un-smoothed values */
-  struct chemistry_part_data *cpd = &p->chemistry_data;
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
 
   /* Total metal mass fraction */
   cpd->smoothed_metal_mass_fraction_total = cpd->metal_mass_fraction_total;
@@ -200,26 +195,24 @@ chemistry_part_has_no_neighbours(struct part *restrict p,
  * @param cosmo The current cosmological model.
  * @param data The global chemistry information.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void chemistry_first_init_part(
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo,
-    const struct chemistry_global_data *data, struct part *restrict p,
-    struct xpart *restrict xp) {
+    const struct chemistry_global_data *data, size_t pind) {
+
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
 
   /* Initialize mass fractions for total metals and each metal individually */
   if (data->initial_metal_mass_fraction_total != -1) {
-    p->chemistry_data.metal_mass_fraction_total =
-        data->initial_metal_mass_fraction_total;
+    cpd->metal_mass_fraction_total = data->initial_metal_mass_fraction_total;
 
     for (int elem = 0; elem < chemistry_element_count; ++elem) {
-      p->chemistry_data.metal_mass_fraction[elem] =
-          data->initial_metal_mass_fraction[elem];
+      cpd->metal_mass_fraction[elem] = data->initial_metal_mass_fraction[elem];
     }
   }
-  chemistry_init_part(p, data);
+  chemistry_init_part(pind, data);
 }
 
 /**
@@ -358,7 +351,7 @@ __attribute__((always_inline)) INLINE static float chemistry_timestep(
     const struct cosmology *restrict cosmo,
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
-    const struct chemistry_global_data *cd, const struct part *restrict p) {
+    const struct chemistry_global_data *cd, const size_t pind) {
   return FLT_MAX;
 }
 
@@ -500,14 +493,17 @@ __attribute__((always_inline)) INLINE static void chemistry_add_bpart_to_bpart(
  *
  * We only need to split the fields that are not fractions.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
 __attribute__((always_inline)) INLINE static void chemistry_split_part(
-    struct part *p, const double n) {
-  p->chemistry_data.mass_from_SNIa /= n;
-  p->chemistry_data.mass_from_SNII /= n;
-  p->chemistry_data.mass_from_AGB /= n;
+    size_t pind, const double n) {
+
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
+
+  cpd->mass_from_SNIa /= n;
+  cpd->mass_from_SNII /= n;
+  cpd->mass_from_AGB /= n;
 }
 
 /**
@@ -521,9 +517,9 @@ __attribute__((always_inline)) INLINE static void chemistry_split_part(
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_feedback(
-    const struct part *restrict p) {
+    const size_t pind) {
 
-  return p->chemistry_data.metal_mass_fraction_total;
+  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total;
 }
 
 /**
@@ -536,9 +532,9 @@ chemistry_get_total_metal_mass_fraction_for_feedback(
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static float const *
-chemistry_get_metal_mass_fraction_for_feedback(const struct part *restrict p) {
+chemistry_get_metal_mass_fraction_for_feedback(const size_t pind) {
 
-  return p->chemistry_data.metal_mass_fraction;
+  return part_get_chemistry_data_p(pind)->metal_mass_fraction;
 }
 
 /**
@@ -581,9 +577,9 @@ chemistry_get_star_metal_mass_fraction_for_feedback(
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_cooling(
-    const struct part *restrict p) {
+    const size_t pind) {
 
-  return p->chemistry_data.smoothed_metal_mass_fraction_total;
+  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total;
 }
 
 /**
@@ -595,9 +591,9 @@ chemistry_get_total_metal_mass_fraction_for_cooling(
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static float const *
-chemistry_get_metal_mass_fraction_for_cooling(const struct part *restrict p) {
+chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
 
-  return p->chemistry_data.smoothed_metal_mass_fraction;
+  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -610,9 +606,9 @@ chemistry_get_metal_mass_fraction_for_cooling(const struct part *restrict p) {
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_star_formation(
-    const struct part *restrict p) {
+    const size_t pind) {
 
-  return p->chemistry_data.smoothed_metal_mass_fraction_total;
+  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction_total;
 }
 
 /**
@@ -624,10 +620,9 @@ chemistry_get_total_metal_mass_fraction_for_star_formation(
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static float const *
-chemistry_get_metal_mass_fraction_for_star_formation(
-    const struct part *restrict p) {
+chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
 
-  return p->chemistry_data.smoothed_metal_mass_fraction;
+  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -637,9 +632,9 @@ chemistry_get_metal_mass_fraction_for_star_formation(
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static float
-chemistry_get_total_metal_mass_for_stats(const struct part *restrict p) {
+chemistry_get_total_metal_mass_for_stats(const size_t pind) {
 
-  return p->chemistry_data.metal_mass_fraction_total * hydro_get_mass(p);
+  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total * hydro_get_mass(pind);
 }
 
 /**
@@ -683,14 +678,13 @@ chemistry_get_star_total_metal_mass_fraction_for_luminosity(
  * @brief Extra chemistry operations to be done during the drift.
  *
  * @param p Particle to act upon.
- * @param xp The extended particle data to act upon.
  * @param dt_drift The drift time-step for positions.
  * @param dt_therm The drift time-step for thermal quantities.
  * @param cosmo The current cosmological model.
  * @param chem_data The global properties of the chemistry scheme.
  */
 __attribute__((always_inline)) INLINE static void chemistry_predict_extra(
-    struct part *p, struct xpart *xp, float dt_drift, float dt_therm,
+    size_t pind, float dt_drift, float dt_therm,
     const struct cosmology *cosmo,
     const struct chemistry_global_data *chem_data) {}
 

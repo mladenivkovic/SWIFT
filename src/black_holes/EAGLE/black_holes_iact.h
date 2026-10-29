@@ -42,7 +42,6 @@
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
  * @param pindj Index of second particle (gas, not updated).
- * @param xpj The extended data of the second particle (not updated).
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -147,7 +146,7 @@ runner_iact_nonsym_bh_gas_density(
       error(
           "Invalid denominator for BH particle %lld and gas particle "
           "%lld in Bondi rate calculation.",
-          bi->id, pj->id);
+          bi->id,part_get_id(pindj));
 #endif
     const double denominator_inv = 1. / sqrt(denominator2);
 
@@ -163,7 +162,7 @@ runner_iact_nonsym_bh_gas_density(
 #ifdef DEBUG_INTERACTIONS_BH
   /* Update ngb counters */
   if (si->num_ngb_density < MAX_NUM_OF_NEIGHBOURS_BH)
-    bi->ids_ngbs_density[si->num_ngb_density] = pj->id;
+    bi->ids_ngbs_density[si->num_ngb_density] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_density;
@@ -227,7 +226,7 @@ runner_iact_nonsym_bh_gas_density(
       /* Minimise separation between the gas particles and the BH. The rays
        * structs with smaller ids in the ray array will refer to the particles
        * with smaller distances to the BH. */
-      ray_minimise_distance(pj->rho, bi->rays, arr_size, gas_id, mj);
+      ray_minimise_distance(part_get_rho(pindj), bi->rays, arr_size, gas_id, mj);
       break;
     }
     case AGN_random_ngb_model: {
@@ -449,7 +448,7 @@ runner_iact_nonsym_bh_gas_swallow(
 
     /* Correct for nibbling the particle mass that is stored in rays */
     for (int i = 0; i < eagle_blackhole_number_of_rays; i++) {
-      if (bi->rays[i].id_min_length == pj->id) bi->rays[i].mass = new_gas_mass;
+      if (bi->rays[i].id_min_length ==part_get_id(pindj)) bi->rays[i].mass = new_gas_mass;
     }
 
     /* Transfer (dynamical) mass from the gas particle to the BH */
@@ -470,17 +469,17 @@ runner_iact_nonsym_bh_gas_swallow(
         nibble_mass * (dx[0] * dv[1] - dx[1] * dv[0]);
 
     /* Update the BH momentum and velocity. Again, no change to gas here. */
-    const float bi_mom[3] = {bi_mass_orig * bi->v[0] + nibble_mass * pj->v[0],
-                             bi_mass_orig * bi->v[1] + nibble_mass * pj->v[1],
-                             bi_mass_orig * bi->v[2] + nibble_mass * pj->v[2]};
+    const float bi_mom[3] = {bi_mass_orig * bi->v[0] + nibble_mass *part_get_v_ind(pindj, 0),
+                             bi_mass_orig * bi->v[1] + nibble_mass *part_get_v_ind(pindj, 1),
+                             bi_mass_orig * bi->v[2] + nibble_mass *part_get_v_ind(pindj, 2)};
 
     bi->v[0] = bi_mom[0] / bi->mass;
     bi->v[1] = bi_mom[1] / bi->mass;
     bi->v[2] = bi_mom[2] / bi->mass;
 
     /* Update the BH and also gas metal masses */
-    struct chemistry_bpart_data *bi_chem = &bi->chemistry_data;
-    struct chemistry_part_data *pj_chem = &pj->chemistry_data;
+    struct chemistry_bpart_data *restrict bi_chem = &bi->chemistry_data;
+    struct chemistry_part_data *restrict pj_chem = part_get_chemistry_data_p(pindj);
     chemistry_transfer_part_to_bpart(
         bi_chem, pj_chem, nibble_mass * excess_fraction,
         nibble_mass * excess_fraction / pj_mass_orig);
@@ -505,7 +504,7 @@ runner_iact_nonsym_bh_gas_swallow(
        * candidates wanting to swallow it */
       if (bhpj->swallow_id < bi->id) {
 
-        message("BH %lld wants to swallow gas particle %lld", bi->id, pj->id);
+        message("BH %lld wants to swallow gas particle %lld", bi->id,part_get_id(pindj));
 
         bhpj->swallow_id = bi->id;
 
@@ -799,7 +798,7 @@ runner_iact_nonsym_bh_gas_feedback(
        * The energy the particle receives is proportional to the number of rays
        * (num_of_energy_inj_received_by_gas) to which the particle was found to
        * be closest. */
-      const double u_init = hydro_get_physical_internal_energy(pj, xpj, cosmo);
+      const double u_init = hydro_get_physical_internal_energy(pj, cosmo);
       const float delta_u = bi->to_distribute.AGN_delta_u *
                             (float)num_of_energy_inj_received_by_gas;
       const double u_new = u_init + delta_u;

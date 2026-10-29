@@ -20,6 +20,6 @@
 #define SWIFT_CHEMISTRY_AGORA_DEBUG_H
 
 __attribute__((always_inline)) INLINE static void chemistry_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_CHEMISTRY_AGORA_DEBUG_H */

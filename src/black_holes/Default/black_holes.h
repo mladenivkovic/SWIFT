@@ -212,7 +212,7 @@ __attribute__((always_inline)) INLINE static double black_holes_get_jet_power(
  * a gas particle.
  *
  * @param bp The #bpart to update.
- * @param pind Index of the #part that is swallowed.
+ * @param pind Index of the hydro particle that is swallowed.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
@@ -334,7 +334,7 @@ black_holes_store_potential_in_part(struct black_holes_part_data *p_data,
  * @param props The properties of the black hole scheme.
  * @param constants The physical constants in internal units.
  * @param cosmo The current cosmological model.
- * @param pind Index of the #part that became a black hole.
+ * @param pind Index of the hydro particle that became a black hole.
  * @param ti_current the current time on the time-line.
  */
 INLINE static void black_holes_create_from_gas(

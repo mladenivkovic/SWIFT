@@ -207,7 +207,7 @@ void cell_recursively_shift_gparts(struct cell *c,
  */
 struct spart *cell_add_spart(struct engine *e, struct cell *const c) {
 
-  /* Perform some basic consitency checks */
+  /* Perform some basic consistency checks */
   if (c->nodeID != engine_rank) error("Adding spart on a foreign node");
   if (c->stars.ti_old_part != e->ti_current) error("Undrifted cell!");
   if (c->split) error("Addition of spart performed above the leaf level");
@@ -560,9 +560,8 @@ struct gpart *cell_add_gpart(struct engine *e, struct cell *c) {
       if (gpart_is_inhibited(&c->grav.parts[i + 1], e)) continue;
 
       if (gparts[i + 1].type == swift_type_gas) {
-        struct part *p = &s->parts[-gparts[i + 1].id_or_neg_offset];
-        struct gpart *gp = part_get_gpart(p);
-        part_set_gpart(p, gp + 1);
+        size_t pind = -gparts[i + 1].id_or_neg_offset;
+        part_set_gpart(pind, part_get_gpart(pind)+1);
       } else if (gparts[i + 1].type == swift_type_stars) {
         s->sparts[-gparts[i + 1].id_or_neg_offset].gpart++;
       } else if (gparts[i + 1].type == swift_type_sink) {
@@ -623,26 +622,24 @@ struct gpart *cell_add_gpart(struct engine *e, struct cell *c) {
  *
  * @param e The #engine running on this node.
  * @param c The #cell from which to remove the particle.
- * @param p The #part to remove.
- * @param xp The extended data of the particle to remove.
+ * @param pind Index of the particle to remove.
  */
-void cell_remove_part(const struct engine *e, struct cell *c, struct part *p,
-                      struct xpart *xp) {
+void cell_remove_part(const struct engine *e, struct cell *c, size_t pind) {
   /* Quick cross-check */
   if (c->nodeID != e->nodeID)
     error("Can't remove a particle in a foreign cell.");
 
   /* Don't remove a particle twice */
-  if (part_get_time_bin(p) == time_bin_inhibited) return;
+  if (part_get_time_bin(pind) == time_bin_inhibited) return;
 
   /* Mark the particle as inhibited */
-  part_set_time_bin(p, time_bin_inhibited);
+  part_set_time_bin(pind, time_bin_inhibited);
   /* Mark the RT time bin as inhibited as well,
    * so part_is_rt_active() checks work as intended */
-  part_set_rt_time_bin(p, time_bin_inhibited);
+  part_set_rt_time_bin(pind, time_bin_inhibited);
 
   /* Mark the gpart as inhibited and stand-alone */
-  struct gpart *gp = part_get_gpart(p);
+  struct gpart *gp = part_get_gpart(pind);
   if (gp) {
     gp->time_bin = time_bin_inhibited;
     gp->id_or_neg_offset = 1;
@@ -657,7 +654,7 @@ void cell_remove_part(const struct engine *e, struct cell *c, struct part *p,
   }
 
   /* Un-link the part */
-  part_set_gpart(p, NULL);
+  part_set_gpart(pind, NULL);
 }
 
 /**
@@ -822,33 +819,32 @@ void cell_remove_sink(const struct engine *e, struct cell *c,
  *
  * @param e The #engine running on this node.
  * @param c The #cell from which to remove the particle.
- * @param p The #part to remove.
- * @param xp The extended data of the particle to remove.
+ * @param pind Index of the hydro particle to remove.
  *
  * @return Pointer to the #gpart the #part has become. It carries the
  * ID of the #part and has a dark matter type.
  */
 struct gpart *cell_convert_part_to_gpart(const struct engine *e, struct cell *c,
-                                         struct part *p, struct xpart *xp) {
+                                         size_t pind) {
   /* Quick cross-checks */
   if (c->nodeID != e->nodeID)
     error("Can't remove a particle in a foreign cell.");
 
   /* Get a handle */
-  struct gpart *gp = part_get_gpart(p);
+  struct gpart *gp = part_get_gpart(pind);
 
   if (gp == NULL)
     error("Trying to convert part without gpart friend to dark matter!");
 
   /* Mark the particle as inhibited */
-  part_set_time_bin(p, time_bin_inhibited);
+  part_set_time_bin(pind, time_bin_inhibited);
 
   /* Un-link the part */
-  part_set_gpart(p, NULL);
+  part_set_gpart(pind, NULL);
 
   /* Mark the gpart as dark matter */
   gp->type = swift_type_dark_matter;
-  gp->id_or_neg_offset = part_get_id(p);
+  gp->id_or_neg_offset = part_get_id(pind);
 
 #ifdef SWIFT_DEBUG_CHECKS
   gp->ti_kick = part_get_ti_kick(p);
@@ -910,30 +906,29 @@ struct gpart *cell_convert_spart_to_gpart(const struct engine *e,
 }
 
 /**
- * @brief "Remove" a #part from a #cell and replace it with a #spart
+ * @brief "Remove" a hydro particle from a #cell and replace it with a #spart
  * connected to the same #gpart.
  *
- * Note that the #part is not destroyed. The pointer is still valid
- * after this call and the properties of the #part are not altered
+ * Note that the particle is not destroyed. The pointers are still valid
+ * after this call and the properties of the particle are not altered
  * apart from the time-bin and #gpart pointer.
  * The particle is inhibited and will officially be removed at the next
  * rebuild.
  *
  * @param e The #engine.
  * @param c The #cell from which to remove the #part.
- * @param p The #part to remove (must be inside c).
- * @param xp The extended data of the #part.
+ * @param pind Index of the hydro particle to remove (must be inside c).
  *
  * @return A fresh #spart with the same ID, position, velocity and
  * time-bin as the original #part.
  */
 struct spart *cell_convert_part_to_spart(struct engine *e, struct cell *c,
-                                         struct part *p, struct xpart *xp) {
+                                         size_t pind) {
   /* Quick cross-check */
   if (c->nodeID != e->nodeID)
     error("Can't remove a particle in a foreign cell.");
 
-  if (part_get_gpart(p) == NULL)
+  if (part_get_gpart(pind) == NULL)
     error("Trying to convert part without gpart friend to star!");
 
   /* Create a fresh (empty) spart */
@@ -943,12 +938,12 @@ struct spart *cell_convert_part_to_spart(struct engine *e, struct cell *c,
   if (sp == NULL) return NULL;
 
   /* Copy over the distance since rebuild */
-  sp->x_diff[0] = xp->x_diff[0];
-  sp->x_diff[1] = xp->x_diff[1];
-  sp->x_diff[2] = xp->x_diff[2];
+  sp->x_diff[0] = part_get_x_diff_ind(pind, 0);
+  sp->x_diff[1] = part_get_x_diff_ind(pind, 1);
+  sp->x_diff[2] = part_get_x_diff_ind(pind, 2);
 
   /* Destroy the gas particle and get it's gpart friend */
-  struct gpart *gp = cell_convert_part_to_gpart(e, c, p, xp);
+  struct gpart *gp = cell_convert_part_to_gpart(e, c, pind);
 
   /* Assign the ID back */
   sp->id = gp->id_or_neg_offset;
@@ -976,7 +971,7 @@ struct spart *cell_convert_part_to_spart(struct engine *e, struct cell *c,
 #endif
 
   /* Set a smoothing length */
-  sp->h = part_get_h(p);
+  sp->h = part_get_h(pind);
 
   /* Give the new particle the correct depth */
   cell_set_spart_h_depth(sp, c);
@@ -986,25 +981,23 @@ struct spart *cell_convert_part_to_spart(struct engine *e, struct cell *c,
 }
 
 /**
- * @brief Add a new #spart based on a #part and link it to a new #gpart.
- * The part and xpart are not changed.
+ * @brief Add a new #spart based on a hydro particle and link it to a new
+ * #gpart. The particle data are not changed.
  *
  * @param e The #engine.
  * @param c The #cell from which to remove the #part.
- * @param p The #part to remove (must be inside c).
- * @param xp The extended data of the #part.
+ * @param pind Index of the hydro particle to remove (must be inside c).
  *
  * @return A fresh #spart with a different ID, but same position,
  * velocity and time-bin as the original #part.
  */
 struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
-                                             const struct part *p,
-                                             const struct xpart *xp) {
+                                             const size_t pind) {
   /* Quick cross-check */
   if (c->nodeID != e->nodeID)
     error("Can't spawn a particle in a foreign cell.");
 
-  if (part_get_gpart(p) == NULL)
+  if (part_get_gpart(pind) == NULL)
     error("Trying to create a new spart from a part without gpart friend!");
 
   /* Create a fresh (empty) spart */
@@ -1014,9 +1007,9 @@ struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
   if (sp == NULL) return NULL;
 
   /* Copy over the distance since rebuild */
-  sp->x_diff[0] = xp->x_diff[0];
-  sp->x_diff[1] = xp->x_diff[1];
-  sp->x_diff[2] = xp->x_diff[2];
+  sp->x_diff[0] = part_get_x_diff_ind(pind,0);
+  sp->x_diff[1] = part_get_x_diff_ind(pind,1);
+  sp->x_diff[2] = part_get_x_diff_ind(pind,2);
 
   /* Create a new gpart */
   struct gpart *gp = cell_add_gpart(e, c);
@@ -1029,7 +1022,7 @@ struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
   }
 
   /* Copy the gpart */
-  *gp = *part_get_gpart(p);
+  *gp = *part_get_gpart(pind);
 
   /* Assign the ID. */
   sp->id = space_get_new_unique_id(e->s);
@@ -1043,14 +1036,14 @@ struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
   gp->time_bin = sp->time_bin;
 
   /* Synchronize masses, positions and velocities */
-  sp->mass = hydro_get_mass(p);
-  const double *const px = part_get_const_x(p);
+  sp->mass = hydro_get_mass(pind);
+  const double *const px = part_get_const_x(pind);
   sp->x[0] = px[0];
   sp->x[1] = px[1];
   sp->x[2] = px[2];
-  sp->v[0] = xp->v_full[0];
-  sp->v[1] = xp->v_full[1];
-  sp->v[2] = xp->v_full[2];
+  sp->v[0] = part_get_v_full_ind(pind, 0);
+  sp->v[1] = part_get_v_full_ind(pind, 1);
+  sp->v[2] = part_get_v_full_ind(pind, 2);
 
 #ifdef SWIFT_DEBUG_CHECKS
   sp->ti_kick = part_get_ti_kick(p);
@@ -1058,7 +1051,7 @@ struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
 #endif
 
   /* Set a smoothing length */
-  sp->h = part_get_h(p);
+  sp->h = part_get_h(pind);
 
   /* Give the new particle the correct depth */
   cell_set_spart_h_depth(sp, c);
@@ -1068,30 +1061,29 @@ struct spart *cell_spawn_new_spart_from_part(struct engine *e, struct cell *c,
 }
 
 /**
- * @brief "Remove" a #part from a #cell and replace it with a #sink
+ * @brief "Remove" a particle from a #cell and replace it with a #sink
  * connected to the same #gpart.
  *
- * Note that the #part is not destroyed. The pointer is still valid
- * after this call and the properties of the #part are not altered
+ * Note that the hydro particle is not destroyed. The pointers are still valid
+ * after this call and the properties of the particle are not altered
  * apart from the time-bin and #gpart pointer.
  * The particle is inhibited and will officially be removed at the next
  * rebuild.
  *
  * @param e The #engine.
  * @param c The #cell from which to remove the #part.
- * @param p The #part to remove (must be inside c).
- * @param xp The extended data of the #part.
+ * @param pind Index of the particle to remove (must be inside c).
  *
  * @return A fresh #sink with the same ID, position, velocity and
  * time-bin as the original #part.
  */
 struct sink *cell_convert_part_to_sink(struct engine *e, struct cell *c,
-                                       struct part *p, struct xpart *xp) {
+                                       size_t pind) {
   /* Quick cross-check */
   if (c->nodeID != e->nodeID)
     error("Can't remove a particle in a foreign cell.");
 
-  if (part_get_gpart(p) == NULL)
+  if (part_get_gpart(pind) == NULL)
     error("Trying to convert part without gpart friend to sink!");
 
   /* Create a fresh (empty) sink */
@@ -1101,15 +1093,15 @@ struct sink *cell_convert_part_to_sink(struct engine *e, struct cell *c,
   if (sp == NULL) return NULL;
 
   /* Copy over the distance since rebuild */
-  sp->x_diff[0] = xp->x_diff[0];
-  sp->x_diff[1] = xp->x_diff[1];
-  sp->x_diff[2] = xp->x_diff[2];
+  sp->x_diff[0] = part_get_x_diff_ind(pind,0);
+  sp->x_diff[1] = part_get_x_diff_ind(pind,1);
+  sp->x_diff[2] = part_get_x_diff_ind(pind,2);
 
   /* Destroy the gas particle and get it's gpart friend */
-  struct gpart *gp = cell_convert_part_to_gpart(e, c, p, xp);
+  struct gpart *gp = cell_convert_part_to_gpart(e, c, pind);
 
   /* Assign the ID back */
-  sp->id = part_get_id(p);
+  sp->id = part_get_id(pind);
   gp->type = swift_type_sink;
 
   /* Re-link things */

@@ -19,12 +19,16 @@
 #ifndef SWIFT_BLACK_HOLES_SPIN_JET_DEBUG_H
 #define SWIFT_BLACK_HOLES_SPIN_JET_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void black_holes_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "inline.h"
+#include <stddef.h>
 
-  warning("[PID%lld] black_holes_part_data:", p->id);
-  warning("[PID%lld] swallow_id=%lld, potential=%.3e", p->id,
-          p->black_holes_data.swallow_id, p->black_holes_data.potential);
+__attribute__((always_inline)) INLINE static void black_holes_debug_particle(
+    const size_t pind) {
+
+  const struct black_holes_part_data *restrict bhpd = part_get_black_holes_data_p(pind);
+  warning("[PID%lld] black_holes_part_data:", part_get_id(pind));
+  warning("[PID%lld] swallow_id=%lld, potential=%.3e",part_get_id(pind),
+         bhpd->swallow_id, bhpd->potential);
 }
 
 #endif /* SWIFT_BLACK_HOLES_SPIN_JET_DEBUG_H */

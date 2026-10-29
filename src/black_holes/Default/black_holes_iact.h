@@ -34,7 +34,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas, not updated).
+ * @param pindj Index of second particle (gas, not updated).
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -68,7 +68,7 @@ runner_iact_nonsym_bh_gas_density(
 #ifdef DEBUG_INTERACTIONS_BH
   /* Update ngb counters */
   if (si->num_ngb_density < MAX_NUM_OF_NEIGHBOURS_BH)
-    bi->ids_ngbs_density[si->num_ngb_density] = pj->id;
+    bi->ids_ngbs_density[si->num_ngb_density] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_density;
@@ -85,7 +85,7 @@ runner_iact_nonsym_bh_gas_density(
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -114,7 +114,7 @@ runner_iact_nonsym_bh_gas_repos(
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -189,7 +189,7 @@ runner_iact_nonsym_bh_bh_swallow(const float r2, const float dx[3],
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param bi First particle (black hole).
- * @param pj Second particle (gas)
+ * @param pindj Index of second particle (gas)
  * @param with_cosmology Are we doing a cosmological run?
  * @param cosmo The cosmological model.
  * @param grav_props The properties of the gravity scheme (softening, G, ...).
@@ -208,7 +208,7 @@ runner_iact_nonsym_bh_gas_feedback(
 #ifdef DEBUG_INTERACTIONS_BH
   /* Update ngb counters */
   if (si->num_ngb_force < MAX_NUM_OF_NEIGHBOURS_BH)
-    bi->ids_ngbs_force[si->num_ngb_force] = pj->id;
+    bi->ids_ngbs_force[si->num_ngb_force] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_force;

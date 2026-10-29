@@ -46,7 +46,6 @@ struct star_formation {};
  *
  * @param starform the star formation law properties to use.
  * @param p the gas particles.
- * @param xp the additional properties of the gas particles.
  * @param phys_const the physical constants in internal units.
  * @param cosmo the cosmological parameters and properties.
  * @param hydro_props The properties of the hydro scheme.
@@ -55,7 +54,7 @@ struct star_formation {};
  *
  */
 INLINE static int star_formation_is_star_forming(
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const struct star_formation *starform, const struct phys_const *phys_const,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cooling_function_data *cooling,
@@ -70,8 +69,7 @@ INLINE static int star_formation_is_star_forming(
  *
  * Nothing to do here.
  *
- * @param p #part.
- * @param xp the #xpart.
+ * @param pind Index of the particle
  * @param starform the star formation law properties to use
  * @param phys_const the physical constants in internal units.
  * @param hydro_props The properties of the hydro scheme.
@@ -79,8 +77,7 @@ INLINE static int star_formation_is_star_forming(
  * @param dt_star The time-step of this particle.
  */
 INLINE static void star_formation_compute_SFR(
-    const struct part *p, struct xpart *xp,
-    const struct star_formation *starform, const struct phys_const *phys_const,
+    const size_t pind, const struct star_formation *starform, const struct phys_const *phys_const,
     const struct hydro_props *hydro_props, const struct cosmology *cosmo,
     const double dt_star) {}
 
@@ -90,15 +87,14 @@ INLINE static void star_formation_compute_SFR(
  *
  * No SF should occur, so return 0.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param starform The properties of the star formation model.
  * @param e The #engine (for random numbers).
  * @param dt_star The time-step of this particle
  * @return 1 if a conversion should be done, 0 otherwise.
  */
 INLINE static int star_formation_should_convert_to_star(
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const struct star_formation *starform, const struct engine *e,
     const double dt_star) {
 
@@ -108,15 +104,14 @@ INLINE static int star_formation_should_convert_to_star(
 /**
  * @brief Returns the number of new star particles to create per SF event.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param starform The properties of the star formation model.
  *
  * @return The number of extra star particles to generate per gas particles.
  *        (return 0 if the gas particle itself is to be converted)
  */
 INLINE static int star_formation_number_spart_to_spawn(
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const struct star_formation *starform) {
   return 0;
 }
@@ -124,15 +119,14 @@ INLINE static int star_formation_number_spart_to_spawn(
 /**
  * @brief Returns the number of particles to convert per SF event.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param starform The properties of the star formation model.
  *
  * @return The number of particles to generate per gas particles.
  *        (This has to be 0 or 1)
  */
 INLINE static int star_formation_number_spart_to_convert(
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const struct star_formation *starform) {
   return 0;
 }
@@ -142,14 +136,13 @@ INLINE static int star_formation_number_spart_to_convert(
  *
  * Nothing to do here.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param e The #engine.
  * @param starform The properties of the star formation model.
  * @param with_cosmology Are we running with cosmology switched on?
  */
 INLINE static void star_formation_update_part_not_SFR(
-    struct part *p, struct xpart *xp, const struct engine *e,
+    size_t pind, const struct engine *e,
     const struct star_formation *starform, const int with_cosmology) {}
 
 /**
@@ -158,10 +151,9 @@ INLINE static void star_formation_update_part_not_SFR(
  *
  * Nothing to do here.
  *
- * @param e The #engine
- * @param p the gas particles.
- * @param xp the additional properties of the gas particles.
+ * @param pind the gas particles.
  * @param sp the new created star particle with its properties.
+ * @param e The #engine
  * @param starform the star formation law properties to use.
  * @param phys_const the physical constants in internal units.
  * @param cosmo the cosmological parameters and properties.
@@ -172,7 +164,7 @@ INLINE static void star_formation_update_part_not_SFR(
  * respect to the sink position.
  */
 INLINE static void star_formation_copy_properties(
-    const struct part *p, const struct xpart *xp, struct spart *sp,
+    const size_t pind, struct spart *sp,
     const struct engine *e, const struct star_formation *starform,
     const struct cosmology *cosmo, const int with_cosmology,
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
@@ -215,11 +207,9 @@ INLINE static void starformation_print_backend(
  *
  * No star formation in this model --> we return 0
  *
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  */
-INLINE static float star_formation_get_SFR(const struct part *p,
-                                           const struct xpart *xp) {
+INLINE static float star_formation_get_SFR(const size_t pind) {
   return 0.f;
 }
 
@@ -228,28 +218,24 @@ INLINE static float star_formation_get_SFR(const struct part *p,
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
- * @param xp The extra particle to act upon
+ * @param pind Index of the particle to act upon
  * @param cd The global star_formation information.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void star_formation_end_density(
-    struct part *p, struct xpart *xp, const struct star_formation *cd,
-    const struct cosmology *cosmo) {}
+    size_t pind, const struct star_formation *cd, const struct cosmology *cosmo) {}
 
 /**
  * @brief Sets all particle fields to sensible values when the #part has 0 ngbs.
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
- * @param xp The extended particle data to act upon
+ * @param pind Index of the particle to act upon
  * @param cd #star_formation containing star_formation informations.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void
-star_formation_part_has_no_neighbours(struct part *p, struct xpart *xp,
-                                      const struct star_formation *cd,
+star_formation_part_has_no_neighbours(size_t pind, const struct star_formation *cd,
                                       const struct cosmology *cosmo) {}
 
 /**
@@ -262,7 +248,7 @@ star_formation_part_has_no_neighbours(struct part *p, struct xpart *xp,
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static void star_formation_init_part(
-    struct part *p, const struct star_formation *data) {}
+    size_t pind, const struct star_formation *data) {}
 
 /**
  * @brief Sets the star_formation properties of the (x-)particles to a valid
@@ -275,35 +261,31 @@ __attribute__((always_inline)) INLINE static void star_formation_init_part(
  * @param cosmo The current cosmological model.
  * @param data The global star_formation information used for this run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void
 star_formation_first_init_part(const struct phys_const *phys_const,
                                const struct unit_system *us,
                                const struct cosmology *cosmo,
                                const struct star_formation *data,
-                               const struct part *p, struct xpart *xp) {}
+                               const size_t pind) {}
 
 /**
  * @brief Split the star formation content of a particle into n pieces
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
 __attribute__((always_inline)) INLINE static void star_formation_split_part(
-    struct part *p, struct xpart *xp, const double n) {}
+    size_t pind, const double n) {}
 
 /**
  * @brief Deal with the case where no spart are available for star formation.
  *
  * @param e The #engine.
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void
-star_formation_no_spart_available(const struct engine *e, const struct part *p,
-                                  const struct xpart *xp) {
+star_formation_no_spart_available(const struct engine *e, const size_t pind) {
   /* Nothing to do, we just skip it and deal with it next step */
 }
 

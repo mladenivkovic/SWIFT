@@ -19,6 +19,14 @@
 #ifndef SWIFT_RAYS_H
 #define SWIFT_RAYS_H
 
+#include "cosmology.h"
+#include "inline.h"
+#include "minmax.h"
+#include "rays_struct.h"
+
+#include <float.h>
+#include <math.h>
+
 /**
  * @brief For a given feedback scheme, sets all fields in the ray struct
  * array at their default values

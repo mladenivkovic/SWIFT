@@ -68,11 +68,11 @@ __attribute__((always_inline)) INLINE static void sink_first_init_sink(
 /**
  * @brief Prepares a particle for the sink calculation.
  *
- * @param p The #part to act upon.
+ * @param pind Index of the hydro particle to act upon.
  * @param sink_props The properties of the sink particles scheme.
  */
 __attribute__((always_inline)) INLINE static void sink_init_part(
-    struct part *restrict p, const struct sink_props *sink_props) {}
+    size_t pind, const struct sink_props *sink_props) {}
 
 /**
  * @brief Prepares a sink-particle for its interactions
@@ -205,7 +205,6 @@ __attribute__((always_inline)) INLINE static void sink_prepare_swallow(
  * Note: called in runner_do_sink_formation
  *
  * @param p the gas particles.
- * @param xp the additional properties of the gas particles.
  * @param sink_props the sink properties to use.
  * @param phys_const the physical constants in internal units.
  * @param cosmo the cosmological parameters and properties.
@@ -216,7 +215,7 @@ __attribute__((always_inline)) INLINE static void sink_prepare_swallow(
  *
  */
 INLINE static int sink_is_forming(
-    const struct part *restrict p, const struct xpart *restrict xp,
+    const size_t pind,
     const struct sink_props *sink_props, const struct phys_const *phys_const,
     const struct cosmology *cosmo,
     const struct hydro_props *restrict hydro_props,
@@ -234,15 +233,14 @@ INLINE static int sink_is_forming(
  * No SF should occur, so return 0.
  * Note: called in runner_do_sink_formation
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param sink_props The properties of the sink model.
  * @param e The #engine (for random numbers).
  * @param dt_sink The time-step of this particle
  * @return 1 if a conversion should be done, 0 otherwise.
  */
 INLINE static int sink_should_convert_to_sink(
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const struct sink_props *sink_props, const struct engine *e,
     const double dt_sink) {
 
@@ -255,8 +253,7 @@ INLINE static int sink_should_convert_to_sink(
  *
  * Nothing to do here.
  *
- * @param p The gas particles.
- * @param xp The additional properties of the gas particles.
+ * @param pind Index of the gas particles.
  * @param sink the new created #sink particle.
  * @param e The #engine.
  * @param sink_props The sink properties to use.
@@ -268,7 +265,7 @@ INLINE static int sink_should_convert_to_sink(
  * @param cooling The cooling function to use.
  */
 INLINE static void sink_copy_properties(
-    const struct part *p, const struct xpart *xp, struct sink *sink,
+    const size_t pind, struct sink *sink,
     const struct engine *e, const struct sink_props *sink_props,
     const struct cosmology *cosmo, const int with_cosmology,
     const struct phys_const *phys_const,
@@ -277,7 +274,7 @@ INLINE static void sink_copy_properties(
     const struct cooling_function_data *restrict cooling) {
 
   /* Set a smoothing length */
-  sink->h = part_get_h(p);
+  sink->h = part_get_h(pind);
 }
 
 /**
@@ -285,12 +282,11 @@ INLINE static void sink_copy_properties(
  * a gas particle.
  *
  * @param sp The #sink to update.
- * @param p The #part that is swallowed.
- * @param xp The #xpart that is swallowed.
+ * @param pind Index of the hydro particle that is swallowed.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void sink_swallow_part(
-    struct sink *sp, const struct part *p, const struct xpart *xp,
+    struct sink *sp, const size_t pind,
     const struct cosmology *cosmo) {}
 
 /**
@@ -415,16 +411,13 @@ __attribute__((always_inline)) INLINE static void sink_store_potential_in_part(
  * Nothing to do here.
  *
  * @param e The #engine.
- * @param pi The #part for which we compute the quantities.
- * @param xpi The #xpart data of the particle #pi.
+ * @param pind Index of the hydro particle for which we compute the quantities.
  * @param pj A neighbouring #part of #pi.
- * @param xpj The #xpart data of the particle #pj.
  * @param cosmo The cosmological parameters and properties.
  * @param sink_props The sink properties to use.
  */
 INLINE static void sink_prepare_part_sink_formation_gas_criteria(
-    struct engine *e, struct part *restrict pi, struct xpart *restrict xpi,
-    struct part *restrict pj, struct xpart *restrict xpj,
+    struct engine *e, size_t pindi, size_t pindj,
     const struct cosmology *cosmo, const struct sink_props *sink_props) {}
 
 /**
@@ -434,15 +427,13 @@ INLINE static void sink_prepare_part_sink_formation_gas_criteria(
  * Nothing to do here.
  *
  * @param e The #engine.
- * @param pi The #part for which we compute the quantities.
- * @param xpi The #xpart data of the particle #pi.
+ * @param pind Index of the hydro particle for which we compute the quantities.
  * @param sj A neighbouring #sink of #p.
  * @param cosmo The cosmological parameters and properties.
  * @param sink_props The sink properties to use.
  */
 INLINE static void sink_prepare_part_sink_formation_sink_criteria(
-    struct engine *e, struct part *restrict pi, struct xpart *restrict xpi,
-    struct sink *restrict sj, const int with_cosmology,
+    struct engine *e, size_t pindi, struct sink *restrict sj, const int with_cosmology,
     const struct cosmology *cosmo, const struct sink_props *sink_props,
     const double time) {}
 

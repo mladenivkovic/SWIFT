@@ -20,8 +20,8 @@
 #define SWIFT_FORCING_H
 
 /**
- * @file src/potential.h
- * @brief Branches between the different external gravitational potentials.
+ * @file src/forcing.h
+ * @brief Branches between the different forcing terms.
  */
 
 /* Config parameters. */

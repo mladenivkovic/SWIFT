@@ -392,16 +392,15 @@ __attribute__((always_inline)) INLINE static double black_holes_get_jet_power(
  * a gas particle.
  *
  * @param bp The #bpart to update.
- * @param p The #part that is swallowed.
- * @param xp The #xpart that is swallowed.
+ * @param pind Index of the hydro particle that is swallowed.
  * @param cosmo The current cosmological model.
  */
 __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
-    struct bpart *bp, const struct part *p, const struct xpart *xp,
+    struct bpart *bp, const size_t pind,
     const struct cosmology *cosmo) {
 
   /* Get the current dynamical masses */
-  const float gas_mass = hydro_get_mass(p);
+  const float gas_mass = hydro_get_mass(pind);
   const float BH_mass = bp->mass;
 
   /* Increase the dynamical mass of the BH. */
@@ -409,14 +408,14 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
   bp->gpart->mass += gas_mass;
 
   /* Physical velocity difference between the particles */
-  const float dv[3] = {(bp->v[0] - p->v[0]) * cosmo->a_inv,
-                       (bp->v[1] - p->v[1]) * cosmo->a_inv,
-                       (bp->v[2] - p->v[2]) * cosmo->a_inv};
+  const float dv[3] = {(bp->v[0] -part_get_v_ind(pind, 0)) * cosmo->a_inv,
+                       (bp->v[1] -part_get_v_ind(pind, 1)) * cosmo->a_inv,
+                       (bp->v[2] -part_get_v_ind(pind, 2)) * cosmo->a_inv};
 
   /* Physical distance between the particles */
-  const float dx[3] = {(bp->x[0] - p->x[0]) * cosmo->a,
-                       (bp->x[1] - p->x[1]) * cosmo->a,
-                       (bp->x[2] - p->x[2]) * cosmo->a};
+  const float dx[3] = {(bp->x[0] -part_get_x_ind(pind, 0)) * cosmo->a,
+                       (bp->x[1] -part_get_x_ind(pind, 1)) * cosmo->a,
+                       (bp->x[2] -part_get_x_ind(pind, 2)) * cosmo->a};
 
   /* Collect the swallowed angular momentum */
   bp->swallowed_angular_momentum[0] +=
@@ -427,9 +426,9 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
       gas_mass * (dx[0] * dv[1] - dx[1] * dv[0]);
 
   /* Update the BH momentum */
-  const float BH_mom[3] = {BH_mass * bp->v[0] + gas_mass * p->v[0],
-                           BH_mass * bp->v[1] + gas_mass * p->v[1],
-                           BH_mass * bp->v[2] + gas_mass * p->v[2]};
+  const float BH_mom[3] = {BH_mass * bp->v[0] + gas_mass *part_get_v_ind(pind, 0),
+                           BH_mass * bp->v[1] + gas_mass *part_get_v_ind(pind, 1),
+                           BH_mass * bp->v[2] + gas_mass *part_get_v_ind(pind, 2)};
 
   bp->v[0] = BH_mom[0] / bp->mass;
   bp->v[1] = BH_mom[1] / bp->mass;
@@ -444,12 +443,12 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
       "(Delta_v = [%f, %f, %f] U_V, "
       "Delta_x = [%f, %f, %f] U_L, "
       "Delta_v_rad = %f)",
-      bp->id, p->id, -dv[0], -dv[1], -dv[2], -dx[0], -dx[1], -dx[2],
+      bp->id,part_get_id(pind), -dv[0], -dv[1], -dv[2], -dx[0], -dx[1], -dx[2],
       (dv[0] * dx[0] + dv[1] * dx[1] + dv[2] * dx[2]) / dr);
 
   /* Update the BH metal masses */
   struct chemistry_bpart_data *bp_chem = &bp->chemistry_data;
-  const struct chemistry_part_data *p_chem = &p->chemistry_data;
+  const struct chemistry_part_data *p_chem = part_get_chemistry_data_p(pind);
   chemistry_add_part_to_bpart(bp_chem, p_chem, gas_mass, BH_mass);
 
   /* This BH swallowed a gas particle */
@@ -461,7 +460,7 @@ __attribute__((always_inline)) INLINE static void black_holes_swallow_part(
   bp->ngb_mass -= gas_mass;
 
   /* The ray(s) should not point to the no-longer existing particle */
-  ray_reset_part_id(bp->rays, gear_blackhole_number_of_rays, p->id);
+  ray_reset_part_id(bp->rays, gear_blackhole_number_of_rays,part_get_id(pind));
 }
 
 /**
@@ -1198,14 +1197,13 @@ black_holes_store_potential_in_part(struct black_holes_part_data *p_data,
  * @param props The properties of the black hole scheme.
  * @param constants The physical constants in internal units.
  * @param cosmo The current cosmological model.
- * @param p The #part that became a black hole.
- * @param xp The #xpart that became a black hole.
+ * @param pind Index of the hydro particle that became a black hole.
  * @param ti_current the current time on the time-line.
  */
 INLINE static void black_holes_create_from_gas(
     struct bpart *bp, const struct black_holes_props *props,
     const struct phys_const *constants, const struct cosmology *cosmo,
-    const struct part *p, const struct xpart *xp,
+    const size_t pind,
     const integertime_t ti_current) {
 
   /* All the non-basic properties of the black hole have been zeroed
@@ -1239,9 +1237,9 @@ INLINE static void black_holes_create_from_gas(
   bp->split_data = xp->split_data;
 
   /* Initial metal masses */
-  const float gas_mass = hydro_get_mass(p);
-  struct chemistry_bpart_data *bp_chem = &bp->chemistry_data;
-  const struct chemistry_part_data *p_chem = &p->chemistry_data;
+  const float gas_mass = hydro_get_mass(pind);
+  struct chemistry_bpart_data *restrict bp_chem = &bp->chemistry_data;
+  const struct chemistry_part_data *restrict p_chem = part_get_chemistry_data_p(pind);
   chemistry_bpart_from_part(bp_chem, p_chem, gas_mass);
 
   /* No swallowed angular momentum */

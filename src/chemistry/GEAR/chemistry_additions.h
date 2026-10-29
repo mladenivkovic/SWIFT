@@ -20,15 +20,22 @@
 #ifndef SWIFT_CHEMISTRY_GEAR_ADDITIONS_H
 #define SWIFT_CHEMISTRY_GEAR_ADDITIONS_H
 
+#include "hydro.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Resets the metal mass fluxes for schemes that use them.
  *
- * @param p The particle to act upon.
+ * @param pind Index of the particle to act upon.
  */
 __attribute__((always_inline)) INLINE static void chemistry_reset_mass_fluxes(
-    struct part *restrict p) {
+    size_t pind) {
+
+  struct chemistry_part_data *restrict cpd = part_get_chemistry_data_p(pind);
   for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-    p->chemistry_data.metal_mass_fluxes[i] = 0.f;
+    cpd->metal_mass_fluxes[i] = 0.f;
   }
 }
 
@@ -47,47 +54,49 @@ __attribute__((always_inline)) INLINE static void chemistry_reset_mass_fluxes(
  * @param chem_data #chemistry_global_data containing chemistry properties.
  */
 __attribute__((always_inline)) INLINE static void chemistry_kick_extra(
-    struct part *p, float dt_therm, float dt_grav, float dt_hydro,
+    size_t pind, float dt_therm, float dt_grav, float dt_hydro,
     float dt_kick_corr, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props,
     const struct chemistry_global_data *chem_data) {
   /* For hydro schemes that exchange mass fluxes between the particles,
    * we want to advect the metals. */
-  if (p->flux.dt > 0.) {
+
+  struct chemistry_part_data* restrict cpd = part_get_chemistry_data_p(pind);
+
+  if (part_get_flux_dt(pind) > 0.) {
 
     /* Check for vacuum? */
-    if (p->conserved.mass + p->flux.mass <= 0.) {
+    if (part_get_conserved_mass(pind) + part_get_flux_mass(pind) <= 0.) {
       for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-        p->chemistry_data.metal_mass[i] = 0.;
-        p->chemistry_data.smoothed_metal_mass_fraction[i] = 0.;
+        cpd->metal_mass[i] = 0.;
+        cpd->smoothed_metal_mass_fraction[i] = 0.;
       }
-      chemistry_reset_mass_fluxes(p);
+      chemistry_reset_mass_fluxes(pind);
       /* Nothing left to do */
       return;
     }
 
     /* apply the metal mass fluxes and reset them */
-    const double *metal_fluxes = p->chemistry_data.metal_mass_fluxes;
+    const double *metal_fluxes = cpd->metal_mass_fluxes;
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-      p->chemistry_data.metal_mass[i] =
-          fmax(p->chemistry_data.metal_mass[i] + metal_fluxes[i], 0.);
+      cpd->metal_mass[i] = fmax(cpd->metal_mass[i] + metal_fluxes[i], 0.);
     }
 
 #ifdef SWIFT_DEBUG_CHECKS
     double sum = 0.;
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT - 1; i++) {
-      sum += p->chemistry_data.metal_mass[i];
+      sum += part_get_chemistry_data_p(pind)->metal_mass[i];
     }
     const double total_metal_mass =
-        p->chemistry_data.metal_mass[GEAR_CHEMISTRY_ELEMENT_COUNT - 1];
+       part_get_chemistry_data_p(pind)->metal_mass[GEAR_CHEMISTRY_ELEMENT_COUNT - 1];
     if (sum > total_metal_mass)
       error(
           "Sum of element-wise metal masses grew larger than total metal "
           "mass!");
-    if (total_metal_mass > p->conserved.mass + p->flux.mass)
+    if (total_metal_mass > part_get_conserved_mass(pind) + part_get_flux_mass(pind))
       error("Total metal mass grew larger than the particle mass!");
 #endif
-    chemistry_reset_mass_fluxes(p);
+    chemistry_reset_mass_fluxes(pind);
   }
 }
 
@@ -107,44 +116,46 @@ __attribute__((always_inline)) INLINE static void chemistry_kick_extra(
  * interaction.
  **/
 __attribute__((always_inline)) INLINE static void runner_iact_chemistry_fluxes(
-    struct part *restrict pi, struct part *restrict pj, float mass_flux,
+    size_t pindi, size_t pindj, float mass_flux,
     float flux_dt, int mode) {
 
   const double mass_flux_integrated = mass_flux * flux_dt;
-  const float mi = pi->conserved.mass;
+  const float mi = part_get_conserved_mass(pindi);
   const float mi_inv = mi > 0 ? 1.f / mi : 0.f;
-  const float mj = pj->conserved.mass;
+  const float mj = part_get_conserved_mass(pindj);
   const float mj_inv = mj > 0 ? 1.f / mj : 0.f;
+  struct chemistry_part_data* restrict cdi = part_get_chemistry_data_p(pindi);
+  struct chemistry_part_data* restrict cdj = part_get_chemistry_data_p(pindj);
 
   /* Convention: a positive mass flux means that pi is losing said mass and pj
    * is gaining it. */
   if (mass_flux > 0.f) {
     /* pi is losing mass */
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-      pi->chemistry_data.metal_mass_fluxes[i] -=
-          mass_flux_integrated * pi->chemistry_data.metal_mass[i] * mi_inv;
+      cdi->metal_mass_fluxes[i] -=
+          mass_flux_integrated *cdi->metal_mass[i] * mi_inv;
     }
   } else {
     /* pi is gaining mass: */
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-      pi->chemistry_data.metal_mass_fluxes[i] -=
-          mass_flux_integrated * pj->chemistry_data.metal_mass[i] * mj_inv;
+      cdi->metal_mass_fluxes[i] -=
+          mass_flux_integrated * cdj->metal_mass[i] * mj_inv;
     }
   }
 
   /* update pj as well, even if it is inactive (flux.dt < 0.) */
-  if (mode == 1 || pj->flux.dt < 0.f) {
+  if (mode == 1 || part_get_flux_dt(pindj) < 0.f) {
     if (mass_flux > 0.f) {
       /* pj is gaining mass */
       for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-        pj->chemistry_data.metal_mass_fluxes[i] +=
-            mass_flux_integrated * pi->chemistry_data.metal_mass[i] * mi_inv;
+         cdj->metal_mass_fluxes[i] +=
+            mass_flux_integrated * cdi->metal_mass[i] * mi_inv;
       }
     } else {
       /* pj is losing mass */
       for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-        pj->chemistry_data.metal_mass_fluxes[i] +=
-            mass_flux_integrated * pj->chemistry_data.metal_mass[i] * mj_inv;
+        cdj->metal_mass_fluxes[i] +=
+            mass_flux_integrated * cdj->metal_mass[i] * mj_inv;
       }
     }
   }
