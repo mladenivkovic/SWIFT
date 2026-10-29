@@ -238,7 +238,6 @@ __attribute__((always_inline)) INLINE static double treecool_bisection_iter(
  * @param pressure_floor The properties of the pressure floor.
  * @param cooling The #cooling_function_data used in the run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the particle's extended data.
  * @param dt The time-step of this particle.
  * @param dt_therm The time-step operator used for thermal quantities.
  * @param time Time since Big Bang (or start of the simulation) in internal
@@ -249,17 +248,17 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
     const struct pressure_floor_props *pressure_floor,
-    const struct cooling_function_data *cooling, struct part *p,
-    struct xpart *xp, const float dt, const float dt_therm, const double time) {
+    const struct cooling_function_data *cooling, size_t pind,
+    const float dt, const float dt_therm, const double time) {
 
   /* Nothing to do over a zero time-step */
   if (dt == 0.) return;
 
   /* Internal energy at the last kick step */
-  const float u_start = hydro_get_physical_internal_energy(p, xp, cosmo);
+  const float u_start = hydro_get_physical_internal_energy(pind, cosmo);
 
   /* Change in internal energy due to the hydro forces */
-  const float hydro_du_dt = hydro_get_physical_internal_energy_dt(p, cosmo);
+  const float hydro_du_dt = hydro_get_physical_internal_energy_dt(pind, cosmo);
 
   /* Internal energy at the end of the next kick step (assuming dt does not
    * change) */
@@ -272,7 +271,7 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
 
   /* Hydrogen number density in physical cgs units */
   const double rho_cgs =
-      hydro_get_physical_density(p, cosmo) * cooling->density_to_cgs;
+      hydro_get_physical_density(pind, cosmo) * cooling->density_to_cgs;
   const double n_H_cgs = rho_cgs * cooling->X_H * cooling->inv_proton_mass_cgs;
 
   /* n_H^2 / rho, computed as n_H * X_H / m_p to avoid dividing by rho */
@@ -281,7 +280,7 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
 
   /* Start the solvers from the electron density this particle had last time */
   struct treecool_gas_state gas;
-  gas.n_e = xp->cooling_data.electron_fraction;
+  gas.n_e = part_get_const_extra_cooling_data_p(pind)->electron_fraction;
 
   /* Net cooling rate at the start of the step */
   const double LambdaNet_cgs =
@@ -298,7 +297,7 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
   } else {
 
     u_final_cgs = treecool_bisection_iter(u_0_cgs, n_H_cgs, ratefact_cgs,
-                                          dt_cgs, cooling, &gas, p->id);
+                                          dt_cgs, cooling, &gas,part_get_id(pind));
   }
 
   /* Back to internal units */
@@ -310,8 +309,8 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
   u_final = max(u_final, (double)hydro_props->minimal_internal_energy);
 
   /* Limit imposed by the entropy floor */
-  const double A_floor = entropy_floor(p, cosmo, floor_props);
-  const double rho_physical = hydro_get_physical_density(p, cosmo);
+  const double A_floor = entropy_floor(pind, cosmo, floor_props);
+  const double rho_physical = hydro_get_physical_density(pind, cosmo);
   const double u_floor =
       gas_internal_energy_from_entropy(rho_physical, A_floor);
   u_final = max(u_final, u_floor);
@@ -322,7 +321,7 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
    * to make this cheap. */
   treecool_temperature_from_u(
       cooling, u_final * cooling->internal_energy_to_cgs, n_H_cgs, &gas);
-  xp->cooling_data.electron_fraction = gas.n_e;
+  part_get_extra_cooling_data_p(pind)->electron_fraction = gas.n_e;
 
   /* Expected change in energy over the next kick step (assuming dt does not
    * change) */
@@ -336,23 +335,23 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
       dt_over_t_cool >= cooling->rapid_cooling_threshold) {
 
     /* Rapid-cooling regime: apply the change straight to the energy */
-    hydro_set_physical_internal_energy(p, xp, cosmo, u_final);
-    hydro_set_drifted_physical_internal_energy(p, cosmo, pressure_floor,
+    hydro_set_physical_internal_energy(pind, cosmo, u_final);
+    hydro_set_drifted_physical_internal_energy(pind, cosmo, pressure_floor,
                                                u_final);
-    hydro_set_physical_internal_energy_dt(p, cosmo, 0.);
+    hydro_set_physical_internal_energy_dt(pind, cosmo, 0.);
 
   } else {
 
     /* Slow-cooling regime: update du/dt so that we can drift the energy */
-    hydro_set_physical_internal_energy_dt(p, cosmo, delta_u / dt_therm);
+    hydro_set_physical_internal_energy_dt(pind, cosmo, delta_u / dt_therm);
   }
 
   /* Store the radiated energy. This is the change due to the cooling alone,
    * i.e. excluding the contribution of the hydro forces already folded into
    * u_0. It is a net quantity: it decreases when the gas is photo-heated by
    * the UV background and can therefore become negative. */
-  xp->cooling_data.radiated_energy -=
-      hydro_get_mass(p) * (u_final - max(u_0, u_floor));
+  part_get_extra_cooling_data_p(pind)->radiated_energy -=
+      hydro_get_mass(pind) * (u_final - max(u_0, u_floor));
 }
 
 /**
@@ -367,15 +366,13 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
  * @param us The internal system of units.
  * @param hydro_props The properties of the hydro scheme.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended data of the particle.
  */
 __attribute__((always_inline)) INLINE static float cooling_timestep(
     const struct cooling_function_data *restrict cooling,
     const struct phys_const *restrict phys_const,
     const struct cosmology *restrict cosmo,
     const struct unit_system *restrict us,
-    const struct hydro_props *hydro_props, const struct part *restrict p,
-    const struct xpart *restrict xp) {
+    const struct hydro_props *hydro_props, const size_t pind) {
 
   return FLT_MAX;
 }
@@ -388,8 +385,7 @@ __attribute__((always_inline)) INLINE static float cooling_timestep(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  *
  * @return The temperature of the gas [K].
  */
@@ -399,17 +395,17 @@ INLINE static float cooling_get_temperature(
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, const struct xpart *restrict xp) {
+    const size_t pind) {
 
-  const double u_cgs = hydro_get_drifted_physical_internal_energy(p, cosmo) *
+  const double u_cgs = hydro_get_drifted_physical_internal_energy(pind, cosmo) *
                        cooling->internal_energy_to_cgs;
 
   const double rho_cgs =
-      hydro_get_physical_density(p, cosmo) * cooling->density_to_cgs;
+      hydro_get_physical_density(pind, cosmo) * cooling->density_to_cgs;
   const double n_H_cgs = rho_cgs * cooling->X_H * cooling->inv_proton_mass_cgs;
 
   struct treecool_gas_state gas;
-  gas.n_e = xp->cooling_data.electron_fraction;
+  gas.n_e = part_get_const_extra_cooling_data_p(pind)->electron_fraction;
 
   return treecool_temperature_from_u(cooling, u_cgs, n_H_cgs, &gas);
 }
@@ -422,8 +418,7 @@ INLINE static float cooling_get_temperature(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  *
  * @return The physical electron number density in internal units
  * [U_L^-3].
@@ -431,14 +426,13 @@ INLINE static float cooling_get_temperature(
 INLINE static double cooling_get_electron_density(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
   /* Physical Hydrogen number density in internal units */
-  const double n_H = hydro_get_physical_density(p, cosmo) * cooling->X_H /
+  const double n_H = hydro_get_physical_density(pind, cosmo) * cooling->X_H /
                      phys_const->const_proton_mass;
 
-  return xp->cooling_data.electron_fraction * n_H;
+  return part_get_extra_cooling_data_p(pind)->electron_fraction * n_H;
 }
 
 /**
@@ -452,8 +446,7 @@ INLINE static double cooling_get_electron_density(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  */
 __attribute__((always_inline)) INLINE static double
 cooling_get_electron_pressure(const struct phys_const *phys_const,
@@ -461,7 +454,7 @@ cooling_get_electron_pressure(const struct phys_const *phys_const,
                               const struct unit_system *us,
                               const struct cosmology *cosmo,
                               const struct cooling_function_data *cooling,
-                              const struct part *p, const struct xpart *xp) {
+                              const size_t pind) {
   return 0.;
 }
 
@@ -476,14 +469,12 @@ cooling_get_electron_pressure(const struct phys_const *phys_const,
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  */
 __attribute__((always_inline)) INLINE static double cooling_get_ycompton(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
   error("This cooling model does not compute Compton Y!");
   return 0.;
@@ -502,7 +493,6 @@ __attribute__((always_inline)) INLINE static double cooling_get_ycompton(
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void cooling_first_init_part(
     const struct phys_const *restrict phys_const,
@@ -510,10 +500,10 @@ __attribute__((always_inline)) INLINE static void cooling_first_init_part(
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, struct xpart *restrict xp) {
+    const size_t pind) {
 
-  xp->cooling_data.radiated_energy = 0.f;
-  xp->cooling_data.electron_fraction = 0.f;
+  part_get_extra_cooling_data_p(pind)->radiated_energy = 0.f;
+  part_get_extra_cooling_data_p(pind)->electron_fraction = 0.f;
 }
 
 /**
@@ -531,28 +521,26 @@ __attribute__((always_inline)) INLINE static void cooling_first_init_part(
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void cooling_post_init_part(
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *cooling, const struct part *restrict p,
-    struct xpart *restrict xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
-  const double u_cgs = hydro_get_physical_internal_energy(p, xp, cosmo) *
+  const double u_cgs = hydro_get_physical_internal_energy(pind, cosmo) *
                        cooling->internal_energy_to_cgs;
 
   const double rho_cgs =
-      hydro_get_physical_density(p, cosmo) * cooling->density_to_cgs;
+      hydro_get_physical_density(pind, cosmo) * cooling->density_to_cgs;
   const double n_H_cgs = rho_cgs * cooling->X_H * cooling->inv_proton_mass_cgs;
 
   struct treecool_gas_state gas;
   gas.n_e = 1.;
   treecool_temperature_from_u(cooling, u_cgs, n_H_cgs, &gas);
 
-  xp->cooling_data.electron_fraction = gas.n_e;
+  part_get_extra_cooling_data_p(pind)->electron_fraction = gas.n_e;
 }
 
 /**
@@ -560,11 +548,9 @@ __attribute__((always_inline)) INLINE static void cooling_post_init_part(
  *
  * This model has no subgrid quantity. We return an error.
  *
- * @param p The particle.
- * @param xp The extended particle data.
+ * @param pind Index of the particle.
  */
-INLINE static float cooling_get_subgrid_temperature(const struct part *p,
-                                                    const struct xpart *xp) {
+INLINE static float cooling_get_subgrid_temperature(const size_t pind) {
   error("This cooling model does not use subgrid quantities!");
   return -1.f;
 }
@@ -574,11 +560,9 @@ INLINE static float cooling_get_subgrid_temperature(const struct part *p,
  *
  * This model has no subgrid quantity. We return an error.
  *
- * @param p The particle.
- * @param xp The extended particle data.
+ * @param pind Index of the particle.
  */
-INLINE static float cooling_get_subgrid_density(const struct part *p,
-                                                const struct xpart *xp) {
+INLINE static float cooling_get_subgrid_density(const size_t pind) {
   error("This cooling model does not use subgrid quantities!");
   return -1.f;
 }
@@ -586,25 +570,21 @@ INLINE static float cooling_get_subgrid_density(const struct part *p,
 /**
  * @brief Returns the total radiated energy by this particle.
  *
- * @param xp The extended particle data.
  */
-__attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(
-    const struct xpart *restrict xp) {
+__attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(const size_t pind) {
 
-  return xp->cooling_data.radiated_energy;
+  return part_get_const_extra_cooling_data_p(pind)->radiated_energy;
 }
 
 /**
  * @brief Split the cooling content of a particle into n pieces.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
-INLINE static void cooling_split_part(struct part *p, struct xpart *xp,
-                                      double n) {
+INLINE static void cooling_split_part(size_t pind, double n) {
 
-  xp->cooling_data.radiated_energy /= n;
+  part_get_extra_cooling_data_p(pind)->radiated_energy /= n;
 }
 
 /**

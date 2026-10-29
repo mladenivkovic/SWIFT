@@ -254,7 +254,7 @@ __attribute__((always_inline)) INLINE static float cooling_timestep(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
+ * @param pind particle index.
  */
 __attribute__((always_inline)) INLINE static double
 cooling_get_electron_pressure(const struct phys_const *phys_const,
@@ -277,7 +277,7 @@ cooling_get_electron_pressure(const struct phys_const *phys_const,
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
+ * @param pind particle index.
  */
 __attribute__((always_inline)) INLINE static double cooling_get_ycompton(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
@@ -340,7 +340,7 @@ __attribute__((always_inline)) INLINE static void cooling_post_init_part(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
+ * @param pind particle index.
  */
 INLINE static float cooling_get_temperature(
     const struct phys_const *restrict phys_const,
@@ -410,7 +410,7 @@ __attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(s
 /**
  * @brief Split the coolong content of a particle into n pieces
  *
- * @param pind Index of the #part.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
 static INLINE void cooling_split_part(size_t pind, double n) {

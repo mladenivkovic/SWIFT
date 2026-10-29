@@ -24,6 +24,9 @@
 #include <config.h>
 
 /* Local includes. */
+#include "chemistry.h"
+#include "chemistry_struct.h"
+#include "cooling_properties.h"
 #include "cooling_tables.h"
 #include "exp10.h"
 #include "interpolate.h"
@@ -51,12 +54,12 @@
  * @param ratio_solar (return) Array of ratios to solar abundances.
  */
 __attribute__((always_inline)) INLINE static void abundance_ratio_to_solar(
-    const struct part *p, const struct cooling_function_data *cooling,
+    const size_t pind, const struct cooling_function_data *cooling,
     float ratio_solar[eagle_cooling_N_abundances]) {
 
   /* Get the individual metal mass fractions from the particle */
   const float *const metal_fraction =
-      chemistry_get_metal_mass_fraction_for_cooling(p);
+      chemistry_get_metal_mass_fraction_for_cooling(pind);
 
   ratio_solar[0] = metal_fraction[chemistry_element_H] *
                    cooling->SolarAbundances_inv[0 /* H */];

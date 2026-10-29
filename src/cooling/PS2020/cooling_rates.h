@@ -103,11 +103,11 @@ __attribute__((always_inline)) INLINE int element_from_table_to_code(
  * log10(Z / Z_sun).
  */
 __attribute__((always_inline)) INLINE static float abundance_ratio_to_solar(
-    const struct part *p, const struct cooling_function_data *cooling,
+    const size_t pind, const struct cooling_function_data *cooling,
     float ratio_solar[colibre_cooling_N_elementtypes]) {
 
   /* Get the particle's metal mass fractions (M_x / M) */
-  const float *Z_mass_frac = chemistry_get_metal_mass_fraction_for_cooling(p);
+  const float *Z_mass_frac = chemistry_get_metal_mass_fraction_for_cooling(pind);
 
   /* Convert mass fractions to abundances (nx/nH) and compute metal mass */
   for (int elem_nr = element_H; elem_nr < element_OA; elem_nr++) {

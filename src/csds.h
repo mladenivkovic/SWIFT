@@ -22,6 +22,8 @@
 
 #include <config.h>
 
+#define WITH_CSDS
+
 #ifdef WITH_CSDS
 
 /* Includes. */
@@ -111,12 +113,10 @@ struct csds_part_data {
 /* Function prototypes. */
 void csds_log_all_particles(struct csds_writer *log, const struct engine *e,
                             const enum csds_special_flags flag);
-void csds_log_part(struct csds_writer *log, const struct part *p,
-                   struct xpart *xp, const struct engine *e,
+void csds_log_part(struct csds_writer *log, const size_t pind, const struct engine *e,
                    const int log_all_fields, const enum csds_special_flags flag,
                    const int flag_data);
-void csds_log_parts(struct csds_writer *log, const struct part *p,
-                    struct xpart *xp, int count, const struct engine *e,
+void csds_log_parts(struct csds_writer *log, const size_t pind, int count, const struct engine *e,
                     const int log_all_fields,
                     const enum csds_special_flags flag, const int flag_data);
 void csds_log_spart(struct csds_writer *log, struct spart *p,
@@ -139,7 +139,7 @@ void csds_log_timestamp(struct csds_writer *log, integertime_t t, double time,
 void csds_ensure_size(struct csds_writer *log, const struct engine *e);
 void csds_write_file_header(struct csds_writer *log);
 
-int csds_read_part(const struct csds_writer *log, struct part *p,
+int csds_read_part(const struct csds_writer *log, size_t pind,
                    size_t *offset, const char *buff);
 int csds_read_gpart(const struct csds_writer *log, struct gpart *p,
                     size_t *offset, const char *buff);

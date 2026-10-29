@@ -1212,7 +1212,7 @@ INLINE static void black_holes_create_from_gas(
 
   /* Birth time and density */
   bp->formation_scale_factor = cosmo->a;
-  bp->formation_gas_density = hydro_get_physical_density(p, cosmo);
+  bp->formation_gas_density = hydro_get_physical_density(pind, cosmo);
 
   /* Initial seed mass */
   bp->subgrid_mass = props->subgrid_seed_mass;

@@ -109,33 +109,31 @@
  *the standard output.
  *
  * @param parts The array of particles.
- * @param xparts The array of particle extended data.
  * @param id The id too look for.
  * @param N The size of the array of particles.
  *
  * (Should be used for debugging only as it runs in O(N).)
  */
-void printParticle(const struct part *parts, const struct xpart *xparts,
-                   long long int id, size_t N) {
+void printParticle(const size_t pind, long long int id, size_t N) {
 
   int found = 0;
 
   /* Look for the particle. */
   for (size_t i = 0; i < N; i++) {
-    if (part_get_id(&parts[i]) == id) {
-      warning("[PID%lld] ## Particle[%zu]:\n id=%lld ", part_get_id(&parts[i]),
-              i, part_get_id(&parts[i]));
-      hydro_debug_particle(&parts[i], &xparts[i]);
-      mhd_debug_particle(&parts[i], &xparts[i]);
-      chemistry_debug_particle(&parts[i], &xparts[i]);
-      cooling_debug_particle(&parts[i], &xparts[i]);
-      particle_splitting_debug_particle(&parts[i], &xparts[i]);
-      tracers_debug_particle(&parts[i], &xparts[i]);
-      star_formation_debug_particle(&parts[i], &xparts[i]);
-      feedback_debug_particle(&parts[i], &xparts[i]);
-      black_holes_debug_particle(&parts[i], &xparts[i]);
-      sink_debug_particle(&parts[i], &xparts[i]);
-      pressure_floor_debug_particle(&parts[i], &xparts[i]);
+    if (part_get_id(pind) == id) {
+      warning("[PID%lld] ## Particle[%zu]:\n id=%lld ", part_get_id(pind),
+              i, part_get_id(pind));
+      hydro_debug_particle(pind);
+      mhd_debug_particle(pind);
+      chemistry_debug_particle(pind);
+      cooling_debug_particle(pind);
+      particle_splitting_debug_particle(pind);
+      tracers_debug_particle(pind);
+      star_formation_debug_particle(pind);
+      feedback_debug_particle(pind);
+      black_holes_debug_particle(pind);
+      sink_debug_particle(pind);
+      pressure_floor_debug_particle(pind);
       found = 1;
       break;
     }
@@ -150,14 +148,12 @@ void printParticle(const struct part *parts, const struct xpart *xparts,
  * the standard output.
  *
  * @param gparts The array of g-particles.
- * @param parts The array of particles.
  * @param id The id too look for.
  * @param N The size of the array of g-particles.
  *
  * (Should be used for debugging only as it runs in O(N).)
  */
-void printgParticle(const struct gpart *gparts, const struct part *parts,
-                    long long int id, size_t N) {
+void printgParticle(const struct gpart *gparts, long long int id, size_t N) {
 
   int found = 0;
 
@@ -169,7 +165,7 @@ void printgParticle(const struct gpart *gparts, const struct part *parts,
       found = 1;
       break;
     } else if (gparts[i].id_or_neg_offset < 0 &&
-               part_get_id(&parts[-gparts[i].id_or_neg_offset]) == id) {
+               part_get_id(-gparts[i].id_or_neg_offset) == id) {
       printf("## gParticle[%zu] (hydro) :\n id=%lld", i, id);
       gravity_debug_particle(&gparts[i]);
       found = 1;
@@ -183,26 +179,22 @@ void printgParticle(const struct gpart *gparts, const struct part *parts,
 /**
  * @brief Prints the details of a given particle to stdout
  *
- * @param p The particle to print
- * @param xp The extended data ot the particle to print
+ * @param pind Index of the particle to print
  */
-void printParticle_single(const struct part *p, const struct xpart *xp) {
+void printParticle_single(const size_t pind) {
 
-  warning("[PID%lld] ## Particle: id=%lld ", part_get_id(p), part_get_id(p));
-  hydro_debug_particle(p, xp);
-  mhd_debug_particle(p, xp);
-  chemistry_debug_particle(p, xp);
-  cooling_debug_particle(p, xp);
-  particle_splitting_debug_particle(p, xp);
-  tracers_debug_particle(p, xp);
-  star_formation_debug_particle(p, xp);
-  feedback_debug_particle(p, xp);
-  black_holes_debug_particle(p, xp);
-  sink_debug_particle(p, xp);
-  pressure_floor_debug_particle(p, xp);
-  if (xp == NULL) {
-    warning("[PID%lld] No xpart data available.", part_get_id(p));
-  }
+  warning("[PID%lld] ## Particle: id=%lld ", part_get_id(pind), part_get_id(pind));
+  hydro_debug_particle(pind);
+  mhd_debug_particle(pind);
+  chemistry_debug_particle(pind);
+  cooling_debug_particle(pind);
+  particle_splitting_debug_particle(pind);
+  tracers_debug_particle(pind);
+  star_formation_debug_particle(pind);
+  feedback_debug_particle(pind);
+  black_holes_debug_particle(pind);
+  sink_debug_particle(pind);
+  pressure_floor_debug_particle(pind);
 }
 
 /**
@@ -254,8 +246,8 @@ int checkSpacehmax(struct space *s) {
   /* Now all particles. */
   float part_h_max = 0.0f;
   for (size_t k = 0; k < s->nr_parts; k++) {
-    if (part_get_h(&s->parts[k]) > part_h_max) {
-      part_h_max = part_get_h(&s->parts[k]);
+    if (part_get_h(k) > part_h_max) {
+      part_h_max = part_get_h(k);
     }
   }
 
@@ -293,9 +285,9 @@ int checkSpacehmax(struct space *s) {
   }
 
   for (size_t k = 0; k < s->nr_parts; k++) {
-    if (part_get_h(&s->parts[k]) > cell_h_max) {
-      message("part %lld is inconsistent (%f > %f)", part_get_id(&s->parts[k]),
-              part_get_h(&s->parts[k]), cell_h_max);
+    if (part_get_h(k) > cell_h_max) {
+      message("part %lld is inconsistent (%f > %f)", part_get_id(k),
+              part_get_h(k), cell_h_max);
     }
   }
 
@@ -362,13 +354,11 @@ int checkCellhdxmax(const struct cell *c, int *depth) {
                              c->loc[2] + c->width[2]};
 
   const size_t nr_parts = c->hydro.count;
-  struct part *parts = c->hydro.parts;
-  struct xpart *xparts = c->hydro.xparts;
-  for (size_t k = 0; k < nr_parts; k++) {
+  size_t first = c->hydro.first;
 
-    struct part *const p = &parts[k];
-    struct xpart *const xp = &xparts[k];
-    const double *x = part_get_const_x(p);
+  for (size_t pind = first; pind < first+nr_parts; pind++) {
+
+    const double x[3] = {part_get_x_ind(pind,0), part_get_x_ind(pind,1), part_get_x_ind(pind,2)};
 
     if (x[0] < loc_min[0] || x[0] >= loc_max[0] || x[1] < loc_min[1] ||
         x[1] >= loc_max[1] || x[2] < loc_min[2] || x[2] >= loc_max[2]) {
@@ -382,11 +372,11 @@ int checkCellhdxmax(const struct cell *c, int *depth) {
       result = 0;
     }
 
-    const float dx2 = xp->x_diff[0] * xp->x_diff[0] +
-                      xp->x_diff[1] * xp->x_diff[1] +
-                      xp->x_diff[2] * xp->x_diff[2];
+    const float dx2 = part_get_x_diff_ind(pind, 0) * part_get_x_diff_ind(pind, 0) +
+                      part_get_x_diff_ind(pind, 1) * part_get_x_diff_ind(pind, 1) +
+                      part_get_x_diff_ind(pind, 2) * part_get_x_diff_ind(pind, 2);
 
-    h_max = max(h_max, part_get_h(p));
+    h_max = max(h_max, part_get_h(pind));
     dx_max = max(dx_max, sqrtf(dx2));
   }
 
@@ -570,9 +560,10 @@ static void dumpCells_map(struct cell *c, void *data) {
       /* If requested we work out how many particles are active in this cell. */
       int pactcount = 0;
       if (pactive) {
-        const struct part *parts = c->hydro.parts;
-        for (int k = 0; k < c->hydro.count; k++)
-          if (part_is_active(&parts[k], e)) pactcount++;
+        const size_t first = c->hydro.first;
+        const size_t count = c->hydro.count;
+        for (size_t k = first; k < first + count; k++)
+          if (part_is_active(k, e)) pactcount++;
         struct gpart *gparts = c->grav.parts;
         for (int k = 0; k < c->grav.count; k++)
           if (gpart_is_active(&gparts[k], e)) pactcount++;

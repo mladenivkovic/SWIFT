@@ -29,6 +29,9 @@
 #include "error.h"
 #include "exp10.h"
 #include "interpolate.h"
+#include "physical_constants.h"
+
+#include <float.h>
 
 /**
  * @brief Compute ratio of mass fraction to solar mass fraction
@@ -59,12 +62,13 @@
  * log10(Z / Z_sun).
  */
 __attribute__((always_inline)) INLINE static float abundance_ratio_to_solar(
-    const struct part *p, const struct cooling_function_data *cooling,
+    const size_t pind, const struct cooling_function_data *cooling,
     const struct phys_const *phys_const,
     float ratio_solar[qla_cooling_N_elementtypes]) {
 
   /* Convert mass fractions to abundances (nx/nH) and compute metal mass */
-  float totmass = 0., metalmass = 0.;
+  float totmass = 0.;
+  float metalmass = 0.;
   for (enum qla_cooling_element elem = element_H; elem < element_OA; elem++) {
 
     double Z_mass_frac = -1.f;
@@ -101,7 +105,7 @@ __attribute__((always_inline)) INLINE static float abundance_ratio_to_solar(
 
   /* Get total metallicity [Z/Z_sun] from the particle data */
   const float Z_total =
-      (float)chemistry_get_total_metal_mass_fraction_for_cooling(p);
+      (float)chemistry_get_total_metal_mass_fraction_for_cooling(pind);
   float ZZsol = Z_total * cooling->Zsol_inv[0];
   if (ZZsol <= 0.0f) ZZsol = FLT_MIN;
   const float logZZsol = log10f(ZZsol);

@@ -50,37 +50,33 @@ void cooling_cool_part(const struct phys_const *phys_const,
                        const struct entropy_floor_properties *floor_props,
                        const struct pressure_floor_props *pressure_floor,
                        const struct cooling_function_data *cooling,
-                       struct part *restrict p, struct xpart *restrict xp,
-                       const float dt, const float dt_therm, const double time);
+                       const size_t pind, const float dt, const float dt_therm, const double time);
 
 float cooling_timestep(const struct cooling_function_data *restrict cooling,
                        const struct phys_const *restrict phys_const,
                        const struct cosmology *restrict cosmo,
                        const struct unit_system *restrict us,
                        const struct hydro_props *hydro_props,
-                       const struct part *restrict p,
-                       const struct xpart *restrict xp);
+                       const size_t pind);
 
 float cooling_get_electron_density(const struct phys_const *phys_const,
                                    const struct hydro_props *hydro_props,
                                    const struct unit_system *us,
                                    const struct cosmology *cosmo,
                                    const struct cooling_function_data *cooling,
-                                   const struct part *p,
-                                   const struct xpart *xp);
+                                   const size_t pind);
 
 double cooling_get_electron_pressure(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp);
+    const struct cooling_function_data *cooling, const size_t pind);
 
 double cooling_get_ycompton(const struct phys_const *phys_const,
                             const struct hydro_props *hydro_props,
                             const struct unit_system *us,
                             const struct cosmology *cosmo,
                             const struct cooling_function_data *cooling,
-                            const struct part *p, const struct xpart *xp);
+                            const size_t pind);
 
 void cooling_first_init_part(
     const struct phys_const *restrict phys_const,
@@ -88,7 +84,7 @@ void cooling_first_init_part(
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, struct xpart *restrict xp);
+    const size_t pind);
 
 /**
  * @brief Sets the cooling properties of the (x-)particles to a valid start
@@ -101,7 +97,6 @@ void cooling_first_init_part(
  * @param cosmo The #cosmology.
  * @param cooling The properties of the cooling function.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 void cooling_post_init_part(
     const struct phys_const *restrict phys_const,
@@ -109,7 +104,7 @@ void cooling_post_init_part(
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, struct xpart *restrict xp);
+    const size_t pind);
 
 float cooling_get_temperature_from_gas(
     const struct phys_const *phys_const, const struct cosmology *cosmo,
@@ -123,28 +118,25 @@ float cooling_get_temperature(
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo,
     const struct cooling_function_data *restrict cooling,
-    const struct part *restrict p, const struct xpart *restrict xp);
+    const size_t pind);
 
 float cooling_get_particle_subgrid_HI_fraction(
     const struct unit_system *us, const struct phys_const *phys_const,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp);
+    const struct cooling_function_data *cooling, const size_t pind);
 
 float cooling_get_particle_subgrid_HII_fraction(
     const struct unit_system *us, const struct phys_const *phys_const,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp);
+    const struct cooling_function_data *cooling, const size_t pind);
 
 float cooling_get_particle_subgrid_H2_fraction(
     const struct unit_system *us, const struct phys_const *phys_const,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct entropy_floor_properties *floor_props,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp);
+    const struct cooling_function_data *cooling, const size_t pind);
 
 double compute_subgrid_property(
     const struct cooling_function_data *cooling,
@@ -156,14 +148,13 @@ double compute_subgrid_property(
     const float *abundance_ratio, const double log_u_cgs,
     const enum cooling_subgrid_properties isub);
 
-float cooling_get_subgrid_temperature(const struct part *p,
-                                      const struct xpart *xp);
+float cooling_get_subgrid_temperature(const size_t pind);
 
-float cooling_get_subgrid_density(const struct part *p, const struct xpart *xp);
+float cooling_get_subgrid_density(const size_t pind);
 
-float cooling_get_radiated_energy(const struct xpart *restrict xp);
+float cooling_get_radiated_energy(const size_t pind);
 
-void cooling_split_part(struct part *p, struct xpart *xp, double n);
+void cooling_split_part(const size_t pind, double n);
 
 void cooling_Hydrogen_reionization(
     const struct cooling_function_data *cooling, const struct cosmology *cosmo,

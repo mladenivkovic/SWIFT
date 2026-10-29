@@ -86,8 +86,7 @@ cooling_get_equilibrium_mean_molecular_weight(
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
  * @param cooling The #cooling_function_data used in the run.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @return Mean molecular weight.
  */
 __attribute__((always_inline)) INLINE static double
@@ -96,12 +95,11 @@ cooling_get_mean_molecular_weight(const struct phys_const *phys_const,
                                   const struct cosmology *cosmo,
                                   const struct hydro_props *hydro_props,
                                   const struct cooling_function_data *cooling,
-                                  const struct part *p,
-                                  const struct xpart *xp) {
+                                  const size_t pind) {
 
   /* Grackle mode 0: Use temperature-based molecular weight calculation */
 #if COOLING_GRACKLE_MODE == 0
-  const double u = hydro_get_drifted_physical_internal_energy(p, cosmo);
+  const double u = hydro_get_drifted_physical_internal_energy(pind, cosmo);
   const double mu = cooling_get_equilibrium_mean_molecular_weight(
       u, phys_const, hydro_props, cooling);
   return mu;
@@ -109,8 +107,8 @@ cooling_get_mean_molecular_weight(const struct phys_const *phys_const,
 #elif COOLING_GRACKLE_MODE >= 1
   /* HI, HII, HeI, HeII, HeIII are tracked in every mode >= 1, computed once
      here and shared by modes 1-3. */
-  const struct cooling_xpart_data *cool_data = &xp->cooling_data;
-  const double rho = hydro_get_physical_density(p, cosmo);
+  const struct cooling_xpart_data *cool_data = part_get_const_extra_cooling_data_p(pind);
+  const double rho = hydro_get_physical_density(pind, cosmo);
   const double m_H = phys_const->const_proton_mass;
 
   const double XHI = cool_data->HI_frac;
@@ -128,7 +126,7 @@ cooling_get_mean_molecular_weight(const struct phys_const *phys_const,
   /* Match Grackle's own mu (calculate_temperature.c: MU_METAL = 16). */
   const double MU_METAL = 16.0;
   const double n_metal =
-      chemistry_get_total_metal_mass_fraction_for_cooling(p) * rho /
+      chemistry_get_total_metal_mass_fraction_for_cooling(pind) * rho /
       (MU_METAL * m_H);
 
 #if COOLING_GRACKLE_MODE == 1
@@ -237,17 +235,16 @@ struct cooling_h2_species_densities {
  *
  * @param phys_const Physical constants.
  * @param cosmo The current cosmological model.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @return mu, nH2 and number_density_noH2 for this particle.
  */
 __attribute__((always_inline)) INLINE static struct cooling_h2_species_densities
 cooling_get_h2_species_densities(const struct phys_const *phys_const,
                                  const struct cosmology *cosmo,
-                                 const struct part *p, const struct xpart *xp) {
+                                 const size_t pind) {
 
-  const struct cooling_xpart_data *cool_data = &xp->cooling_data;
-  const double rho = hydro_get_physical_density(p, cosmo);
+  const struct cooling_xpart_data *cool_data = part_get_const_extra_cooling_data_p(pind);
+  const double rho = hydro_get_physical_density(pind, cosmo);
   const double m_H = phys_const->const_proton_mass;
 
   const double nHI = cool_data->HI_frac * rho / m_H;
@@ -349,8 +346,7 @@ __attribute__((always_inline)) INLINE static double cooling_h2_effective_gamma(
  *
  * @param phys_const Physical constants.
  * @param cosmo The current cosmological model.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @param u The particle's (already-drifted, physical) specific internal
  *   energy, so callers that already have it don't pay for it twice.
  * @return Temperature, H2-Gamma corrected.
@@ -358,15 +354,14 @@ __attribute__((always_inline)) INLINE static double cooling_h2_effective_gamma(
 __attribute__((always_inline)) INLINE static float
 cooling_get_temperature_h2_gamma_corrected(const struct phys_const *phys_const,
                                            const struct cosmology *cosmo,
-                                           const struct part *p,
-                                           const struct xpart *xp,
+                                           const size_t pind,
                                            const double u) {
 
   const double m_H = phys_const->const_proton_mass;
   const double k_B = phys_const->const_boltzmann_k;
 
   const struct cooling_h2_species_densities sd =
-      cooling_get_h2_species_densities(phys_const, cosmo, p, xp);
+      cooling_get_h2_species_densities(phys_const, cosmo, pind);
 
   const double T_default =
       cooling_temperature_from_internal_energy(u, sd.mu, k_B, m_H);
@@ -391,8 +386,7 @@ cooling_get_temperature_h2_gamma_corrected(const struct phys_const *phys_const,
  *
  * @param phys_const Physical constants.
  * @param cosmo The current cosmological model.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @param T_target Desired temperature, e.g. the AGORA CMB floor.
  * @return Specific internal energy that reproduces T_target under
  *   cooling_get_temperature_h2_gamma_corrected().
@@ -400,13 +394,13 @@ cooling_get_temperature_h2_gamma_corrected(const struct phys_const *phys_const,
 __attribute__((always_inline)) INLINE static double
 cooling_get_internal_energy_h2_gamma_corrected(
     const struct phys_const *phys_const, const struct cosmology *cosmo,
-    const struct part *p, const struct xpart *xp, const double T_target) {
+    const size_t pind, const double T_target) {
 
   const double m_H = phys_const->const_proton_mass;
   const double k_B = phys_const->const_boltzmann_k;
 
   const struct cooling_h2_species_densities sd =
-      cooling_get_h2_species_densities(phys_const, cosmo, p, xp);
+      cooling_get_h2_species_densities(phys_const, cosmo, pind);
 
   /* T_target is already exact, so it is a better Gamma1 seed than the
      forward direction's own fixed-gamma approximation gets to use. */
@@ -434,8 +428,7 @@ cooling_get_internal_energy_h2_gamma_corrected(
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
  * @param cooling The #cooling_function_data used in the run.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @param T_target Desired temperature.
  * @return Specific internal energy that reproduces T_target under
  *   cooling_get_temperature().
@@ -444,17 +437,16 @@ __attribute__((always_inline)) INLINE static double
 cooling_get_internal_energy_from_temperature(
     const struct phys_const *phys_const, const struct unit_system *us,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp, const double T_target) {
+    const struct cooling_function_data *cooling, const size_t pind,
+    const double T_target) {
 
 #if COOLING_GRACKLE_MODE >= 2
-  return cooling_get_internal_energy_h2_gamma_corrected(phys_const, cosmo, p,
-                                                        xp, T_target);
+  return cooling_get_internal_energy_h2_gamma_corrected(phys_const, cosmo, pind, T_target);
 #else
   const double m_H = phys_const->const_proton_mass;
   const double k_B = phys_const->const_boltzmann_k;
   const double mu = cooling_get_mean_molecular_weight(
-      phys_const, us, cosmo, hydro_props, cooling, p, xp);
+      phys_const, us, cosmo, hydro_props, cooling, pind);
 
   return cooling_internal_energy_from_T(T_target, mu, k_B, m_H);
 #endif
@@ -472,21 +464,19 @@ cooling_get_internal_energy_from_temperature(
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
  * @param cooling The #cooling_function_data used in the run.
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  * @return Specific internal energy corresponding to T_CMB,0 * (1+z).
  */
 __attribute__((always_inline)) INLINE static double
 cooling_agora_cmb_floor_internal_energy(
     const struct phys_const *phys_const, const struct unit_system *us,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
-    const struct cooling_function_data *cooling, const struct part *p,
-    const struct xpart *xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
   const double z = (cooling->redshift == -1) ? cosmo->z : cooling->redshift;
   const double T_CMB_agora = phys_const->const_T_CMB_0 * (z + 1.0);
 
   return cooling_get_internal_energy_from_temperature(
-      phys_const, us, cosmo, hydro_props, cooling, p, xp, T_CMB_agora);
+      phys_const, us, cosmo, hydro_props, cooling, pind, T_CMB_agora);
 }
 #endif /* SWIFT_COOLING_GRACKLE_COOLING_UTILS_H */

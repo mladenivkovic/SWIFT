@@ -519,7 +519,7 @@ __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_feedback(
     const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total;
+  return part_get_const_chemistry_data_p(pind)->metal_mass_fraction_total;
 }
 
 /**
@@ -534,7 +534,7 @@ chemistry_get_total_metal_mass_fraction_for_feedback(
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_feedback(const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->metal_mass_fraction;
+  return part_get_const_chemistry_data_p(pind)->metal_mass_fraction;
 }
 
 /**
@@ -579,7 +579,7 @@ __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_cooling(
     const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total;
+  return part_get_const_chemistry_data_p(pind)->metal_mass_fraction_total;
 }
 
 /**
@@ -593,7 +593,7 @@ chemistry_get_total_metal_mass_fraction_for_cooling(
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -608,7 +608,7 @@ __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_star_formation(
     const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction_total;
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction_total;
 }
 
 /**
@@ -622,7 +622,7 @@ chemistry_get_total_metal_mass_fraction_for_star_formation(
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -634,7 +634,7 @@ chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_for_stats(const size_t pind) {
 
-  return part_get_chemistry_data_p(pind)->metal_mass_fraction_total * hydro_get_mass(pind);
+  return part_get_const_chemistry_data_p(pind)->metal_mass_fraction_total * hydro_get_mass(pind);
 }
 
 /**

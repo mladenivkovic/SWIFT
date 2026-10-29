@@ -463,8 +463,7 @@ __attribute__((always_inline)) INLINE static void chemistry_split_part(
  * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static float
-chemistry_get_total_metal_mass_fraction_for_feedback(
-    const size_t pind) {
+chemistry_get_total_metal_mass_fraction_for_feedback(const size_t pind) {
   error("To be implemented.");
   return 0.f;
 }
@@ -526,7 +525,7 @@ __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_cooling(
     const size_t pind) {
 
-  return part_get_chemistry_data(pind).smoothed_metal_mass_fraction[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
 }
 
 /**
@@ -540,7 +539,7 @@ chemistry_get_total_metal_mass_fraction_for_cooling(
 __attribute__((always_inline)) INLINE static double const *
 chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
 
-  return part_get_chemistry_data(pind).smoothed_metal_mass_fraction;
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -555,7 +554,7 @@ __attribute__((always_inline)) INLINE static double
 chemistry_get_total_metal_mass_fraction_for_star_formation(
     const size_t pind) {
 
-  return part_get_chemistry_data(pind).smoothed_metal_mass_fraction[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
 }
 
 /**
@@ -570,7 +569,7 @@ __attribute__((always_inline)) INLINE static double const *
 chemistry_get_metal_mass_fraction_for_star_formation(
     const size_t pind) {
 
-  return part_get_chemistry_data(pind).smoothed_metal_mass_fraction;
+  return part_get_const_chemistry_data_p(pind)->smoothed_metal_mass_fraction;
 }
 
 /**
@@ -584,7 +583,7 @@ chemistry_get_metal_mass_fraction_for_star_formation(
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_for_stats(const size_t pind) {
 
-  return part_get_chemistry_data(pind).metal_mass[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
+  return part_get_const_chemistry_data_p(pind)->metal_mass[AGORA_CHEMISTRY_ELEMENT_COUNT - 1];
 }
 
 /**

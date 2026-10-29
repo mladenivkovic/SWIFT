@@ -19,13 +19,18 @@
 #ifndef SWIFT_COOLING_CONST_DU_DEBUG_H
 #define SWIFT_COOLING_CONST_DU_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void cooling_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "inline.h"
 
-  if (xp != NULL) {
-    warning("[PID%lld] cooling_xpart_data:", p->id);
-    warning("[PID%lld] radiated_energy = %.3e", p->id,
-            xp->cooling_data.radiated_energy);
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void cooling_debug_particle(
+    const size_t pind) {
+
+  if (pind != -1ull) {
+    warning("[PID%lld] cooling_xpart_data:",part_get_id(pind));
+    warning("[PID%lld] radiated_energy = %.3e",part_get_id(pind),
+            part_get_const_extra_cooling_data(pind)->radiated_energy);
   }
 }
 

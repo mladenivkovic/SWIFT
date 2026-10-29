@@ -20,8 +20,8 @@
 #define SWIFT_EAGLE_COOL_TABLES_H
 
 /**
- * @file src/cooling/EAGLE/cooling.h
- * @brief EAGLE cooling function
+ * @file src/cooling/EAGLE/cooling_tables.h
+ * @brief EAGLE cooling tables related functions and definitions
  */
 
 /* Config parameters. */
@@ -29,6 +29,7 @@
 
 /* Local includes. */
 #include "cooling_struct.h"
+#include "cooling_properties.h"
 
 /*! Number of different bins along the redhsift axis of the tables */
 #define eagle_cooling_N_redshifts 49

@@ -67,7 +67,6 @@ INLINE static void cooling_update(
  * @param floor_props Properties of the entropy floor.
  * @param cooling The #cooling_function_data used in the run.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  * @param dt The time-step of this particle.
  * @param dt_therm The time-step operator used for thermal quantities.
  * @param time The current time (since the Big Bang or start of the run) in
@@ -92,7 +91,6 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
  * @param hydro_props The properties of the hydro scheme.
  * @param us The internal system of units.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended data of the particle.
  */
 __attribute__((always_inline)) INLINE static float cooling_timestep(
     const struct cooling_function_data *restrict cooling,
@@ -116,15 +114,13 @@ __attribute__((always_inline)) INLINE static float cooling_timestep(
  * @param cosmo The current cosmological model.
  * @param data The properties of the cooling function.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void cooling_first_init_part(
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *data, const size_t pind,
-    struct xpart *restrict xp) {}
+    const struct cooling_function_data *data, const size_t pind) {}
 
 /**
  * @brief Perform additional init on the cooling properties of the
@@ -138,15 +134,13 @@ __attribute__((always_inline)) INLINE static void cooling_first_init_part(
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
  * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
  */
 __attribute__((always_inline)) INLINE static void cooling_post_init_part(
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct hydro_props *hydro_props,
     const struct cosmology *restrict cosmo,
-    const struct cooling_function_data *cooling, const size_t pind,
-    struct xpart *restrict xp) {}
+    const struct cooling_function_data *cooling, const size_t pind) {}
 
 /**
  * @brief Compute the temperature of a #part based on the cooling function.
@@ -156,8 +150,7 @@ __attribute__((always_inline)) INLINE static void cooling_post_init_part(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  */
 INLINE static float cooling_get_temperature(
     const struct phys_const *restrict phys_const,
@@ -201,14 +194,12 @@ INLINE static float cooling_get_temperature(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  */
 INLINE static double cooling_get_electron_pressure(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const size_t pind,
-    const struct xpart *xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
 
   return 0.;
 }
@@ -224,14 +215,12 @@ INLINE static double cooling_get_electron_pressure(
  * @param us The internal system of units.
  * @param cosmo #cosmology data structure.
  * @param cooling #cooling_function_data struct.
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  */
 INLINE static double cooling_get_ycompton(
     const struct phys_const *phys_const, const struct hydro_props *hydro_props,
     const struct unit_system *us, const struct cosmology *cosmo,
-    const struct cooling_function_data *cooling, const size_t pind,
-    const struct xpart *xp) {
+    const struct cooling_function_data *cooling, const size_t pind) {
   return 0.f;
 }
 
@@ -240,11 +229,9 @@ INLINE static double cooling_get_ycompton(
  *
  * This model has no subgrid quantity. We return -1.
  *
- * @param p The particle.
- * @param xp The extended particle data.
+ * @param pind Index of the particle.
  */
-INLINE static float cooling_get_subgrid_temperature(const size_t pind,
-                                                    const struct xpart *xp) {
+INLINE static float cooling_get_subgrid_temperature(const size_t pind) {
   return -1.f;
 }
 
@@ -253,11 +240,9 @@ INLINE static float cooling_get_subgrid_temperature(const size_t pind,
  *
  * This model has no subgrid quantity. We return -1.
  *
- * @param p The particle.
- * @param xp The extended particle data.
+ * @param pind Index of the particle.
  */
-INLINE static float cooling_get_subgrid_density(const size_t pind,
-                                                const struct xpart *xp) {
+INLINE static float cooling_get_subgrid_density(const size_t pind) {
   return -1.f;
 }
 
@@ -266,10 +251,8 @@ INLINE static float cooling_get_subgrid_density(const size_t pind,
  *
  * No cooling, so return 0.
  *
- * @param xp The extended particle data
  */
-__attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(
-    const struct xpart *restrict xp) {
+__attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(const size_t pind) {
 
   return 0.f;
 }
@@ -279,24 +262,20 @@ __attribute__((always_inline)) INLINE static float cooling_get_radiated_energy(
  *
  * In none model, this function does nothing.
  *
- * @param p #part data.
- * @param xp Pointer to the #xpart data.
+ * @param pind particle index.
  * @param time The time when the cooling was switched off.
  */
-INLINE static void cooling_set_part_time_cooling_off(size_t pind,
-                                                     struct xpart *xp,
-                                                     const double time) {}
+INLINE static void cooling_set_part_time_cooling_off(const size_t pind, const double time) {}
 
 /**
  * @brief Split the coolong content of a particle into n pieces
  *
  * Nothing to do here.
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
-static INLINE void cooling_split_part(size_t pind, double n) {}
+static INLINE void cooling_split_part(const size_t pind, double n) {}
 
 /**
  * @brief Initialises the cooling properties.

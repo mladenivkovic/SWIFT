@@ -19,17 +19,20 @@
 #ifndef SWIFT_COOLING_PS2020_DEBUG_H
 #define SWIFT_COOLING_PS2020_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void cooling_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "inline.h"
 
-  warning("[PID%lld] cooling_part_data:", p->id);
-  warning("[PID%lld] subgrid_temp=%.3e, subgrid_dens=%.3e", p->id,
-          p->cooling_data.subgrid_temp, p->cooling_data.subgrid_dens);
-  if (xp != NULL) {
-    warning("[PID%lld] cooling_xpart_data:", p->id);
-    warning("[PID%lld] radiated_energy=%.3e", p->id,
-            xp->cooling_data.radiated_energy);
-  }
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void cooling_debug_particle(
+    const size_t pind, const size_t xind) {
+
+  warning("[PID%lld] cooling_part_data:",part_get_id(pind));
+  warning("[PID%lld] subgrid_temp=%.3e, subgrid_dens=%.3e", part_get_id(pind),
+          part_get_cooling_data(pind)->subgrid_temp, part_get_cooling_data(pind)->subgrid_dens);
+  warning("[PID%lld] cooling_xpart_data:",part_get_id(pind));
+  warning("[PID%lld] radiated_energy=%.3e",part_get_id(pind),
+          part_get_extra_cooling_data(pind)->radiated_energy);
 }
 
 #endif /* SWIFT_COOLING_PS2020_DEBUG_H */

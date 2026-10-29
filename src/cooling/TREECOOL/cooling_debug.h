@@ -25,20 +25,24 @@
  * Weinberg & Hernquist 1996).
  */
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Print the cooling data of a particle.
  *
- * @param p The #part.
- * @param xp The #xpart (can be NULL).
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void cooling_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+    const size_t pind) {
 
-  if (xp != NULL) {
-    warning("[PID%lld] cooling_xpart_data:", p->id);
-    warning("[PID%lld] radiated_energy = %.3e, electron_fraction = %.3e", p->id,
-            xp->cooling_data.radiated_energy,
-            xp->cooling_data.electron_fraction);
+  if (pind != -1ull) {
+    warning("[PID%lld] cooling_xpart_data:", part_get_id(pind));
+    warning("[PID%lld] radiated_energy = %.3e, electron_fraction = %.3e", part_get_id(pind),
+            part_get_const_extra_cooling_data(pind)->radiated_energy,
+            part_get_const_extra_cooling_data(pind)->electron_fraction);
   }
 }
 

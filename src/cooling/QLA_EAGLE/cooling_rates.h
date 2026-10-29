@@ -24,9 +24,11 @@
 #include <config.h>
 
 /* Local includes. */
+#include "cooling_struct.h"
 #include "cooling_tables.h"
 #include "exp10.h"
 #include "interpolate.h"
+#include "physical_constants.h"
 
 /**
  * @brief Compute ratio of mass fraction to solar mass fraction
@@ -48,7 +50,7 @@
  * @param ratio_solar (return) Array of ratios to solar abundances.
  */
 __attribute__((always_inline)) INLINE static void abundance_ratio_to_solar(
-    const struct part *p, const struct cooling_function_data *cooling,
+    const size_t pind, const struct cooling_function_data *cooling,
     const struct phys_const *phys_const,
     float ratio_solar[qla_eagle_cooling_N_abundances]) {
 

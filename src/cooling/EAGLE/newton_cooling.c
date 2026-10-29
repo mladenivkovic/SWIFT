@@ -3,6 +3,8 @@
  * for the cooling.
  */
 
+#include "inline.h"
+
 /**
  * @brief Computes the log_10 of the temperature corresponding to a given
  * internal energy, hydrogen number density, Helium fraction and redshift.
@@ -605,7 +607,7 @@ INLINE static double eagle_metal_cooling_rate(
    */
   float newton_iter(float logu_init, double u_ini, int n_H_index, float d_n_H,
                     int He_index, float d_He, float He_reion_heat,
-                    struct part *restrict p,
+                    size_t pind,
                     const struct cosmology *restrict cosmo,
                     const struct cooling_function_data *restrict cooling,
                     const struct phys_const *restrict phys_const,
@@ -624,7 +626,7 @@ INLINE static double eagle_metal_cooling_rate(
     float const *metal_fraction =
         chemistry_get_metal_mass_fraction_for_cooling(p);
     const float XH = metal_fraction[chemistry_element_H];
-    const double n_H = hydro_get_physical_density(p, cosmo) * XH /
+    const double n_H = hydro_get_physical_density(pind, cosmo) * XH /
                        phys_const->const_proton_mass;
     const double n_H_cgs = n_H * cooling->number_density_to_cgs;
 

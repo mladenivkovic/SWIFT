@@ -19,13 +19,20 @@
 #ifndef SWIFT_COOLING_GRACKLE_DEBUG_H
 #define SWIFT_COOLING_GRACKLE_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void cooling_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "inline.h"
 
-  if (xp != NULL) {
-    warning("[PID%lld] cooling_xpart_data:", p->id);
-    warning("[PID%lld] radiated_energy = %.3e, time_last_event = %.3e", p->id,
-            xp->cooling_data.radiated_energy, xp->cooling_data.time_last_event);
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void cooling_debug_particle(
+    const size_t pind) {
+
+  const struct xpart_cooling_data *restrict cd = part_get_const_extra_cooling_data_p(pind);
+
+  if (pind != -1ull) {
+    warning("[PID%lld] cooling_xpart_data:",part_get_id(pind));
+    warning("[PID%lld] radiated_energy = %.3e, time_last_event = %.3e",part_get_id(pind),
+            cd->radiated_energy, cd->time_last_event);
 
 #if COOLING_GRACKLE_MODE >= 1
     warning(
@@ -33,21 +40,21 @@ __attribute__((always_inline)) INLINE static void cooling_debug_particle(
         "= "
         "%.3e, "
         "HeIII_frac = %.3e, e_frac = %.3e",
-        p->id, xp->cooling_data.HI_frac, xp->cooling_data.HII_frac,
-        xp->cooling_data.HeI_frac, xp->cooling_data.HeII_frac,
-        xp->cooling_data.HeIII_frac, xp->cooling_data.e_frac);
+       part_get_id(pind), cd->HI_frac, cd->HII_frac,
+        cd->HeI_frac, cd->HeII_frac,
+        cd->HeIII_frac, cd->e_frac);
 #if COOLING_GRACKLE_MODE >= 2
     warning("[PID%lld] HM_frac = %.3e, H2I_frac = %.3e, H2II_frac = %.3e",
-            p->id, xp->cooling_data.HM_frac, xp->cooling_data.H2I_frac,
-            xp->cooling_data.H2II_frac);
+           part_get_id(pind), cd->HM_frac, cd->H2I_frac,
+            cd->H2II_frac);
 #if COOLING_GRACKLE_MODE >= 3
-    warning("[PID%lld] DI_frac = %.3e, DII_frac = %.3e, HDI_frac = %.3e", p->id,
-            xp->cooling_data.DI_frac, xp->cooling_data.DII_frac,
-            xp->cooling_data.HDI_frac);
+    warning("[PID%lld] DI_frac = %.3e, DII_frac = %.3e, HDI_frac = %.3e",part_get_id(pind),
+            cd->DI_frac, cd->DII_frac,
+            cd->HDI_frac);
 #endif
 #endif
 #endif
-    warning("[PID%lld] metal_frac = %.3e", p->id, xp->cooling_data.metal_frac);
+    warning("[PID%lld] metal_frac = %.3e",part_get_id(pind), cd->metal_frac);
   }
 }
 
