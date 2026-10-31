@@ -96,14 +96,14 @@ float entropy_floor_gas_pressure(const float rho_phys, const float rho_com,
                                  const struct cosmology *cosmo,
                                  const struct entropy_floor_properties *props);
 
-float entropy_floor(const struct part *p, const struct cosmology *cosmo,
+float entropy_floor(const size_t pind, const struct cosmology *cosmo,
                     const struct entropy_floor_properties *props);
 
 float entropy_floor_gas_temperature(
     const float rho_phys, const float rho_com, const struct cosmology *cosmo,
     const struct entropy_floor_properties *props);
 
-float entropy_floor_temperature(const struct part *p,
+float entropy_floor_temperature(const size_t pind,
                                 const struct cosmology *cosmo,
                                 const struct entropy_floor_properties *props);
 

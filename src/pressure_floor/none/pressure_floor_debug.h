@@ -19,7 +19,13 @@
 #ifndef SWIFT_PRESSURE_FLOOR_NONE_DEBUG_H
 #define SWIFT_PRESSURE_FLOOR_NONE_DEBUG_H
 
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void pressure_floor_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_PRESSURE_FLOOR_NONE_DEBUG_H */

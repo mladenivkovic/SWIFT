@@ -19,14 +19,18 @@
 #ifndef SWIFT_STAR_FORMATION_QLA_DEBUG_H
 #define SWIFT_STAR_FORMATION_QLA_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void star_formation_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
 
-  if (xp != NULL) {
-    warning("[PID%lld] sf_data:", p->id);
-    warning("[PID%lld] convert_to_star = %d", p->id,
-            xp->sf_data.convert_to_star);
-  }
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void star_formation_debug_particle(
+    const size_t pind) {
+
+  warning("[PID%lld] sf_data:",part_get_id(pind));
+  warning("[PID%lld] convert_to_star = %d",part_get_id(pind),
+          part_get_const_sf_data_p(pind)->convert_to_star);
 }
 
 #endif /* SWIFT_STAR_FORMATION_QLA_DEBUG_H */

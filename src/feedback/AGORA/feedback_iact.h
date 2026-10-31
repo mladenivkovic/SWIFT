@@ -34,8 +34,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First sparticle.
- * @param pj Second particle (not updated).
- * @param xpj Extra particle data (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time value
@@ -43,14 +42,13 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
                                     const float hi, const float hj,
-                                    struct spart *si, const struct part *pj,
-                                    const struct xpart *xpj,
+                                    struct spart *si, const size_t pindj,
                                     const struct cosmology *cosmo,
                                     const struct feedback_props *fb_props,
                                     const integertime_t ti_current) {
 
   /* Get the gas mass. */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
 
   /* Get r */
   const float r = sqrtf(r2);
@@ -79,7 +77,6 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
  * @param pj Second (gas) particle.
- * @param xpj Extra particle data
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time used value for seeding random number
@@ -88,9 +85,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_apply(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *si, struct part *pj, struct xpart *xpj,
-    const struct cosmology *cosmo, const struct hydro_props *hydro_props,
-    const struct feedback_props *fb_props, const integertime_t ti_current) {
+    struct spart *si, size_t pindj, const struct cosmology *cosmo, const struct hydro_props *hydro_props, const struct feedback_props *fb_props, const integertime_t ti_current) {
 
   const double e_sn = si->feedback_data.energy_ejected;
 
@@ -99,7 +94,7 @@ runner_iact_nonsym_feedback_apply(
     return;
   }
 
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
   const float r = sqrtf(r2);
 
   /* Get the kernel for hi. */
@@ -124,25 +119,26 @@ runner_iact_nonsym_feedback_apply(
   /* Energy received */
   const double du = e_sn * weight / new_mass;
 
-  xpj->feedback_data.delta_mass += dm;
-  xpj->feedback_data.delta_u += du;
+  struct feedback_xpart_data *restrict fdj = part_get_extra_feedback_data_p(pindj);
+  fdj->delta_mass += dm;
+  fdj->delta_u += du;
 
   /* Compute momentum received. */
   for (int i = 0; i < 3; i++) {
-    xpj->feedback_data.delta_p[i] += dm * (si->v[i] - xpj->v_full[i]);
+    fdj->delta_p[i] += dm * (si->v[i] - part_get_v_full_ind(pindj, i));
   }
 
   /* Add the metals */
   for (int i = 0; i < AGORA_CHEMISTRY_ELEMENT_COUNT; i++) {
-    pj->chemistry_data.metal_mass[i] +=
+   part_get_chemistry_data_p(pindj)->metal_mass[i] +=
         weight * si->feedback_data.metal_mass_ejected[i];
   }
 
   /* Impose maximal viscosity */
-  hydro_diffusive_feedback_reset(pj);
+  hydro_diffusive_feedback_reset(pindj);
 
   /* Synchronize the particle on the timeline */
-  timestep_sync_part(pj);
+  timestep_sync_part(pindj);
 }
 
 #endif /* SWIFT_AGORA_FEEDBACK_IACT_H */

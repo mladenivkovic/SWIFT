@@ -19,7 +19,11 @@
 #ifndef SWIFT_FEEDBACK_AGORA_DEBUG_H
 #define SWIFT_FEEDBACK_AGORA_DEBUG_H
 
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void feedback_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_FEEDBACK_NONE_DEBUG_H */

@@ -19,28 +19,33 @@
 #ifndef SWIFT_TRACERS_FLAMINGO_DEBUG_H
 #define SWIFT_TRACERS_FLAMINGO_DEBUG_H
 
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Write the particle-carried tracers field for debugging
  *
- * @param p the #part.
- * @param xp the #xpart.
+ * @param pind the particle index.
  */
 __attribute__((always_inline)) INLINE static void tracers_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+    const size_t pind) {
 
-  if (xp != NULL) {
-    warning("[PID%lld] tracers_xpart_data:", p->id);
-    warning(
-        "[PID%lld] maximum_temperature = %.3e, "
-        "maximum_temperature_scale_factor/time = %.3e, "
-        "last_AGN_injection_scale_factor/time = %.3e, "
-        "AGN_feedback_energy = "
-        "%.3e, ",
-        p->id, xp->tracers_data.maximum_temperature,
-        xp->tracers_data.maximum_temperature_scale_factor,
-        xp->tracers_data.last_AGN_injection_scale_factor,
-        xp->tracers_data.AGN_feedback_energy);
-  }
+  const struct tracers_xpart_data *restrict td = part_get_const_extra_tracers_data_p(pind);
+
+  warning("[PID%lld] tracers_xpart_data:", part_get_id(pind));
+  warning(
+      "[PID%lld] maximum_temperature = %.3e, "
+      "maximum_temperature_scale_factor/time = %.3e, "
+      "last_AGN_injection_scale_factor/time = %.3e, "
+      "AGN_feedback_energy = "
+      "%.3e, ",
+     part_get_id(pind), td->maximum_temperature,
+      td->maximum_temperature_scale_factor,
+      td->last_AGN_injection_scale_factor,
+      td->AGN_feedback_energy);
 }
 
 #endif /* SWIFT_TRACERS_FLAMINGO_DEBUG_H */

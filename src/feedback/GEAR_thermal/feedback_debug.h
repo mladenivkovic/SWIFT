@@ -19,18 +19,19 @@
 #ifndef SWIFT_FEEDBACK_GEAR_DEBUG_H
 #define SWIFT_FEEDBACK_GEAR_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void feedback_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "inline.h"
 
-  if (xp != NULL) {
-    warning("[PID%lld] feedback_xpart_data:", p->id);
-    warning(
-        "[PID%lld] delta_mass = %.3e, delta_u = %.3e, delta_p = [%.3e, %.3e, "
-        "%.3e]",
-        p->id, xp->feedback_data.delta_mass, xp->feedback_data.delta_u,
-        xp->feedback_data.delta_p[0], xp->feedback_data.delta_p[1],
-        xp->feedback_data.delta_p[2]);
-  }
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void feedback_debug_particle(
+    const size_t pind) {
+
+  const struct feedback_xpart_data *restrict fd = part_get_const_extra_feedback_data_p(pind);
+
+  warning("[PID%lld] feedback_xpart_data:", part_get_id(pind));
+  warning(
+      "[PID%lld] delta_mass = %.3e, delta_u = %.3e, delta_p = [%.3e, %.3e, %.3e]",
+      part_get_id(pind), fd->delta_mass, fd->delta_u, fd->delta_p[0], fd->delta_p[1], fd->delta_p[2]);
 }
 
 #endif /* SWIFT_FEEDBACK_GEAR_DEBUG_H */

@@ -64,19 +64,19 @@ struct entropy_floor_properties {
  *
  * Note that the particle is not updated!!
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
 static INLINE float entropy_floor(
-    const struct part *p, const struct cosmology *cosmo,
+    const size_t pind, const struct cosmology *cosmo,
     const struct entropy_floor_properties *props) {
 
   /* Comoving density in internal units */
-  const float rho_com = hydro_get_comoving_density(p);
+  const float rho_com = hydro_get_comoving_density(pind);
 
   /* Physical density in internal units */
-  const float rho_phys = hydro_get_physical_density(p, cosmo);
+  const float rho_phys = hydro_get_physical_density(pind, cosmo);
 
   /* Mean baryon density in co-moving internal units for over-density condition
    * (Recall cosmo->critical_density_0 is 0 in a non-cosmological run,
@@ -110,19 +110,19 @@ static INLINE float entropy_floor(
  * It only matches the entropy returned by the entropy_floor() function
  * for a neutral gas with primoridal abundance.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
 static INLINE float entropy_floor_temperature(
-    const struct part *p, const struct cosmology *cosmo,
+    const size_t pind, const struct cosmology *cosmo,
     const struct entropy_floor_properties *props) {
 
   /* Comoving density in internal units */
-  const float rho_com = hydro_get_comoving_density(p);
+  const float rho_com = hydro_get_comoving_density(pind);
 
   /* Physical density in internal units */
-  const float rho_phys = hydro_get_physical_density(p, cosmo);
+  const float rho_phys = hydro_get_physical_density(pind, cosmo);
 
   /* Mean baryon density in co-moving internal units for over-density condition
    * (Recall cosmo->critical_density_0 is 0 in a non-cosmological run,

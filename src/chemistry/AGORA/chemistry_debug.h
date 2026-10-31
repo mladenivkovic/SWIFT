@@ -19,6 +19,10 @@
 #ifndef SWIFT_CHEMISTRY_AGORA_DEBUG_H
 #define SWIFT_CHEMISTRY_AGORA_DEBUG_H
 
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void chemistry_debug_particle(
     const size_t pind) {}
 

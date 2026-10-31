@@ -35,61 +35,60 @@
 /**
  * @brief Update the properties of the particle due to a supernovae.
  *
- * @param p The #part to consider.
- * @param xp The #xpart to consider.
+ * @param pind Index of the hydro particle to consider.
  * @param e The #engine.
  */
-void feedback_update_part(struct part *p, struct xpart *xp,
-                          const struct engine *e) {
+void feedback_update_part(size_t pind, const struct engine *e) {
+
+  struct feedback_xpart_data *restrict fd = part_get_extra_feedback_data_p(pind);
 
   /* Did the particle receive a supernovae */
-  if (!xp->feedback_data.hit_by_SN && !xp->feedback_data.hit_by_winds) return;
+  if (!fd->hit_by_SN && !fd->hit_by_winds) return;
 
   const struct cosmology *cosmo = e->cosmology;
   const struct pressure_floor_props *pressure_floor = e->pressure_floor_props;
 
   /* Turn off the cooling only when SN are involved */
-  if (xp->feedback_data.hit_by_SN) {
-    cooling_set_part_time_cooling_off(p, xp, e->time);
+  if (fd->hit_by_SN) {
+    cooling_set_part_time_cooling_off(pind, e->time);
   }
 
   /* Update mass */
-  const float old_mass = hydro_get_mass(p);
-  const float new_mass = old_mass + xp->feedback_data.delta_mass;
+  const float old_mass = hydro_get_mass(pind);
+  const float new_mass = old_mass + fd->delta_mass;
 
-  if (xp->feedback_data.delta_mass < 0.) {
+  if (fd->delta_mass < 0.) {
     error("Delta mass smaller than 0");
   }
 
-  hydro_set_mass(p, new_mass);
+  hydro_set_mass(pind, new_mass);
 
-  xp->feedback_data.delta_mass = 0;
+  fd->delta_mass = 0;
 
   /* Update the density */
-  p->rho *= new_mass / old_mass;
+  part_set_rho(pind, part_get_rho(pind) * new_mass / old_mass);
 
   /* Update internal energy */
-  const float u =
-      hydro_get_physical_internal_energy(p, xp, cosmo) * old_mass / new_mass;
-  const float u_new = u + xp->feedback_data.delta_u;
+  const float u = hydro_get_physical_internal_energy(pind, cosmo) * old_mass / new_mass;
+  const float u_new = u + fd->delta_u;
 
-  hydro_set_physical_internal_energy(p, xp, cosmo, u_new);
-  hydro_set_drifted_physical_internal_energy(p, cosmo, pressure_floor, u_new);
+  hydro_set_physical_internal_energy(pind, cosmo, u_new);
+  hydro_set_drifted_physical_internal_energy(pind, cosmo, pressure_floor, u_new);
 
-  xp->feedback_data.delta_u = 0.;
+  fd->delta_u = 0.;
 
   /* Update the velocities */
   for (int i = 0; i < 3; i++) {
-    const float dv = xp->feedback_data.delta_p[i] / new_mass;
+    const float dv = fd->delta_p[i] / new_mass;
 
-    xp->v_full[i] += dv;
-    p->v[i] += dv;
+    part_set_v_full_ind(pind, i, part_get_v_full_ind(pind, i) + dv);
+    part_set_v_ind(pind, i, part_get_v_ind(pind, i) + dv);
 
-    xp->feedback_data.delta_p[i] = 0;
+    fd->delta_p[i] = 0;
   }
 
-  xp->feedback_data.hit_by_SN = 0;
-  xp->feedback_data.hit_by_winds = 0;
+  fd->hit_by_SN = 0;
+  fd->hit_by_winds = 0;
 }
 
 /**
@@ -97,11 +96,9 @@ void feedback_update_part(struct part *p, struct xpart *xp,
  *
  * Nothing to do here.
  *
- * @param p The particle to act upon
- * @param xp The extra particle to act upon
+ * @param pind Index of the particle to act upon
  */
-__attribute__((always_inline)) INLINE void feedback_end_density(
-    struct part *p, struct xpart *xp) {}
+__attribute__((always_inline)) INLINE void feedback_end_density(size_t pind) {}
 
 /**
  * @brief Reset the gas particle-carried fields related to feedback at the
@@ -109,10 +106,9 @@ __attribute__((always_inline)) INLINE void feedback_end_density(
  *
  * Nothing to do here in the GEAR model.
  *
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  */
-void feedback_reset_part(struct part *p, struct xpart *xp) {}
+void feedback_reset_part(size_t pind) {}
 
 /**
  * @brief Should this particle be doing any feedback-related operation?

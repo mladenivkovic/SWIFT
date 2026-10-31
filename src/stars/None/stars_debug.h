@@ -19,13 +19,19 @@
 #ifndef SWIFT_NONE_STARS_DEBUG_H
 #define SWIFT_NONE_STARS_DEBUG_H
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void stars_debug_particle(
-    const struct spart *p) {
-  printf(
+    const struct spart *sp) {
+  warning(
       "x=[%.3e,%.3e,%.3e], "
-      "v_full=[%.3e,%.3e,%.3e] p->mass=%.3e \n t_begin=%d, t_end=%d\n",
-      p->x[0], p->x[1], p->x[2], p->v_full[0], p->v_full[1], p->v_full[2],
-      p->mass, p->ti_begin, p->ti_end);
+      "v_full=[%.3e,%.3e,%.3e] sp->mass=%.3e \n t_begin=%d, t_end=%d",
+      sp->x[0], sp->x[1], sp->x[2], sp->v_full[0], sp->v_full[1], sp->v_full[2],
+      sp->mass, sp->ti_begin, sp->ti_end);
 }
+
 
 #endif /* SWIFT_NONE_STARS_DEBUG_H */

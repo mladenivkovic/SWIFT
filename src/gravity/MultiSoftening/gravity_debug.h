@@ -19,21 +19,26 @@
 #ifndef SWIFT_MULTI_SOFTENING_GRAVITY_DEBUG_H
 #define SWIFT_MULTI_SOFTENING_GRAVITY_DEBUG_H
 
+#include "inline.h"
+
+#include <stddef.h>
+#include <stdio.h>
+
 __attribute__((always_inline)) INLINE static void gravity_debug_particle(
-    const struct gpart *p) {
+    const struct gpart *gp) {
   printf(
       "mass=%.3e time_bin=%d\n"
       "x=[%.5e,%.5e,%.5e], v_full=[%.5e,%.5e,%.5e], type=%d, "
       "a=[%.5e,%.5e,%.5e]\n",
-      p->mass, p->time_bin, p->x[0], p->x[1], p->x[2], p->v_full[0],
-      p->v_full[1], p->v_full[2], (int)p->type, p->a_grav[0], p->a_grav[1],
-      p->a_grav[2]);
+      gp->mass, gp->time_bin, gp->x[0], gp->x[1], gp->x[2], gp->v_full[0],
+      gp->v_full[1], gp->v_full[2], (int)gp->type, gp->a_grav[0], gp->a_grav[1],
+      gp->a_grav[2]);
 #ifndef SWIFT_GRAVITY_NO_POTENTIAL
-  printf("pot=%e\n", p->potential);
+  printf("pot=%e\n", gp->potential);
 #endif
 #ifdef SWIFT_DEBUG_CHECKS
-  printf("num_interacted=%lld ti_drift=%lld ti_kick=%lld\n", p->num_interacted,
-         p->ti_drift, p->ti_kick);
+  printf("num_interacted=%lld ti_drift=%lld ti_kick=%lld\n", gp->num_interacted,
+         gp->ti_drift, gp->ti_kick);
 #endif
 }
 

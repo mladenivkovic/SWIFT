@@ -63,7 +63,7 @@ static INLINE float entropy_floor_gas_pressure(
  *
  * Simply return 0 (no floor).
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
@@ -96,12 +96,12 @@ static INLINE float entropy_floor_gas_temperature(
  *
  * Simply return 0 (no floor).
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
 static INLINE float entropy_floor_temperature(
-    const struct part *p, const struct cosmology *cosmo,
+    const size_t pind, const struct cosmology *cosmo,
     const struct entropy_floor_properties *props) {
 
   return 0.f;

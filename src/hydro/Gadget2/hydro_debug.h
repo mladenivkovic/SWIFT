@@ -19,31 +19,35 @@
 #ifndef SWIFT_GADGET2_HYDRO_DEBUG_H
 #define SWIFT_GADGET2_HYDRO_DEBUG_H
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
+
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
-  warning("[PID%lld] part:", p->id);
+    const size_t pind) {
+  warning("[PID%lld] part:",part_get_id(pind));
   warning(
       "[PID%lld] x=[%.3e,%.3e,%.3e], "
       "v=[%.3e,%.3e,%.3e]",
-      p->id, p->x[0], p->x[1], p->x[2], p->v[0], p->v[1], p->v[2]);
+     part_get_id(pind),part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2),part_get_v_ind(pind, 0),part_get_v_ind(pind, 1),part_get_v_ind(pind, 2));
   warning(
       "[PID%lld] a=[%.3e,%.3e,%.3e] h=%.3e, wcount=%.3f, wcount_dh=%.3e, "
       "m=%.3e, dh_drho=%.3e, rho=%.3e, "
       "P=%.3e, P_over_rho2=%.3e, S=%.3e, dS/dt=%.3e, c=%.3e",
-      p->id, p->a_hydro[0], p->a_hydro[1], p->a_hydro[2], p->h,
-      p->density.wcount, p->density.wcount_dh, p->mass, p->density.rho_dh,
-      p->rho, hydro_get_comoving_pressure(p), p->force.P_over_rho2, p->entropy,
-      p->entropy_dt, p->force.soundspeed);
-  warning("[PID%lld] divV=%.3e, rotV=[%.3e,%.3e,%.3e], balsara=%.3e", p->id,
-          p->density.div_v, p->density.rot_v[0], p->density.rot_v[1],
-          p->density.rot_v[2], p->force.balsara);
-  warning("[PID%lld] v_sig=%e dh/dt=%.3e time_bin=%d wakeup=%d", p->id,
-          p->force.v_sig, p->force.h_dt, p->time_bin, p->limiter_data.wakeup);
-  if (xp != NULL) {
-    warning("[PID%lld] xpart:", p->id);
-    warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]", p->id, xp->v_full[0],
-            xp->v_full[1], xp->v_full[2]);
-  }
+     part_get_id(pind),part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2), part_get_h(pind),
+      part_get_wcount(pind), part_get_rho_dh(pind),part_get_mass(pind), part_get_rho_dh(pind),
+     part_get_rho(pind), hydro_get_comoving_pressure(pind), part_get_p_over_rho2(pind), part_get_entropy(pind),
+      part_get_entropy_dt(pind), part_get_soundspeed(pind));
+  warning("[PID%lld] divV=%.3e, rotV=[%.3e,%.3e,%.3e], balsara=%.3e",part_get_id(pind),
+          part_get_div_v(pind), part_get_rot_v(pind, 0), part_get_rot_v(pind, 1),
+          part_get_rot_v(pind, 2), part_get_balsara(pind));
+  warning("[PID%lld] v_sig=%e dh/dt=%.3e time_bin=%d wakeup=%d",part_get_id(pind),
+          p->force.v_sig, part_get_h_dt(pind), part_get_time_bin(pind), part_get_const_limiter_data_p(pind)->wakeup);
+  warning("[PID%lld] xpart:",part_get_id(pind));
+  warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]",part_get_id(pind), part_get_v_full_ind(pind, 0),
+          part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2));
 }
 
 #endif /* SWIFT_GADGET2_HYDRO_DEBUG_H */

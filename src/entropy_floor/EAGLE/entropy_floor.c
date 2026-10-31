@@ -81,18 +81,18 @@ float entropy_floor_gas_pressure(const float rho_phys, const float rho_com,
  *
  * Note that the particle is not updated!!
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
-float entropy_floor(const struct part *p, const struct cosmology *cosmo,
+float entropy_floor(const size_t pind, const struct cosmology *cosmo,
                     const struct entropy_floor_properties *props) {
 
   /* Comoving density in internal units */
-  const float rho_com = hydro_get_comoving_density(p);
+  const float rho_com = hydro_get_comoving_density(pind);
 
   /* Physical density in internal units */
-  const float rho_phys = hydro_get_physical_density(p, cosmo);
+  const float rho_phys = hydro_get_physical_density(pind, cosmo);
 
   const float pressure =
       entropy_floor_gas_pressure(rho_phys, rho_com, cosmo, props);
@@ -135,7 +135,7 @@ float entropy_floor_gas_temperature(
 
     const float temperature_Jeans =
         props->Jeans_temperature_norm *
-        pow(rho_phys * props->Jeans_density_threshold_inv, jeans_slope);
+        powf(rho_phys * props->Jeans_density_threshold_inv, jeans_slope);
 
     temperature = max(temperature, temperature_Jeans);
   }
@@ -148,7 +148,7 @@ float entropy_floor_gas_temperature(
 
     const float temperature_Cool =
         props->Cool_temperature_norm *
-        pow(rho_phys * props->Cool_density_threshold_inv, cool_slope);
+        powf(rho_phys * props->Cool_density_threshold_inv, cool_slope);
 
     temperature = max(temperature, temperature_Cool);
   }
@@ -164,19 +164,19 @@ float entropy_floor_gas_temperature(
  * It only matches the entropy returned by the entropy_floor() function
  * for a neutral gas with primoridal abundance.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param cosmo The cosmological model.
  * @param props The properties of the entropy floor.
  */
-float entropy_floor_temperature(const struct part *p,
+float entropy_floor_temperature(const size_t pind,
                                 const struct cosmology *cosmo,
                                 const struct entropy_floor_properties *props) {
 
   /* Comoving density in internal units */
-  const float rho_com = hydro_get_comoving_density(p);
+  const float rho_com = hydro_get_comoving_density(pind);
 
   /* Physical density in internal units */
-  const float rho_phys = hydro_get_physical_density(p, cosmo);
+  const float rho_phys = hydro_get_physical_density(pind, cosmo);
 
   return entropy_floor_gas_temperature(rho_phys, rho_com, cosmo, props);
 }

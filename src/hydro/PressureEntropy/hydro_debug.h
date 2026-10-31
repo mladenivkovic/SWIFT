@@ -29,27 +29,31 @@
  * Follows eqautions (19), (21) and (22) of Hopkins, P., MNRAS, 2013,
  * Volume 428, Issue 4, pp. 2840-2856 with a simple Balsara viscosity term.
  */
+
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
-  warning("[PID%lld] part:", p->id);
+    const size_t pind) {
+  warning("[PID%lld] part:",part_get_id(pind));
   warning(
       "[PID%lld] x=[%.3e,%.3e,%.3e], "
       "v=[%.3e,%.3e,%.3e], a=[%.3e,%.3e,%.3e], "
       "h=%.3e, wcount=%.3f, wcount_dh=%.3e, m=%.3e, dh_drho=%.3e, rho=%.3e, "
       "rho_bar=%.3e, P=%.3e, dP_dh=%.3e, P_over_rho2=%.3e, S=%.3e, S^1/g=%.3e, "
       "dS/dt=%.3e, c=%.3e v_sig=%e dh/dt=%.3e time_bin=%d wakeup=%d",
-      p->id, p->x[0], p->x[1], p->x[2], p->v[0], p->v[1], p->v[2],
-      p->a_hydro[0], p->a_hydro[1], p->a_hydro[2], p->h, p->density.wcount,
-      p->density.wcount_dh, p->mass, p->density.rho_dh, p->rho, p->rho_bar,
-      hydro_get_comoving_pressure(p), p->density.pressure_dh,
-      p->force.P_over_rho2, p->entropy, p->entropy_one_over_gamma,
-      p->entropy_dt, p->force.soundspeed, p->force.v_sig, p->force.h_dt,
-      p->time_bin, p->limiter_data.wakeup);
-  if (xp != NULL) {
-    warning("[PID%lld] xpart:", p->id);
-    warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]", p->id, xp->v_full[0],
-            xp->v_full[1], xp->v_full[2]);
-  }
+     part_get_id(pind),part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2),part_get_v_ind(pind, 0),part_get_v_ind(pind, 1),part_get_v_ind(pind, 2),
+     part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2), part_get_h(pind), part_get_wcount(pind),
+      part_get_rho_dh(pind),part_get_mass(pind), part_get_rho_dh(pind),part_get_rho(pind),part_get_rho_bar(pind),
+      hydro_get_comoving_pressure(pind), part_get_pressure_dh(pind),
+      part_get_p_over_rho2(pind), part_get_entropy(pind), part_get_entropy_one_over_gamma(pind),
+      part_get_entropy_dt(pind), part_get_soundspeed(pind), part_get_v_sig(pind), part_get_h_dt(pind),
+      part_get_time_bin(pind), part_get_const_limiter_data_p(pind)->wakeup);
+  warning("[PID%lld] xpart:",part_get_id(pind));
+  warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]",part_get_id(pind), part_get_v_full_ind(pind, 0),
+          part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2));
 }
 
 #endif /* SWIFT_PRESSURE_ENTROPY_HYDRO_DEBUG_H */

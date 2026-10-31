@@ -19,8 +19,13 @@
 #ifndef SWIFT_GIZMO_MFV_HYDRO_DEBUG_H
 #define SWIFT_GIZMO_MFV_HYDRO_DEBUG_H
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+    const size_t pind) {
   warning(
       "[PID%lld] x=[%.16e,%.16e,%.16e], "
       "v=[%.3e,%.3e,%.3e], "
@@ -53,26 +58,26 @@ __attribute__((always_inline)) INLINE static void hydro_debug_particle(
       "density={"
       "wcount_dh=%.3e, "
       "wcount=%.3e}",
-      p->id, p->x[0], p->x[1], p->x[2], p->v[0], p->v[1], p->v[2],
-      p->a_hydro[0], p->a_hydro[1], p->a_hydro[2], p->h, p->time_bin,
-      p->limiter_data.wakeup, p->fluid_v[0], p->fluid_v[1], p->fluid_v[2],
-      p->rho, p->P, p->gradients.rho[0], p->gradients.rho[1],
-      p->gradients.rho[2], p->gradients.v[0][0], p->gradients.v[0][1],
-      p->gradients.v[0][2], p->gradients.v[1][0], p->gradients.v[1][1],
-      p->gradients.v[1][2], p->gradients.v[2][0], p->gradients.v[2][1],
-      p->gradients.v[2][2], p->gradients.P[0], p->gradients.P[1],
-      p->gradients.P[2], p->limiter.rho[0], p->limiter.rho[1],
-      p->limiter.v[0][0], p->limiter.v[0][1], p->limiter.v[1][0],
-      p->limiter.v[1][1], p->limiter.v[2][0], p->limiter.v[2][1],
-      p->limiter.P[0], p->limiter.P[1], p->limiter.maxr,
-      p->conserved.momentum[0], p->conserved.momentum[1],
-      p->conserved.momentum[2], p->conserved.mass, p->conserved.energy,
-      p->geometry.volume, p->geometry.matrix_E[0][0],
-      p->geometry.matrix_E[0][1], p->geometry.matrix_E[0][2],
-      p->geometry.matrix_E[1][0], p->geometry.matrix_E[1][1],
-      p->geometry.matrix_E[1][2], p->geometry.matrix_E[2][0],
-      p->geometry.matrix_E[2][1], p->geometry.matrix_E[2][2],
-      p->timestepvars.vmax, p->density.wcount_dh, p->density.wcount);
+     part_get_id(pind),part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2),part_get_v_ind(pind, 0),part_get_v_ind(pind, 1),part_get_v_ind(pind, 2),
+     part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2), part_get_h(pind), part_get_time_bin(pind),
+      part_get_const_limiter_data_p(pind)->wakeup, part_get_fluid_v(pind,0), part_get_fluid_v(pind,1), part_get_fluid_v(pind,2),
+     part_get_rho(pind), part_get_P(pind), part_get_grad_rho_ind(pind, 0), part_get_grad_rho_ind(pind, 1),
+      part_get_grad_rho_ind(pind, 2), part_get_grad_v_ind(pind, 0, 0), part_get_grad_v_ind(pind, 0, 1),
+      part_get_grad_v_ind(pind, 0, 2), part_get_grad_v_ind(pind, 1, 0), part_get_grad_v_ind(pind, 1, 1),
+      part_get_grad_v_ind(pind, 1, 2), part_get_grad_v_ind(pind, 2, 0), part_get_grad_v_ind(pind, 2, 1),
+      part_get_grad_v_ind(pind, 2, 2), part_get_grad_P_ind(pind, 0), part_get_grad_P_ind(pind, 1),
+      part_get_grad_P_ind(pind, 2), part_get_limiter_rho(pind, 0), part_get_limiter_rho(pind, 1),
+      part_get_limiter_v(pind, 0, 0), part_get_limiter_v(pind, 0, 1), part_get_limiter_v(pind, 1, 0),
+      part_get_limiter_v(pind, 1, 1), part_get_limiter_v(pind, 2, 0), part_get_limiter_v(pind, 2, 1),
+      part_get_limiter_P_ind(pind, 0), part_get_limiter_P_ind(pind, 1), part_get_limiter_maxr(pind),
+      part_get_conserved_momentum(pind, 0), part_get_conserved_momentum(pind, 1),
+      part_get_conserved_momentum(pind, 2), part_get_conserved_mass(pind), part_get_conserved_energy(pind),
+      part_get_geometry_volume(pind), part_get_geometry_matrix_E_ind(pind, 0, 0),
+      part_get_geometry_matrix_E_ind(pind, 0, 1), part_get_geometry_matrix_E_ind(pind, 0, 2),
+      part_get_geometry_matrix_E_ind(pind, 1, 0), part_get_geometry_matrix_E_ind(pind, 1, 1),
+      part_get_geometry_matrix_E_ind(pind, 1, 2), part_get_geometry_matrix_E_ind(pind, 2, 0),
+      part_get_geometry_matrix_E_ind(pind, 2, 1), part_get_geometry_matrix_E_ind(pind, 2, 2),
+      part_get_timestepvars_vmax(pind), part_get_rho_dh(pind), part_get_wcount(pind));
 }
 
 #endif /* SWIFT_GIZMO_MFV_HYDRO_DEBUG_H */

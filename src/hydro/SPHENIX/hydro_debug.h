@@ -30,8 +30,8 @@
 #include "hydro.h"
 
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
-  warning("[PID%lld] part:", part_get_id(p));
+    const size_t pind) {
+  warning("[PID%lld] part:", part_get_id(pind));
   warning(
       "[PID%lld] x=[%.3e,%.3e,%.3e], "
       "v=[%.3e,%.3e,%.3e], a=[%.3e,%.3e,%.3e], "
@@ -39,19 +39,17 @@ __attribute__((always_inline)) INLINE static void hydro_debug_particle(
       "h=%.3e, dh/dt=%.3e wcount=%d, m=%.3e, dh_drho=%.3e, rho=%.3e, "
       "alpha=%.3e, "
       "time_bin=%d",
-      part_get_id(p), part_get_x_ind(p, 0), part_get_x_ind(p, 1),
-      part_get_x_ind(p, 2), part_get_v_ind(p, 0), part_get_v_ind(p, 1),
-      part_get_v_ind(p, 2), part_get_a_hydro_ind(p, 0),
-      part_get_a_hydro_ind(p, 1), part_get_a_hydro_ind(p, 2), part_get_u(p),
-      part_get_u_dt(p), part_get_v_sig(p), hydro_get_comoving_pressure(p),
-      part_get_h(p), part_get_h_dt(p), (int)part_get_wcount(p),
-      part_get_mass(p), part_get_rho_dh(p), part_get_rho(p),
-      part_get_alpha_av(p), part_get_time_bin(p));
-  if (xp != NULL) {
-    warning("[PID%lld] xpart:", part_get_id(p));
-    warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]", part_get_id(p), xp->v_full[0],
-            xp->v_full[1], xp->v_full[2]);
-  }
+      part_get_id(pind), part_get_x_ind(pind, 0), part_get_x_ind(pind, 1),
+      part_get_x_ind(pind, 2), part_get_v_ind(pind, 0), part_get_v_ind(pind, 1),
+      part_get_v_ind(pind, 2), part_get_a_hydro_ind(pind, 0),
+      part_get_a_hydro_ind(pind, 1), part_get_a_hydro_ind(pind, 2), part_get_u(pind),
+      part_get_u_dt(pind), part_get_v_sig(pind), hydro_get_comoving_pressure(pind),
+      part_get_h(pind), part_get_h_dt(pind), (int)part_get_wcount(pind),
+      part_get_mass(pind), part_get_rho_dh(pind), part_get_rho(pind),
+      part_get_alpha_av(pind), part_get_time_bin(pind));
+    warning("[PID%lld] xpart:", part_get_id(pind));
+    warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]", part_get_id(pind), part_get_v_full_ind(pind, 0),
+            part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2));
 }
 
 #endif /* SWIFT_SPHENIX_HYDRO_DEBUG_H */

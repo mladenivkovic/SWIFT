@@ -24,8 +24,7 @@
 
 #include <stddef.h>
 
-__attribute__((always_inline)) INLINE static void cooling_debug_particle(
-    const size_t pind, const size_t xind) {
+__attribute__((always_inline)) INLINE static void cooling_debug_particle(const size_t pind) {
 
   warning("[PID%lld] cooling_part_data:",part_get_id(pind));
   warning("[PID%lld] subgrid_temp=%.3e, subgrid_dens=%.3e", part_get_id(pind),

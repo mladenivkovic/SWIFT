@@ -56,55 +56,56 @@ float feedback_compute_spart_timestep(
 /**
  * @brief Update the properties of the particle due to a supernovae.
  *
- * @param p The #part to consider.
- * @param xp The #xpart to consider.
+ * @param pind Index of the hydro particle to consider.
  * @param e The #engine.
  */
-void feedback_update_part(struct part *p, struct xpart *xp,
-                          const struct engine *e) {
+void feedback_update_part(size_t pind, const struct engine *e) {
+
+  struct feedback_xpart_data *restrict fd = part_get_extra_feedback_data_p(pind);
+  struct cooling_xpart_data *restrict cd = part_get_extra_cooling_data_p(pind);
 
   /* Did the particle receive a supernovae */
-  if (xp->feedback_data.delta_mass == 0) return;
+  if (fd->delta_mass == 0) return;
 
   const struct cosmology *cosmo = e->cosmology;
   const struct pressure_floor_props *pressure_floor = e->pressure_floor_props;
 
   /* Turn off the cooling */
-  xp->cooling_data.time_last_event = e->time;
+  cd->time_last_event = e->time;
 
   /* Update mass */
-  const float old_mass = hydro_get_mass(p);
-  const float new_mass = old_mass + xp->feedback_data.delta_mass;
+  const float old_mass = hydro_get_mass(pind);
+  const float new_mass = old_mass + fd->delta_mass;
 
-  if (xp->feedback_data.delta_mass < 0.) {
+  if (fd->delta_mass < 0.) {
     error("Delta mass smaller than 0");
   }
 
-  hydro_set_mass(p, new_mass);
+  hydro_set_mass(pind, new_mass);
 
-  xp->feedback_data.delta_mass = 0;
+  fd->delta_mass = 0;
 
   /* Update the density */
-  p->rho *= new_mass / old_mass;
+  part_set_rho(pind, part_get_rho(pind) * new_mass / old_mass);
 
   /* Update internal energy */
   const float u =
-      hydro_get_physical_internal_energy(p, xp, cosmo) * old_mass / new_mass;
-  const float u_new = u + xp->feedback_data.delta_u;
+      hydro_get_physical_internal_energy(pind, cosmo) * old_mass / new_mass;
+  const float u_new = u + fd->delta_u;
 
-  hydro_set_physical_internal_energy(p, xp, cosmo, u_new);
-  hydro_set_drifted_physical_internal_energy(p, cosmo, pressure_floor, u_new);
+  hydro_set_physical_internal_energy(pind, cosmo, u_new);
+  hydro_set_drifted_physical_internal_energy(pind, cosmo, pressure_floor, u_new);
 
-  xp->feedback_data.delta_u = 0.;
+  fd->delta_u = 0.;
 
   /* Update the velocities */
   for (int i = 0; i < 3; i++) {
-    const float dv = xp->feedback_data.delta_p[i] / new_mass;
+    const float dv = fd->delta_p[i] / new_mass;
 
-    xp->v_full[i] += dv;
-    p->v[i] += dv;
+    part_set_v_full_ind(pind, i, part_get_v_full_ind(pind, i) + dv);
+    part_set_v_ind(pind, i, part_get_v_ind(pind, i) + dv);
 
-    xp->feedback_data.delta_p[i] = 0;
+    fd->delta_p[i] = 0;
   }
 }
 

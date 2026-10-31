@@ -243,9 +243,9 @@ extern int engine_rank;
  */
 #define parttrace(p, s, ...)                                          \
   ({                                                                  \
-    if (p->id == PROBLEMPART1 || p->id == PROBLEMPART2)               \
+    if (part_get_id(pind) == PROBLEMPART1 || part_get_id(pind) == PROBLEMPART2)               \
       printf("%s %s: part %lld " s "\n", clocks_get_timesincestart(), \
-             __FUNCTION__, p->id, ##__VA_ARGS__);                     \
+             __FUNCTION__, part_get_id(pind), ##__VA_ARGS__);                     \
     fflush(stdout);                                                   \
   })
 

@@ -19,15 +19,20 @@
 #ifndef SWIFT_NONE_MHD_DEBUG_H
 #define SWIFT_NONE_MHD_DEBUG_H
 
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Print out the mhd fields of a particle.
  *
  * Function used for debugging purposes.
  *
- * @param p The particle to act upon
- * @param xp The extended particle data to act upon
+ * @param pind Index of the particle to act upon
  */
 __attribute__((always_inline)) INLINE static void mhd_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_NONE_MHD_DEBUG_H */

@@ -32,8 +32,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First sparticle.
- * @param pj Second particle (not updated).
- * @param xp Extra particle data (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time value
@@ -41,8 +40,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
                                     const float hi, const float hj,
-                                    struct spart *si, const struct part *pj,
-                                    const struct xpart *xp,
+                                    struct spart *si, const size_t pindj,
                                     const struct cosmology *cosmo,
                                     const struct feedback_props *fb_props,
                                     const integertime_t ti_current) {}
@@ -59,7 +57,6 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
  * @param pj Second (gas) particle.
- * @param xp Extra particle data
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time used value for seeding random number
@@ -68,7 +65,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_apply(
     const float r2, const float dx[3], const float hi, const float hj,
-    const struct spart *si, struct part *pj, struct xpart *xp,
+    const struct spart *si, size_t pindj,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct feedback_props *fb_props, const integertime_t ti_current) {}
 

@@ -23,9 +23,14 @@
  * @file Shadowswift/hydro_debug.h
  * @brief Empty implementation.
  */
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
+
+#include <stddef.h>
 
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+    const size_t pind) {
   error("Empty implementation");
 }
 

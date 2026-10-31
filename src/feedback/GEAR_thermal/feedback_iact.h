@@ -34,8 +34,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First sparticle.
- * @param pj Second particle (not updated).
- * @param xpj Extra particle data (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time value
@@ -43,14 +42,13 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
                                     const float hi, const float hj,
-                                    struct spart *si, const struct part *pj,
-                                    const struct xpart *xpj,
+                                    struct spart *si, const size_t pindj,
                                     const struct cosmology *cosmo,
                                     const struct feedback_props *fb_props,
                                     const integertime_t ti_current) {
 
   /* Get the gas mass. */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
 
   /* Get r */
   const float r = sqrtf(r2);
@@ -79,7 +77,6 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
  * @param pj Second (gas) particle.
- * @param xpj Extra particle data
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time used value for seeding random number
@@ -88,14 +85,14 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_apply(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *si, struct part *pj, struct xpart *xpj,
+    struct spart *si, size_t pindj,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct feedback_props *fb_props, const integertime_t ti_current) {
 
   const double e_sn = si->feedback_data.supernovae.energy_ejected;
   const double e_winds = si->feedback_data.winds.energy_ejected;
 
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
   const float r = sqrtf(r2);
 
   /* Get the kernel for hi. */
@@ -116,6 +113,8 @@ runner_iact_nonsym_feedback_apply(
   double new_mass = mj;
   double dm_SW = 0.0;
   double dm_SN = 0.0;
+
+  struct feedback_xpart_data *restrict fdj = part_get_extraq_feedback_data_p(pindj);
 
   /* Distribute pre-SN */
   if (e_winds != 0.0 && weight > 0.0) {
@@ -147,9 +146,9 @@ runner_iact_nonsym_feedback_apply(
                               si->v[2] * a_inv};
 
       /* Physical velocities of the gas particle j. */
-      const float v_j_p[3] = {-a_dot * dx[0] + xpj->v_full[0] * a_inv,
-                              -a_dot * dx[1] + xpj->v_full[1] * a_inv,
-                              -a_dot * dx[2] + xpj->v_full[2] * a_inv};
+      const float v_j_p[3] = {-a_dot * dx[0] + part_get_v_full_ind(pindj, 0) * a_inv,
+                              -a_dot * dx[1] + part_get_v_full_ind(pindj, 1) * a_inv,
+                              -a_dot * dx[2] + part_get_v_full_ind(pindj, 2) * a_inv};
 
       const float r_p = sqrtf(r2) * a;
       const float dx_p[3] = {dx[0] * a, dx[1] * a, dx[2] * a};
@@ -179,7 +178,7 @@ runner_iact_nonsym_feedback_apply(
 
         /* Give the comoving momentum to the gas particle.
          * The minus sign comes from the direction of dx (si - pj) */
-        xpj->feedback_data.delta_p[i] -= delta_p_lab_frame[i] * a;
+        fdj->delta_p[i] -= delta_p_lab_frame[i] * a;
       }
 
       const double norm2_delta_p_lab_frame =
@@ -220,7 +219,7 @@ runner_iact_nonsym_feedback_apply(
         new_mass */
       const float du =
           (old_kinetic_energy + dE_lab_frame - new_kinetic_energy) / new_mass;
-      xpj->feedback_data.delta_u += du;
+      fdj->delta_u += du;
 
       /* Only used in non-cosmological simulations. Has to be
          investigated in cosmological simulations*/
@@ -251,18 +250,17 @@ runner_iact_nonsym_feedback_apply(
            We want to subtract the Hubble flow participation in the signal
            velocity.*/
         const float dv_phys = sqrtf(norm2_delta_p_without_Hubble) / new_mass;
-        hydro_set_v_sig_based_on_velocity_kick(pj, cosmo, dv_phys);
+        hydro_set_v_sig_based_on_velocity_kick(pindj, cosmo, dv_phys);
       }
 
       /* Lifetime-cumulative tracer, using this branch's own locally-computed
          momentum/energy (not the shared feedback_data.delta_p/delta_u,
          which the SN branch below can also add to this same step). */
       const float delta_p_mag_winds = (float)sqrt(norm2_delta_p_lab_frame);
-      tracers_after_stellar_winds_feedback_part(
-          xpj, delta_p_mag_winds, (float)du,
+      tracers_after_stellar_winds_feedback_part(pindj, delta_p_mag_winds, (float)du,
           delta_p_mag_winds / (float)new_mass);
 
-      xpj->feedback_data.hit_by_winds = 1;
+      fdj->hit_by_winds = 1;
     }
   }
 
@@ -286,18 +284,18 @@ runner_iact_nonsym_feedback_apply(
     /* Energy received. Guard against 0/0 (mj == 0): matches the winds
        branch's own new_mass > 0.0 guard above. */
     const double du = new_mass > 0.0 ? (e_sn)*weight / new_mass : 0.0;
-    xpj->feedback_data.delta_u += du;
+    fdj->delta_u += du;
 
     /* Compute momentum received. */
     float delta_p_supernovae[3];
     for (int i = 0; i < 3; i++) {
-      delta_p_supernovae[i] = dm_SN * (si->v[i] - xpj->v_full[i]);
-      xpj->feedback_data.delta_p[i] += delta_p_supernovae[i];
+      delta_p_supernovae[i] = dm_SN * (si->v[i] - part_get_v_full_ind(pindj, i));
+      fdj->delta_p[i] += delta_p_supernovae[i];
     }
 
     /* Add the metals */
     for (int i = 0; i < GEAR_CHEMISTRY_ELEMENT_COUNT; i++) {
-      pj->chemistry_data.metal_mass[i] +=
+     part_get_chemistry_data_p(pindj)->metal_mass[i] +=
           weight * si->feedback_data.metal_mass_ejected[i];
     }
 
@@ -324,11 +322,11 @@ runner_iact_nonsym_feedback_apply(
 
   /* Impose maximal viscosity (only for SN) */
   if (xpj->feedback_data.hit_by_SN) {
-    hydro_diffusive_feedback_reset(pj);
+    hydro_diffusive_feedback_reset(pindj);
   }
 
   /* Synchronize the particle on the timeline */
-  timestep_sync_part(pj);
+  timestep_sync_part(pindj);
 }
 
 #endif /* SWIFT_GEAR_FEEDBACK_IACT_H */

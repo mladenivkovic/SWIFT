@@ -25,9 +25,14 @@
  * @brief Debugging routines for planetary SPH.
  */
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
-  warning("[PID%lld] part:", p->id);
+    const size_t pind) {
+  warning("[PID%lld] part:",part_get_id(pind));
   warning(
       "[PID%lld] "
       "x=[%.6g, %.6g, %.6g], v=[%.3g, %.3g, %.3g], "
@@ -35,18 +40,16 @@ __attribute__((always_inline)) INLINE static void hydro_debug_particle(
       "m=%.3g, u=%.3g, du/dt=%.3g, P=%.3g, c_s=%.3g, "
       "v_sig=%.3g, h=%.3g, dh/dt=%.3g, wcount=%.3g, rho=%.3g, "
       "dh_drho=%.3g, time_bin=%d, wakeup=%d, mat_id=%d",
-      p->id, p->x[0], p->x[1], p->x[2], p->v[0], p->v[1], p->v[2],
-      p->a_hydro[0], p->a_hydro[1], p->a_hydro[2], p->mass, p->u, p->u_dt,
-      hydro_get_comoving_pressure(p), p->force.soundspeed, p->force.v_sig, p->h,
-      p->force.h_dt, p->density.wcount, p->rho, p->density.rho_dh, p->time_bin,
-      p->limiter_data.wakeup, p->mat_id);
-  if (xp != NULL) {
-    warning("[PID%lld] xpart:", p->id);
-    warning(
-        "[PID%lld] "
-        "v_full=[%.3g, %.3g, %.3g]",
-        p->id, xp->v_full[0], xp->v_full[1], xp->v_full[2]);
-  }
+     part_get_id(pind),part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2),part_get_v_ind(pind, 0),part_get_v_ind(pind, 1),part_get_v_ind(pind, 2),
+     part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2),part_get_mass(pind), part_get_u(pind), part_get_u_dt(pind),
+      hydro_get_comoving_pressure(pind), part_get_soundspeed(pind), part_get_v_sig(pind), part_get_h(pind),
+      part_get_h_dt(pind), part_get_wcount(pind),part_get_rho(pind), part_get_rho_dh(pind), part_get_time_bin(pind),
+      part_get_const_limiter_data_p(pind)->wakeup, part_get_mat_id(pind));
+  warning("[PID%lld] xpart:",part_get_id(pind));
+  warning(
+      "[PID%lld] "
+      "v_full=[%.3g, %.3g, %.3g]",
+      part_get_id(pind), part_get_v_full_ind(pind, 0), part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2));
 }
 
 #endif /* SWIFT_PLANETARY_HYDRO_DEBUG_H */

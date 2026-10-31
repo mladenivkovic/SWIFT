@@ -26,30 +26,33 @@
  *        Price 2008 thermal diffusion (Debugging routines).
  */
 
+#include "error.h"
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
-    const struct part *p, const struct xpart *xp) {
-  warning("[PID%lld] part:", p->id);
+    const size_t pind) {
+  warning("[PID%lld] part:",part_get_id(pind));
   warning(
       "[PID%lld] x=[%.3e,%.3e,%.3e], "
       "v=[%.3e,%.3e,%.3e]",
-      p->id, p->x[0], p->x[1], p->x[2], p->v[0], p->v[1], p->v[2]);
+     part_get_id(pind),part_get_x_ind(pind, 0),part_get_x_ind(pind, 1),part_get_x_ind(pind, 2),part_get_v_ind(pind, 0),part_get_v_ind(pind, 1),part_get_v_ind(pind, 2));
   warning(
       "[PID%lld] a=[%.3e,%.3e,%.3e], "
       "u=%.3e, du/dt=%.3e v_sig=%.3e, P=%.3e",
-      p->id, p->a_hydro[0], p->a_hydro[1], p->a_hydro[2], p->u, p->u_dt,
-      p->viscosity.v_sig, hydro_get_comoving_pressure(p));
+     part_get_id(pind),part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2), part_get_u(pind), part_get_u_dt(pind),
+      part_get_v_sig(pind), hydro_get_comoving_pressure(pind));
   warning(
       "[PID%lld] h=%.3e, dh/dt=%.3e wcount=%d, m=%.3e, dh_drho=%.3e, rho=%.3e",
-      p->id, p->h, p->force.h_dt, (int)p->density.wcount, p->mass,
-      p->density.rho_dh, p->rho);
-  warning("[PID%lld] p_dh=%.3e, p_bar=%.3e, alpha=%.3e", p->id,
-          p->density.pressure_bar_dh, p->pressure_bar, p->viscosity.alpha);
-  warning("[PID%lld] time_bin=%d", p->id, p->time_bin);
-  if (xp != NULL) {
-    warning("[PID%lld] xpart:", p->id);
-    warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]", p->id, xp->v_full[0],
-            xp->v_full[1], xp->v_full[2]);
-  }
+     part_get_id(pind), part_get_h(pind), part_get_h_dt(pind), (int)part_get_wcount(pind),part_get_mass(pind),
+      part_get_rho_dh(pind),part_get_rho(pind));
+  warning("[PID%lld] p_dh=%.3e, p_bar=%.3e, alpha=%.3e",part_get_id(pind),
+          part_get_pressure_bar_dh(pind), part_get_pressure_bar(pind), part_get_alpha_av(pind));
+  warning("[PID%lld] time_bin=%d",part_get_id(pind), part_get_time_bin(pind));
+  warning("[PID%lld] xpart:",part_get_id(pind));
+  warning("[PID%lld] v_full=[%.3e,%.3e,%.3e]",part_get_id(pind), part_get_v_full_ind(pind, 0),
+          part_get_v_full_ind(pind, 1), part_get_v_full_ind(pind, 2));
 }
 
 #endif /* SWIFT_ANARCHY_PU_HYDRO_DEBUG_H */

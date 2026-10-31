@@ -42,24 +42,22 @@ void compute_stellar_evolution(const struct feedback_props *feedback_props,
  *
  * Nothing to do here in the EAGLE model.
  *
- * @param p The #part to consider.
- * @param xp The #xpart to consider.
+ * @param pind Index of the hydro particle to consider.
  * @param e The #engine.
  */
 __attribute__((always_inline)) INLINE static void feedback_update_part(
-    struct part *p, struct xpart *xp, const struct engine *e) {}
+    size_t pind, const struct engine *e) {}
 
 /**
  * @brief Reset the gas particle-carried fields related to feedback at the
  * start of a step.
  *
- * @param p The particle.
- * @param xp The extended data of the particle.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void feedback_reset_part(
-    struct part *p, struct xpart *xp) {
+    size_t pind) {
 
-  p->feedback_data.SNII_star_largest_id = -1;
+  part_get_feedback_data_p(pind)->SNII_star_largest_id = -1;
 }
 
 /**

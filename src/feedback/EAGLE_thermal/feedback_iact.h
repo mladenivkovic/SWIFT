@@ -34,8 +34,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First sparticle.
- * @param pj Second particle (not updated).
- * @param xpj Extra particle data (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time value
@@ -43,14 +42,13 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
                                     const float hi, const float hj,
-                                    struct spart *si, const struct part *pj,
-                                    const struct xpart *xpj,
+                                    struct spart *si, const size_t pindj,
                                     const struct cosmology *cosmo,
                                     const struct feedback_props *fb_props,
                                     const integertime_t ti_current) {
 
   /* Get the gas mass. */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
 
   /* Get r. */
   const float r = sqrtf(r2);
@@ -73,7 +71,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
   /* Contribution to the star's surrounding gas density */
   si->feedback_data.to_collect.ngb_rho += mj * wi;
 
-  const float Zj = chemistry_get_total_metal_mass_fraction_for_feedback(pj);
+  const float Zj = chemistry_get_total_metal_mass_fraction_for_feedback(pindj);
 
   /* Contribution to the star's surrounding metallicity (metal mass fraction */
   si->feedback_data.to_collect.ngb_Z += mj * Zj * wi;
@@ -81,7 +79,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
   /* Add contribution of pj to normalisation of density weighted fraction
    * which determines how much mass to distribute to neighbouring
    * gas particles */
-  const float rho = hydro_get_comoving_density(pj);
+  const float rho = hydro_get_comoving_density(pindj);
   if (rho != 0.f)
     si->feedback_data.to_collect.enrichment_weight_inv += wi / rho;
 
@@ -108,7 +106,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
 
         /* Compute arclength */
         ray_minimise_arclength(dx, r, si->feedback_data.SNII_rays + i,
-                               /*ray_type=*/ray_feedback_thermal, pj->id,
+                               /*ray_type=*/ray_feedback_thermal,part_get_id(pindj),
                                rand_theta_SNII, rand_phi_SNII, mj,
                                /*ray_ext=*/NULL, /*v=*/NULL);
       }
@@ -126,7 +124,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
       /* Minimise separation between the gas particles and the star. The rays
        * structs with smaller ids in the ray array will refer to the particles
        * with smaller distances to the star. */
-      ray_minimise_distance(r, si->feedback_data.SNII_rays, arr_size, pj->id,
+      ray_minimise_distance(r, si->feedback_data.SNII_rays, arr_size,part_get_id(pindj),
                             mj);
       break;
     }
@@ -142,7 +140,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
       /* Minimise separation between the gas particles and the star. The rays
        * structs with smaller ids in the ray array will refer to the particles
        * with smaller distances to the star. */
-      ray_minimise_distance(rho, si->feedback_data.SNII_rays, arr_size, pj->id,
+      ray_minimise_distance(rho, si->feedback_data.SNII_rays, arr_size,part_get_id(pindj),
                             mj);
       break;
     }
@@ -159,12 +157,12 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
        * draw random distances in [0,1) and then pick the particle(s) with
        * the smallest of these 'fake' distances */
       const float dist = random_unit_interval_two_IDs(
-          si->id, pj->id, ti_current, random_number_stellar_feedback_1);
+          si->id,part_get_id(pindj), ti_current, random_number_stellar_feedback_1);
 
       /* Minimise separation between the gas particles and the BH. The rays
        * structs with smaller ids in the ray array will refer to the particles
        * with smaller 'fake' distances to the BH. */
-      ray_minimise_distance(dist, si->feedback_data.SNII_rays, arr_size, pj->id,
+      ray_minimise_distance(dist, si->feedback_data.SNII_rays, arr_size, part_get_id(pindj),
                             mj);
       break;
     }
@@ -181,7 +179,6 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
  * @param pj Second (gas) particle.
- * @param xpj Extra particle data
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time used value for seeding random number
@@ -190,7 +187,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_feedback_apply(
     const float r2, const float dx[3], const float hi, const float hj,
-    const struct spart *si, struct part *pj, struct xpart *xpj,
+    const struct spart *si, const size_t pindj,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct feedback_props *fb_props, const integertime_t ti_current) {
 
@@ -209,7 +206,7 @@ runner_iact_nonsym_feedback_apply(
   kernel_eval(ui, &wi);
 
   /* Gas particle density */
-  const float rho_j = hydro_get_comoving_density(pj);
+  const float rho_j = hydro_get_comoving_density(pindj);
 
   /* Compute weighting for distributing feedback quantities */
   float Omega_frac;
@@ -228,104 +225,90 @@ runner_iact_nonsym_feedback_apply(
 #endif
 
   /* Update particle mass */
-  const double current_mass = hydro_get_mass(pj);
+  const double current_mass = hydro_get_mass(pindj);
   const double delta_mass = si->feedback_data.to_distribute.mass * Omega_frac;
   const double new_mass = current_mass + delta_mass;
 
-  hydro_set_mass(pj, new_mass);
+  hydro_set_mass(pindj, new_mass);
 
   /* Inverse of the new mass */
   const double new_mass_inv = 1. / new_mass;
+  struct chemistry_part_data *restrict cdj = part_get_chemistry_data_p(pindj);
 
   /* Update total metallicity */
   const double current_metal_mass_total =
-      pj->chemistry_data.metal_mass_fraction_total * current_mass;
+      cdj->metal_mass_fraction_total * current_mass;
   const double delta_metal_mass_total =
       si->feedback_data.to_distribute.total_metal_mass * Omega_frac;
   const double new_metal_mass_total =
       current_metal_mass_total + delta_metal_mass_total;
 
-  pj->chemistry_data.metal_mass_fraction_total =
+  cdj->metal_mass_fraction_total =
       new_metal_mass_total * new_mass_inv;
 
   /* Update mass fraction of each tracked element  */
   for (int elem = 0; elem < chemistry_element_count; elem++) {
     const double current_metal_mass =
-        pj->chemistry_data.metal_mass_fraction[elem] * current_mass;
+        cdj->metal_mass_fraction[elem] * current_mass;
     const double delta_metal_mass =
         si->feedback_data.to_distribute.metal_mass[elem] * Omega_frac;
     const double new_metal_mass = current_metal_mass + delta_metal_mass;
 
-    pj->chemistry_data.metal_mass_fraction[elem] =
+    cdj->metal_mass_fraction[elem] =
         new_metal_mass * new_mass_inv;
   }
 
   /* Update iron mass fraction from SNIa  */
-  const double current_iron_from_SNIa_mass =
-      pj->chemistry_data.iron_mass_fraction_from_SNIa * current_mass;
-  const double delta_iron_from_SNIa_mass =
-      si->feedback_data.to_distribute.Fe_mass_from_SNIa * Omega_frac;
-  const double new_iron_from_SNIa_mass =
-      current_iron_from_SNIa_mass + delta_iron_from_SNIa_mass;
+  const double current_iron_from_SNIa_mass = cdj->iron_mass_fraction_from_SNIa * current_mass;
+  const double delta_iron_from_SNIa_mass = si->feedback_data.to_distribute.Fe_mass_from_SNIa * Omega_frac;
+  const double new_iron_from_SNIa_mass = current_iron_from_SNIa_mass + delta_iron_from_SNIa_mass;
 
-  pj->chemistry_data.iron_mass_fraction_from_SNIa =
-      new_iron_from_SNIa_mass * new_mass_inv;
+  cdj->iron_mass_fraction_from_SNIa = new_iron_from_SNIa_mass * new_mass_inv;
 
   /* Update mass from SNIa  */
-  const double delta_mass_from_SNIa =
-      si->feedback_data.to_distribute.mass_from_SNIa * Omega_frac;
+  const double delta_mass_from_SNIa = si->feedback_data.to_distribute.mass_from_SNIa * Omega_frac;
 
-  pj->chemistry_data.mass_from_SNIa += delta_mass_from_SNIa;
+  cdj->mass_from_SNIa += delta_mass_from_SNIa;
 
   /* Update metal mass fraction from SNIa */
-  const double current_metal_mass_from_SNIa =
-      pj->chemistry_data.metal_mass_fraction_from_SNIa * current_mass;
-  const double delta_metal_mass_from_SNIa =
-      si->feedback_data.to_distribute.metal_mass_from_SNIa * Omega_frac;
-  const double new_metal_mass_from_SNIa =
-      current_metal_mass_from_SNIa + delta_metal_mass_from_SNIa;
+  const double current_metal_mass_from_SNIa = cdj->metal_mass_fraction_from_SNIa * current_mass;
+  const double delta_metal_mass_from_SNIa = si->feedback_data.to_distribute.metal_mass_from_SNIa * Omega_frac;
+  const double new_metal_mass_from_SNIa = current_metal_mass_from_SNIa + delta_metal_mass_from_SNIa;
 
-  pj->chemistry_data.metal_mass_fraction_from_SNIa =
-      new_metal_mass_from_SNIa * new_mass_inv;
+  cdj->metal_mass_fraction_from_SNIa = new_metal_mass_from_SNIa * new_mass_inv;
 
   /* Update mass from SNII  */
-  const double delta_mass_from_SNII =
-      si->feedback_data.to_distribute.mass_from_SNII * Omega_frac;
+  const double delta_mass_from_SNII = si->feedback_data.to_distribute.mass_from_SNII * Omega_frac;
 
-  pj->chemistry_data.mass_from_SNII += delta_mass_from_SNII;
+  cdj->mass_from_SNII += delta_mass_from_SNII;
 
   /* Update metal mass fraction from SNII */
-  const double current_metal_mass_from_SNII =
-      pj->chemistry_data.metal_mass_fraction_from_SNII * current_mass;
-  const double delta_metal_mass_from_SNII =
-      si->feedback_data.to_distribute.metal_mass_from_SNII * Omega_frac;
-  const double new_metal_mass_from_SNII =
-      current_metal_mass_from_SNII + delta_metal_mass_from_SNII;
+  const double current_metal_mass_from_SNII = cdj->metal_mass_fraction_from_SNII * current_mass;
+  const double delta_metal_mass_from_SNII = si->feedback_data.to_distribute.metal_mass_from_SNII * Omega_frac;
+  const double new_metal_mass_from_SNII = current_metal_mass_from_SNII + delta_metal_mass_from_SNII;
 
-  pj->chemistry_data.metal_mass_fraction_from_SNII =
-      new_metal_mass_from_SNII * new_mass_inv;
+  cdj->metal_mass_fraction_from_SNII = new_metal_mass_from_SNII * new_mass_inv;
 
   /* Update mass from AGB  */
-  const double delta_mass_from_AGB =
-      si->feedback_data.to_distribute.mass_from_AGB * Omega_frac;
+  const double delta_mass_from_AGB = si->feedback_data.to_distribute.mass_from_AGB * Omega_frac;
 
-  pj->chemistry_data.mass_from_AGB += delta_mass_from_AGB;
+  cdj->mass_from_AGB += delta_mass_from_AGB;
 
   /* Update metal mass fraction from AGB */
   const double current_metal_mass_from_AGB =
-      pj->chemistry_data.metal_mass_fraction_from_AGB * current_mass;
+      cdj->metal_mass_fraction_from_AGB * current_mass;
   const double delta_metal_mass_from_AGB =
       si->feedback_data.to_distribute.metal_mass_from_AGB * Omega_frac;
   const double new_metal_mass_from_AGB =
       current_metal_mass_from_AGB + delta_metal_mass_from_AGB;
 
-  pj->chemistry_data.metal_mass_fraction_from_AGB =
+  cdj->metal_mass_fraction_from_AGB =
       new_metal_mass_from_AGB * new_mass_inv;
 
   /* Compute the current kinetic energy */
-  const double current_v2 = xpj->v_full[0] * xpj->v_full[0] +
-                            xpj->v_full[1] * xpj->v_full[1] +
-                            xpj->v_full[2] * xpj->v_full[2];
+  const double current_v2 = part_get_v_full_ind(pindj, 0) * part_get_v_full_ind(pindj, 0) +
+                            part_get_v_full_ind(pindj, 1) * part_get_v_full_ind(pindj, 1) +
+                            part_get_v_full_ind(pindj, 2) * part_get_v_full_ind(pindj, 2);
   const double current_kinetic_energy_gas =
       0.5 * cosmo->a2_inv * current_mass * current_v2;
 
@@ -336,19 +319,19 @@ runner_iact_nonsym_feedback_apply(
   /* Apply conservation of momentum */
 
   /* Update velocity following change in gas mass */
-  xpj->v_full[0] *= current_mass * new_mass_inv;
-  xpj->v_full[1] *= current_mass * new_mass_inv;
-  xpj->v_full[2] *= current_mass * new_mass_inv;
+  part_get_v_full_ind(pindj, 0) *= current_mass * new_mass_inv;
+  part_get_v_full_ind(pindj, 1) *= current_mass * new_mass_inv;
+  part_get_v_full_ind(pindj, 2) *= current_mass * new_mass_inv;
 
   /* Update velocity following addition of mass with different momentum */
-  xpj->v_full[0] += delta_mass * new_mass_inv * si->v[0];
-  xpj->v_full[1] += delta_mass * new_mass_inv * si->v[1];
-  xpj->v_full[2] += delta_mass * new_mass_inv * si->v[2];
+  part_get_v_full_ind(pindj, 0) += delta_mass * new_mass_inv * si->v[0];
+  part_get_v_full_ind(pindj, 1) += delta_mass * new_mass_inv * si->v[1];
+  part_get_v_full_ind(pindj, 2) += delta_mass * new_mass_inv * si->v[2];
 
   /* Compute the new kinetic energy */
-  const double new_v2 = xpj->v_full[0] * xpj->v_full[0] +
-                        xpj->v_full[1] * xpj->v_full[1] +
-                        xpj->v_full[2] * xpj->v_full[2];
+  const double new_v2 = part_get_v_full_ind(pindj, 0) * part_get_v_full_ind(pindj, 0) +
+                        part_get_v_full_ind(pindj, 1) * part_get_v_full_ind(pindj, 1) +
+                        part_get_v_full_ind(pindj, 2) * part_get_v_full_ind(pindj, 2);
   const double new_kinetic_energy_gas = 0.5 * cosmo->a2_inv * new_mass * new_v2;
 
   /* Energy injected
@@ -380,8 +363,8 @@ runner_iact_nonsym_feedback_apply(
   const double u_new_enrich = new_thermal_energy * new_mass_inv;
 
   /* Do the energy injection. */
-  hydro_set_physical_internal_energy(pj, xpj, cosmo, u_new_enrich);
-  hydro_set_drifted_physical_internal_energy(pj, cosmo, /*pfloor=*/NULL,
+  hydro_set_physical_internal_energy(pindj, xpj, cosmo, u_new_enrich);
+  hydro_set_drifted_physical_internal_energy(pindj, cosmo, /*pfloor=*/NULL,
                                              u_new_enrich);
 
   /* Finally, SNII stochastic feedback */
@@ -398,7 +381,7 @@ runner_iact_nonsym_feedback_apply(
 
     /* Find out how many rays this gas particle has received. */
     for (int i = 0; i < N_of_SNII_thermal_energy_inj; i++) {
-      if (pj->id == si->feedback_data.SNII_rays[i].id_min_length)
+      if (part_get_id(pindj) == si->feedback_data.SNII_rays[i].id_min_length)
         N_of_SNII_energy_inj_received_by_gas++;
     }
 
@@ -412,12 +395,12 @@ runner_iact_nonsym_feedback_apply(
           u_init + delta_u * (float)N_of_SNII_energy_inj_received_by_gas;
 
       /* Inject energy into the particle */
-      hydro_set_physical_internal_energy(pj, xpj, cosmo, u_new);
-      hydro_set_drifted_physical_internal_energy(pj, cosmo, /*pfloor=*/NULL,
+      hydro_set_physical_internal_energy(pindj, xpj, cosmo, u_new);
+      hydro_set_drifted_physical_internal_energy(pindj, cosmo, /*pfloor=*/NULL,
                                                  u_new);
 
       /* Impose maximal viscosity */
-      hydro_diffusive_feedback_reset(pj);
+      hydro_diffusive_feedback_reset(pindj);
 
       /* Mark this particle has having been heated by supernova feedback */
       tracers_after_supernovae_feedback_part(xpj, /*delta_p_magnitude=*/0.f,
@@ -426,10 +409,10 @@ runner_iact_nonsym_feedback_apply(
       /* message( */
       /*     "We did some heating! id %llu star id %llu probability %.5e " */
       /*     "random_num %.5e du %.5e du/ini %.5e", */
-      /*     pj->id, si->id, 0., 0., delta_u, delta_u / u_init); */
+      /*    part_get_id(pindj), si->id, 0., 0., delta_u, delta_u / u_init); */
 
       /* Synchronize the particle on the timeline */
-      timestep_sync_part(pj);
+      timestep_sync_part(pindj);
     }
   }
 }

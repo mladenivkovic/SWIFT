@@ -19,12 +19,18 @@
 #ifndef SWIFT_SINK_GEAR_DEBUG_H
 #define SWIFT_SINK_GEAR_DEBUG_H
 
-__attribute__((always_inline)) INLINE static void sink_debug_particle(
-    const struct part *p, const struct xpart *xp) {
+#include "error.h"
+#include "hydro.h"
+#include "inline.h"
 
-  warning("[PID%lld] sink_part_data:", p->id);
-  warning("[PID%lld] swallow_id = %lld, can_form_sink = %d", p->id,
-          p->sink_data.swallow_id, p->sink_data.can_form_sink);
+#include <stddef.h>
+
+__attribute__((always_inline)) INLINE static void sink_debug_particle(
+    const size_t pind) {
+
+  warning("[PID%lld] sink_part_data:",part_get_id(pind));
+  warning("[PID%lld] swallow_id = %lld, can_form_sink = %d",part_get_id(pind),
+          part_get_const_sink_data_p(pind)->swallow_id, part_get_const_sink_data_p(pind)->can_form_sink);
 }
 
 #endif /* SWIFT_SINK_GEAR_DEBUG_H */

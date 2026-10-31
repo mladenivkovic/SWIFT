@@ -19,7 +19,11 @@
 #ifndef SWIFT_TRACERS_NONE_DEBUG_H
 #define SWIFT_TRACERS_NONE_DEBUG_H
 
+#include "inline.h"
+
+#include <stddef.h>
+
 __attribute__((always_inline)) INLINE static void tracers_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_TRACERS_NONE_DEBUG_H */

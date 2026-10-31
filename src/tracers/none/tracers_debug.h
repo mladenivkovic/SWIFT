@@ -19,15 +19,18 @@
 #ifndef SWIFT_TRACERS_NONE_DEBUG_H
 #define SWIFT_TRACERS_NONE_DEBUG_H
 
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Write the particle-carried tracers field for debugging
  *
  * Nothing to do here.
  *
- * @param p the #part.
- * @param xp the #xpart.
+ * @param pind the particle index.
  */
 __attribute__((always_inline)) INLINE static void tracers_debug_particle(
-    const struct part *p, const struct xpart *xp) {}
+    const size_t pind) {}
 
 #endif /* SWIFT_TRACERS_NONE_DEBUG_H */
