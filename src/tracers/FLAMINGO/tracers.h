@@ -34,8 +34,7 @@
  *
  * Nothing to do here in the EAGLE model.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -46,7 +45,7 @@
  * @param time The current time.
  */
 static INLINE void tracers_after_init(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time) {}
@@ -56,8 +55,7 @@ static INLINE void tracers_after_init(
  *
  * Nothing to do here in the EAGLE model.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -68,7 +66,7 @@ static INLINE void tracers_after_init(
  * @param time The current time.
  */
 static INLINE void tracers_after_drift(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time) {}
@@ -79,9 +77,7 @@ static INLINE void tracers_after_drift(
  *
  * In FLAMINGO, we record the highest temperature reached.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
- * struct).
+ * @param pind Index of the particle.
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
  * @param with_cosmology Are we running a cosmological simulation?
@@ -94,30 +90,31 @@ static INLINE void tracers_after_drift(
  * num_snapshot_triggers_part)
  */
 static INLINE void tracers_after_timestep_part(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const int with_cosmology,
     const struct cosmology *cosmo, const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling, const double time,
     const double time_step_length, const int *const tracers_triggers_started) {
 
+  struct tracers_xpart_data *restrict td = part_get_extra_tracers_data_p(pind);
+
   /* Current temperature */
   const float temperature = cooling_get_temperature(phys_const, hydro_props, us,
-                                                    cosmo, cooling, p, xp);
+                                                    cosmo, cooling, pind);
   /* New record? */
-  if (temperature > xp->tracers_data.maximum_temperature) {
+  if (temperature > td->maximum_temperature) {
 
-    xp->tracers_data.maximum_temperature = temperature;
+    td->maximum_temperature = temperature;
 
     if (with_cosmology) {
-      xp->tracers_data.maximum_temperature_scale_factor = cosmo->a;
+      td->maximum_temperature_scale_factor = cosmo->a;
     } else {
-      xp->tracers_data.maximum_temperature_time = time;
+      td->maximum_temperature_time = time;
     }
   }
 }
 
-static INLINE void tracers_after_recording_trigger_part(
-    struct xpart *xp, const int trigger_index, const double time_to_remove) {}
+static INLINE void tracers_after_recording_trigger_part(const int trigger_index, const double time_to_remove) {}
 
 /**
  * @brief Update the star particle tracers just after its time-step has been
@@ -125,9 +122,7 @@ static INLINE void tracers_after_recording_trigger_part(
  *
  * In FLAMINGO, nothing to do.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
- * struct).
+ * @param pind Index of the particle.
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
  * @param with_cosmology Are we running a cosmological simulation?
@@ -148,8 +143,7 @@ static INLINE void tracers_after_timestep_spart(
  *
  * In FLAMINGO, nothing to do.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -195,8 +189,7 @@ static INLINE void tracers_after_recording_trigger_sink(
 /**
  * @brief Initialise the tracer data at the start of a calculation.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -205,15 +198,17 @@ static INLINE void tracers_after_recording_trigger_sink(
  * @param cooling The #cooling_function_data used in the run.
  */
 static INLINE void tracers_first_init_xpart(
-    const struct part *p, struct xpart *xp, const struct unit_system *us,
+    const size_t pind, const struct unit_system *us,
     const struct phys_const *phys_const, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props,
     const struct cooling_function_data *cooling) {
 
-  xp->tracers_data.maximum_temperature = -1.f;
-  xp->tracers_data.maximum_temperature_time = -1.f;
-  xp->tracers_data.last_AGN_injection_scale_factor = -1.f;
-  xp->tracers_data.last_AGN_jet_feedback_scale_factor = -1.f;
+  struct tracers_xpart_data *restrict td = part_get_extra_tracers_data_p(pind);
+
+  td->maximum_temperature = -1.f;
+  td->maximum_temperature_time = -1.f;
+  td->last_AGN_injection_scale_factor = -1.f;
+  td->last_AGN_jet_feedback_scale_factor = -1.f;
 }
 
 /**
@@ -221,8 +216,7 @@ static INLINE void tracers_first_init_xpart(
  *
  * In FLAMINGO, nothing to do.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -238,8 +232,7 @@ static INLINE void tracers_first_init_spart(struct spart *sp,
  *
  * In FLAMINGO, nothing to do.
  *
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data (containing the tracers
+ * @param pind Index of the particle.
  * struct).
  * @param us The internal system of units.
  * @param phys_const The physical constants in internal units.
@@ -271,15 +264,13 @@ static INLINE void tracers_first_init_sink(struct sink *sink,
  *
  * Nothing to do here.
  *
- * @param xp The extended particle data.
  * @param delta_p_magnitude Norm of the momentum received (internal physical
  * units).
  * @param delta_u Specific internal energy received (internal physical units).
  * @param kick_velocity Norm of the velocity kick, in the same frame as
  * delta_p_magnitude (internal physical units).
  */
-static INLINE void tracers_after_stellar_winds_feedback_part(
-    struct xpart *xp, const float delta_p_magnitude, const float delta_u,
+static INLINE void tracers_after_stellar_winds_feedback_part(const float delta_p_magnitude, const float delta_u,
     const float kick_velocity) {}
 
 /**
@@ -288,15 +279,13 @@ static INLINE void tracers_after_stellar_winds_feedback_part(
  *
  * Nothing to do here.
  *
- * @param xp The extended particle data.
  * @param delta_p_magnitude Norm of the momentum received (internal physical
  * units).
  * @param delta_u Specific internal energy received (internal physical units).
  * @param kick_velocity Norm of the velocity kick, in the same frame as
  * delta_p_magnitude (internal physical units).
  */
-static INLINE void tracers_after_supernovae_feedback_part(
-    struct xpart *xp, const float delta_p_magnitude, const float delta_u,
+static INLINE void tracers_after_supernovae_feedback_part(const float delta_p_magnitude, const float delta_u,
     const float kick_velocity) {}
 
 /**
@@ -344,18 +333,16 @@ static INLINE void tracers_after_snia_event_spart(struct spart *sp,
  * event. Note: this function is called in `black_holes_iact.h` before the
  * particle data are updated.
  *
- * @param p Pointer to the basic particle data.
- * @param xp The extended particle data.
+ * @param pind Index of the particle.
  * (internal physical units)
  */
 static INLINE void tracers_before_black_holes_feedback(
-    const struct part *p, struct xpart *xp, const float scale_factor) {}
+    const size_t pind, const float scale_factor) {}
 
 /**
  * @brief Update the particles' tracer data after an AGN feedback
  * event.
  *
- * @param xp The extended particle data.
  * @param with_cosmology Are we running with cosmology?
  * @param scale_factor The current scale-factor (if running with cosmo)
  * @param time The current time (if running without cosmo)
@@ -363,27 +350,31 @@ static INLINE void tracers_before_black_holes_feedback(
  * (internal physical units)
  */
 static INLINE void tracers_after_black_holes_feedback(
-    const struct part *p, struct xpart *xp, const int with_cosmology,
+    const size_t pind, const int with_cosmology,
     const float scale_factor, const double time, const double delta_energy) {
 
+  struct tracers_xpart_data *restrict td = part_get_extra_tracers_data_p(pind);
+
   if (with_cosmology)
-    xp->tracers_data.last_AGN_injection_scale_factor = scale_factor;
+    td->last_AGN_injection_scale_factor = scale_factor;
   else
-    xp->tracers_data.last_AGN_injection_time = time;
+    td->last_AGN_injection_time = time;
 }
 
 static INLINE void tracers_after_jet_feedback(
-    const struct part *p, struct xpart *xp, const int with_cosmology,
+    const size_t pind, const int with_cosmology,
     const float scale_factor, const double time, const double delta_energy,
     const float vel_kick, const enum BH_accretion_modes accretion_mode,
     const long long id) {
 
+  struct tracers_xpart_data *restrict td = part_get_extra_tracers_data_p(pind);
+
   if (with_cosmology)
-    xp->tracers_data.last_AGN_jet_feedback_scale_factor = scale_factor;
+    td->last_AGN_jet_feedback_scale_factor = scale_factor;
   else
-    xp->tracers_data.last_AGN_jet_feedback_time = time;
-  xp->tracers_data.hit_by_jet_feedback++;
-  xp->tracers_data.jet_feedback_energy += delta_energy;
+    td->last_AGN_jet_feedback_time = time;
+  td->hit_by_jet_feedback++;
+  td->jet_feedback_energy += delta_energy;
 }
 
 /**
@@ -391,11 +382,9 @@ static INLINE void tracers_after_jet_feedback(
  *
  * In FLAMINGO, nothing to do.
  *
- * @param p the #part.
- * @param xp the #xpart.
+ * @param pind the particle index.
  */
-static INLINE void tracers_after_snapshot_part(const struct part *p,
-                                               struct xpart *xp) {}
+static INLINE void tracers_after_snapshot_part(const size_t pind) {}
 
 /**
  * @brief Tracer event called after a snapshot was written.
@@ -427,14 +416,14 @@ static INLINE void tracers_after_snapshot_sink(struct sink *sink) {}
 /**
  * @brief Split the tracer content of a particle into n pieces
  *
- * @param p The #part.
- * @param xp The #xpart.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
 __attribute__((always_inline)) INLINE static void tracers_split_part(
-    struct part *p, struct xpart *xp, const double n) {
+    size_t pind, const double n) {
 
-  xp->tracers_data.jet_feedback_energy /= n;
+  struct tracers_xpart_data *restrict td = part_get_extra_tracers_data_p(pind);
+  td->jet_feedback_energy /= n;
 }
 
 #endif /* SWIFT_TRACERS_FLAMINGO_H */

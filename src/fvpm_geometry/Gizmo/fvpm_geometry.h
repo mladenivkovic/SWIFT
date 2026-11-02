@@ -33,14 +33,14 @@
 /**
  * @brief Check if the gradient matrix for this particle is well behaved.
  *
- * @param p Particle.
+ * @param pind Particle index.
  * @return 1 if the gradient matrix is well behaved, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int
-fvpm_part_geometry_well_behaved(const struct part *restrict p) {
+fvpm_part_geometry_well_behaved(const size_t pind) {
 
-  const struct fvpm_geometry_struct *geometry =
-      part_get_const_fvpm_geometry_p(p);
+  const struct fvpm_geometry_struct *restrict geometry =
+      part_get_const_fvpm_geometry_p(pind);
   return geometry->wcorr > const_gizmo_min_wcorr;
 }
 
@@ -48,10 +48,10 @@ fvpm_part_geometry_well_behaved(const struct part *restrict p) {
  * @brief Collect the data needed for the matrix construction.
  */
 __attribute__((always_inline)) INLINE static void
-fvpm_accumulate_geometry_and_matrix(struct part *restrict pi, const float wi,
+fvpm_accumulate_geometry_and_matrix(size_t pindi, const float wi,
                                     const float dx[3]) {
 
-  struct fvpm_geometry_struct *geometry = part_get_fvpm_geometry_p(pi);
+  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pindi);
 
   /* these are eqns. (1) and (2) in the Gizmo theory summary */
   geometry->volume += wi;
@@ -60,9 +60,9 @@ fvpm_accumulate_geometry_and_matrix(struct part *restrict pi, const float wi,
 }
 
 __attribute__((always_inline)) INLINE static void fvpm_geometry_init(
-    struct part *restrict p) {
+    size_t pind) {
 
-  struct fvpm_geometry_struct *geometry = part_get_fvpm_geometry_p(p);
+  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
 
   geometry->volume = 0.0f;
   geometry->matrix_E[0][0] = 0.0f;
@@ -76,7 +76,7 @@ __attribute__((always_inline)) INLINE static void fvpm_geometry_init(
   geometry->matrix_E[2][2] = 0.0f;
 
   /* reset the centroid variables used for the velocity correction in MFV */
-  fvpm_reset_centroids(p);
+  fvpm_reset_centroids(pind);
 }
 
 /**
@@ -86,9 +86,9 @@ __attribute__((always_inline)) INLINE static void fvpm_geometry_init(
  * @param ihdim 1/h^{dim}
  */
 __attribute__((always_inline)) INLINE static void
-fvpm_compute_volume_and_matrix(struct part *restrict p, const float ihdim) {
+fvpm_compute_volume_and_matrix(size_t pind, const float ihdim) {
 
-  struct fvpm_geometry_struct *geometry = part_get_fvpm_geometry_p(p);
+  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
 
   /* Final operation on the geometry. */
   /* we multiply with the smoothing kernel normalization ih3 and calculate the
@@ -109,7 +109,7 @@ fvpm_compute_volume_and_matrix(struct part *restrict p, const float ihdim) {
   geometry->matrix_E[2][2] *= ihdim;
 
   /* normalise the centroids for MFV */
-  fvpm_normalise_centroid(p, part_get_wcount(p));
+  fvpm_normalise_centroid(pind, part_get_wcount(pind));
 
   /* Check the condition number to see if we have a stable geometry. */
   const float condition_number_E =
@@ -150,8 +150,8 @@ fvpm_compute_volume_and_matrix(struct part *restrict p, const float ihdim) {
           const_gizmo_max_condition_number, condition_number);
 #endif
 #ifdef GIZMO_PATHOLOGICAL_WARNING
-    message("Condition number too large: %g (> %g, p->id: %llu)!",
-            condition_number, const_gizmo_max_condition_number, part_get_id(p));
+    message("Condition number too large: %g (> %g,id=: %llu)!",
+            condition_number, const_gizmo_max_condition_number, part_get_id(pind));
 #endif
     /* add a correction to the number of neighbours for this particle */
     geometry->wcorr = const_gizmo_w_correction_factor * geometry->wcorr;

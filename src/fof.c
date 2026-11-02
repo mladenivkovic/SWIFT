@@ -1008,65 +1008,65 @@ void fof_search_self_cell(const struct fof_props *props, const double l_x2,
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count; i++) {
 
-    const struct gpart *pi = &gparts[i];
+    const struct gpart *gpi = &gparts[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0];
-    const double piy = pi->x[1];
-    const double piz = pi->x[2];
+    const double gpix = gpi->x[0];
+    const double gpiy = gpi->x[1];
+    const double gpiz = gpi->x[2];
 
-    /* Find the root of pi. */
+    /* Find the root of gpi. */
     size_t root_i = fof_find(offset[i], group_index);
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
 
     for (size_t j = i + 1; j < count; j++) {
 
-      const struct gpart *pj = &gparts[j];
+      const struct gpart *gpj = &gparts[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_is_ignorable(pj)) continue;
+      if (gpart_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_is_linkable(pj);
+      const int is_link_j = gpart_is_linkable(gpj);
 
       /* Both particles must be of the linking kind */
       if (!(is_link_i && is_link_j)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      /* Find the root of pj. */
+      /* Find the root of gpj. */
       const size_t root_j = fof_find(offset[j], group_index);
 
       /* Skip particles in the same group. */
       if (root_i == root_j) continue;
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute the pairwise distance */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -1136,66 +1136,66 @@ void fof_search_pair_cells(const struct fof_props *props, const double dim[3],
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count_i; i++) {
 
-    const struct gpart *restrict pi = &gparts_i[i];
+    const struct gpart *restrict gpi = &gparts_i[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0] - shift[0];
-    const double piy = pi->x[1] - shift[1];
-    const double piz = pi->x[2] - shift[2];
+    const double gpix = gpi->x[0] - shift[0];
+    const double gpiy = gpi->x[1] - shift[1];
+    const double gpiz = gpi->x[2] - shift[2];
 
-    /* Find the root of pi. */
+    /* Find the root of gpi. */
     size_t root_i = fof_find(offset_i[i], group_index);
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
 
     for (size_t j = 0; j < count_j; j++) {
 
-      const struct gpart *restrict pj = &gparts_j[j];
+      const struct gpart *restrict gpj = &gparts_j[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_is_ignorable(pj)) continue;
+      if (gpart_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_is_linkable(pj);
+      const int is_link_j = gpart_is_linkable(gpj);
 
       /* At least one of the particles has to be of linking type */
       if (!(is_link_i && is_link_j)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      /* Find the root of pj. */
+      /* Find the root of gpj. */
       const size_t root_j = fof_find(offset_j[j], group_index);
 
       /* Skip particles in the same group. */
       if (root_i == root_j) continue;
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute pairwise distance (periodic BCs were accounted
        for by the shift vector) */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -1314,7 +1314,7 @@ void fof_search_pair_cells_foreign(
 
   double shift[3] = {0.0, 0.0, 0.0};
 
-  /* Get the relative distance between the pairs, wrapping. */
+  /* Get the relative distance between the pairs, wrapgping. */
   for (int k = 0; k < 3; k++) {
     const double diff = cj->loc[k] - ci->loc[k];
     if (periodic && diff < -dim[k] / 2)
@@ -1328,61 +1328,61 @@ void fof_search_pair_cells_foreign(
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count_i; i++) {
 
-    const struct gpart *pi = &gparts_i[i];
+    const struct gpart *gpi = &gparts_i[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0] - shift[0];
-    const double piy = pi->x[1] - shift[1];
-    const double piz = pi->x[2] - shift[2];
+    const double gpix = gpi->x[0] - shift[0];
+    const double gpiy = gpi->x[1] - shift[1];
+    const double gpiz = gpi->x[2] - shift[2];
 
-    /* Find the root of pi. */
+    /* Find the root of gpi. */
     const size_t root_i =
         fof_find_global(offset_i[i] - node_offset, group_index, nr_gparts);
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
 
     for (size_t j = 0; j < count_j; j++) {
 
-      const struct gpart_fof_foreign *pj = &gparts_j[j];
+      const struct gpart_fof_foreign *gpj = &gparts_j[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_foreign_is_ignorable(pj)) continue;
+      if (gpart_foreign_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_foreign_is_linkable(pj);
+      const int is_link_j = gpart_foreign_is_linkable(gpj);
 
       /* Only consider linkable<->linkable pairs */
       if (!(is_link_i && is_link_j)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute pairwise distance (periodic BCs were accounted
        for by the shift vector) */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -1392,7 +1392,7 @@ void fof_search_pair_cells_foreign(
         /* Check that the links have not already been added to the list. */
         for (size_t l = 0; l < local_link_count; l++) {
           if (local_group_links[l].group_i == root_i &&
-              local_group_links[l].group_j == pj->fof_data.group_id) {
+              local_group_links[l].group_j == gpj->fof_data.group_id) {
             continue;
           }
         }
@@ -1400,8 +1400,8 @@ void fof_search_pair_cells_foreign(
         /* Add a possible link to the list */
         add_foreign_link_to_list(
             &local_link_count, group_links_size, group_links,
-            &local_group_links, root_i, pj->fof_data.group_id,
-            group_size[root_i - node_offset], pj->fof_data.group_size);
+            &local_group_links, root_i, gpj->fof_data.group_id,
+            group_size[root_i - node_offset], gpj->fof_data.group_size);
       }
     }
   }
@@ -1604,26 +1604,26 @@ void fof_attach_self_cell(const struct fof_props *props, const double l_x2,
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count; i++) {
 
-    struct gpart *pi = &gparts[i];
+    struct gpart *gpi = &gparts[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0];
-    const double piy = pi->x[1];
-    const double piz = pi->x[2];
+    const double gpix = gpi->x[0];
+    const double gpiy = gpi->x[1];
+    const double gpiz = gpi->x[2];
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
-    const int is_attach_i = gpart_is_attachable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
+    const int is_attach_i = gpart_is_attachable(gpi);
 
 #ifdef SWIFT_DEBUG_CHECKS
     if (is_link_i && is_attach_i)
@@ -1632,17 +1632,17 @@ void fof_attach_self_cell(const struct fof_props *props, const double l_x2,
 
     for (size_t j = i + 1; j < count; j++) {
 
-      struct gpart *pj = &gparts[j];
+      struct gpart *gpj = &gparts[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_is_ignorable(pj)) continue;
+      if (gpart_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_is_linkable(pj);
-      const int is_attach_j = gpart_is_attachable(pj);
+      const int is_link_j = gpart_is_linkable(gpj);
+      const int is_attach_j = gpart_is_attachable(gpj);
 
 #ifdef SWIFT_DEBUG_CHECKS
       if (is_link_j && is_attach_j)
@@ -1654,19 +1654,19 @@ void fof_attach_self_cell(const struct fof_props *props, const double l_x2,
       if (is_link_i && is_link_j) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute the pairwise distance */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -1693,7 +1693,7 @@ void fof_attach_self_cell(const struct fof_props *props, const double l_x2,
             offset_dist[j] = dist;
 
             /* Store the current best root */
-            pj->fof_data.group_id = pi->fof_data.group_id;
+            gpj->fof_data.group_id = gpi->fof_data.group_id;
           }
 
         } else if (is_link_j && is_attach_i) {
@@ -1709,7 +1709,7 @@ void fof_attach_self_cell(const struct fof_props *props, const double l_x2,
             offset_dist[i] = dist;
 
             /* Store the current best root */
-            pi->fof_data.group_id = pj->fof_data.group_id;
+            gpi->fof_data.group_id = gpj->fof_data.group_id;
           }
 
         } else {
@@ -1777,26 +1777,26 @@ void fof_attach_pair_cells_both_local(const struct fof_props *props,
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count_i; i++) {
 
-    struct gpart *restrict pi = &gparts_i[i];
+    struct gpart *restrict gpi = &gparts_i[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0] - shift[0];
-    const double piy = pi->x[1] - shift[1];
-    const double piz = pi->x[2] - shift[2];
+    const double gpix = gpi->x[0] - shift[0];
+    const double gpiy = gpi->x[1] - shift[1];
+    const double gpiz = gpi->x[2] - shift[2];
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
-    const int is_attach_i = gpart_is_attachable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
+    const int is_attach_i = gpart_is_attachable(gpi);
 
 #ifdef SWIFT_DEBUG_CHECKS
     if (is_link_i && is_attach_i)
@@ -1805,17 +1805,17 @@ void fof_attach_pair_cells_both_local(const struct fof_props *props,
 
     for (size_t j = 0; j < count_j; j++) {
 
-      struct gpart *restrict pj = &gparts_j[j];
+      struct gpart *restrict gpj = &gparts_j[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_is_ignorable(pj)) continue;
+      if (gpart_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_is_linkable(pj);
-      const int is_attach_j = gpart_is_attachable(pj);
+      const int is_link_j = gpart_is_linkable(gpj);
+      const int is_attach_j = gpart_is_attachable(gpj);
 
 #ifdef SWIFT_DEBUG_CHECKS
       if (is_link_j && is_attach_j)
@@ -1827,20 +1827,20 @@ void fof_attach_pair_cells_both_local(const struct fof_props *props,
       if (is_link_i && is_link_j) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute pairwise distance (periodic BCs were accounted
        for by the shift vector) */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -1870,7 +1870,7 @@ void fof_attach_pair_cells_both_local(const struct fof_props *props,
             offset_dist_j[j] = dist;
 
             /* Store the current best root */
-            pj->fof_data.group_id = pi->fof_data.group_id;
+            gpj->fof_data.group_id = gpi->fof_data.group_id;
           }
 
         } else if (is_link_j && is_attach_i) {
@@ -1887,7 +1887,7 @@ void fof_attach_pair_cells_both_local(const struct fof_props *props,
             offset_dist_i[i] = dist;
 
             /* Store the current best root */
-            pi->fof_data.group_id = pj->fof_data.group_id;
+            gpi->fof_data.group_id = gpj->fof_data.group_id;
           }
 
         } else {
@@ -1941,26 +1941,26 @@ void fof_attach_pair_cells_ci_local(const struct fof_props *props,
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count_i; i++) {
 
-    struct gpart *restrict pi = &gparts_i[i];
+    struct gpart *restrict gpi = &gparts_i[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_is_ignorable(pi)) continue;
+    if (gpart_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0] - shift[0];
-    const double piy = pi->x[1] - shift[1];
-    const double piz = pi->x[2] - shift[2];
+    const double gpix = gpi->x[0] - shift[0];
+    const double gpiy = gpi->x[1] - shift[1];
+    const double gpiz = gpi->x[2] - shift[2];
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_is_linkable(pi);
-    const int is_attach_i = gpart_is_attachable(pi);
+    const int is_link_i = gpart_is_linkable(gpi);
+    const int is_attach_i = gpart_is_attachable(gpi);
 
 #ifdef SWIFT_DEBUG_CHECKS
     if (is_link_i && is_attach_i)
@@ -1969,17 +1969,17 @@ void fof_attach_pair_cells_ci_local(const struct fof_props *props,
 
     for (size_t j = 0; j < count_j; j++) {
 
-      struct gpart_fof_foreign *restrict pj = &gparts_j[j];
+      struct gpart_fof_foreign *restrict gpj = &gparts_j[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_foreign_is_ignorable(pj)) continue;
+      if (gpart_foreign_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_foreign_is_linkable(pj);
-      const int is_attach_j = gpart_foreign_is_attachable(pj);
+      const int is_link_j = gpart_foreign_is_linkable(gpj);
+      const int is_attach_j = gpart_foreign_is_attachable(gpj);
 
 #ifdef SWIFT_DEBUG_CHECKS
       if (is_link_j && is_attach_j)
@@ -1991,20 +1991,20 @@ void fof_attach_pair_cells_ci_local(const struct fof_props *props,
       if (is_link_i && is_link_j) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute pairwise distance (periodic BCs were accounted
        for by the shift vector) */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -2039,7 +2039,7 @@ void fof_attach_pair_cells_ci_local(const struct fof_props *props,
             offset_dist_i[i] = dist;
 
             /* Store the current best root */
-            pi->fof_data.group_id = pj->fof_data.group_id;
+            gpi->fof_data.group_id = gpj->fof_data.group_id;
           }
         } else {
 #ifdef SWIFT_DEBUG_CHECKS
@@ -2092,26 +2092,26 @@ void fof_attach_pair_cells_cj_local(const struct fof_props *props,
   /* Loop over particles and find which particles belong in the same group. */
   for (size_t i = 0; i < count_i; i++) {
 
-    struct gpart_fof_foreign *restrict pi = &gparts_i[i];
+    struct gpart_fof_foreign *restrict gpi = &gparts_i[i];
 
     /* Ignore inhibited particles */
-    if (pi->time_bin >= time_bin_inhibited) continue;
+    if (gpi->time_bin >= time_bin_inhibited) continue;
 
     /* Check whether we ignore this particle type altogether */
-    if (gpart_foreign_is_ignorable(pi)) continue;
+    if (gpart_foreign_is_ignorable(gpi)) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-    if (pi->ti_drift != ti_current)
+    if (gpi->ti_drift != ti_current)
       error("Running FOF on an un-drifted particle!");
 #endif
 
-    const double pix = pi->x[0] - shift[0];
-    const double piy = pi->x[1] - shift[1];
-    const double piz = pi->x[2] - shift[2];
+    const double gpix = gpi->x[0] - shift[0];
+    const double gpiy = gpi->x[1] - shift[1];
+    const double gpiz = gpi->x[2] - shift[2];
 
     /* Get the nature of the linking */
-    const int is_link_i = gpart_foreign_is_linkable(pi);
-    const int is_attach_i = gpart_foreign_is_attachable(pi);
+    const int is_link_i = gpart_foreign_is_linkable(gpi);
+    const int is_attach_i = gpart_foreign_is_attachable(gpi);
 
 #ifdef SWIFT_DEBUG_CHECKS
     if (is_link_i && is_attach_i)
@@ -2120,17 +2120,17 @@ void fof_attach_pair_cells_cj_local(const struct fof_props *props,
 
     for (size_t j = 0; j < count_j; j++) {
 
-      struct gpart *restrict pj = &gparts_j[j];
+      struct gpart *restrict gpj = &gparts_j[j];
 
       /* Ignore inhibited particles */
-      if (pj->time_bin >= time_bin_inhibited) continue;
+      if (gpj->time_bin >= time_bin_inhibited) continue;
 
       /* Check whether we ignore this particle type altogether */
-      if (gpart_is_ignorable(pj)) continue;
+      if (gpart_is_ignorable(gpj)) continue;
 
       /* Get the nature of the linking */
-      const int is_link_j = gpart_is_linkable(pj);
-      const int is_attach_j = gpart_is_attachable(pj);
+      const int is_link_j = gpart_is_linkable(gpj);
+      const int is_attach_j = gpart_is_attachable(gpj);
 
 #ifdef SWIFT_DEBUG_CHECKS
       if (is_link_j && is_attach_j)
@@ -2142,20 +2142,20 @@ void fof_attach_pair_cells_cj_local(const struct fof_props *props,
       if (is_link_i && is_link_j) continue;
 
 #ifdef SWIFT_DEBUG_CHECKS
-      if (pj->ti_drift != ti_current)
+      if (gpj->ti_drift != ti_current)
         error("Running FOF on an un-drifted particle!");
 #endif
 
-      const double pjx = pj->x[0];
-      const double pjy = pj->x[1];
-      const double pjz = pj->x[2];
+      const double gpjx = gpj->x[0];
+      const double gpjy = gpj->x[1];
+      const double gpjz = gpj->x[2];
 
       /* Compute pairwise distance (periodic BCs were accounted
        for by the shift vector) */
       float dx[3], r2 = 0.0f;
-      dx[0] = pix - pjx;
-      dx[1] = piy - pjy;
-      dx[2] = piz - pjz;
+      dx[0] = gpix - gpjx;
+      dx[1] = gpiy - gpjy;
+      dx[2] = gpiz - gpjz;
 
       for (int k = 0; k < 3; k++) r2 += dx[k] * dx[k];
 
@@ -2186,7 +2186,7 @@ void fof_attach_pair_cells_cj_local(const struct fof_props *props,
             offset_dist_j[j] = dist;
 
             /* Store the current best root */
-            pj->fof_data.group_id = pi->fof_data.group_id;
+            gpj->fof_data.group_id = gpi->fof_data.group_id;
           }
 
         } else if (is_link_j && is_attach_i) {
@@ -2535,8 +2535,6 @@ void fof_calc_group_mass(struct fof_props *props, const struct space *s,
 
   const size_t nr_gparts = s->nr_gparts;
   const struct gpart *gparts = s->gparts;
-  const struct part *parts = s->parts;
-  const struct xpart *xparts = s->xparts;
   const size_t group_id_default = props->group_id_default;
   const int periodic = s->periodic;
   const double dim[3] = {s->dim[0], s->dim[1], s->dim[2]};
@@ -2630,7 +2628,7 @@ void fof_calc_group_mass(struct fof_props *props, const struct space *s,
     /* Identify the densest gas particle in the group */
     if (gparts[i].type == swift_type_gas) {
       const size_t gas_index = -gparts[i].id_or_neg_offset;
-      const float rho_com = hydro_get_comoving_density(&parts[gas_index]);
+      const float rho_com = hydro_get_comoving_density(gas_index);
 #ifdef SWIFT_DEBUG_CHECKS
       if (rho_com == 0.f) {
         error("Found a particle with 0-density! id=%lld", parts[gas_index].id);
@@ -2638,7 +2636,7 @@ void fof_calc_group_mass(struct fof_props *props, const struct space *s,
 #endif
       max_part_density[index] = fmaxf(rho_com, max_part_density[index]);
       star_formation_rate[index] +=
-          star_formation_get_SFR(&parts[gas_index], &xparts[gas_index]);
+          star_formation_get_SFR(gas_index);
       gas_mass[index] += gparts[i].mass;
     }
 
@@ -2721,14 +2719,14 @@ void fof_calc_group_mass(struct fof_props *props, const struct space *s,
       /* Is this a gas particle? */
       if (gparts[i].type == swift_type_gas) {
         const size_t gas_index = -gparts[i].id_or_neg_offset;
-        const float rho_com = hydro_get_comoving_density(&parts[gas_index]);
+        const float rho_com = hydro_get_comoving_density(gas_index);
 
         /* Is this the gas paricle which is the densest? */
         if (rho_com == max_part_density[index]) {
 
           /* If so, is this the minimum ID we have seen with this density? */
-          if (parts[gas_index].id < id_gas_particle_to_convert[index])
-            id_gas_particle_to_convert[index] = parts[gas_index].id;
+          if (part_get_id(gas_index) < id_gas_particle_to_convert[index])
+            id_gas_particle_to_convert[index] = part_get_id(gas_index);
         }
       }
     }
@@ -2802,7 +2800,7 @@ void fof_calc_group_mass(struct fof_props *props, const struct space *s,
         const size_t gas_index = -gparts[i].id_or_neg_offset;
 
         /* Increment the local BH counter */
-        if (parts[gas_index].id == id_gas_particle_to_convert[index])
+        if (part_get_id(gas_index) == id_gas_particle_to_convert[index])
           (*number_of_local_seeds)++;
       }
     }
@@ -2866,8 +2864,6 @@ void fof_seed_black_holes(const struct fof_props *props,
 
   const size_t nr_gparts = s->nr_gparts;
   struct gpart *gparts = s->gparts;
-  struct part *parts = s->parts;
-  struct xpart *xparts = s->xparts;
   struct bpart *bparts = s->bparts;
   const size_t group_id_default = props->group_id_default;
   const double seed_halo_mass = props->seed_halo_mass;
@@ -2895,7 +2891,7 @@ void fof_seed_black_holes(const struct fof_props *props,
 
     /* Get the density of this particle */
     const size_t gas_index = -gparts[i].id_or_neg_offset;
-    const long long gas_part_id = parts[gas_index].id;
+    const long long gas_part_id = part_get_id(gas_index);
 
     /* Entry into the global list of group properties of this particle */
     const size_t index = gparts[i].fof_data.group_id - 1;
@@ -2908,17 +2904,15 @@ void fof_seed_black_holes(const struct fof_props *props,
       if (gas_part_id == id_gas_particle_to_convert[index]) {
 
         /* Handle on the particle to convert */
-        struct part *p = &parts[gas_index];
-        struct xpart *xp = &xparts[gas_index];
-        struct gpart *gp = p->gpart;
+        struct gpart *gp = part_get_gpart(gas_index);
 
 #ifdef SWIFT_DEBUG_CHECKS
         if (gp != &gparts[i]) error("Weird gas<->gpart linking error!");
 #endif
 
         /* Let's destroy the gas particle */
-        p->time_bin = time_bin_inhibited;
-        p->gpart = NULL;
+        part_set_time_bin(gas_index, time_bin_inhibited);
+        part_set_gpart(gas_index, NULL);
 
         /* Mark the gpart as black hole */
         gp->type = swift_type_black_hole;
@@ -2942,21 +2936,21 @@ void fof_seed_black_holes(const struct fof_props *props,
         bp->v[2] = gp->v_full[2];
 
         /* Set a smoothing length */
-        bp->h = p->h;
+        bp->h =part_get_h(gas_index);
 
         /* Save the ID */
-        bp->id = p->id;
+        bp->id =part_get_id(gas_index);
 
         /* Save the tree depth */
-        bp->depth_h = p->depth_h;
+        bp->depth_h = part_get_depth_h(gas_index);
 
 #ifdef SWIFT_DEBUG_CHECKS
-        bp->ti_kick = p->ti_kick;
-        bp->ti_drift = p->ti_drift;
+        bp->ti_kick = part_get_ti_kick(pind);
+        bp->ti_drift = part_get_ti_drift(pind);
 #endif
 
         /* Copy over all the gas properties that we want */
-        black_holes_create_from_gas(bp, bh_props, constants, cosmo, p, xp,
+        black_holes_create_from_gas(bp, bh_props, constants, cosmo, gas_index,
                                     s->e->ti_current);
         tracers_first_init_bpart(bp, s->e->internal_units,
                                  s->e->physical_constants, cosmo);

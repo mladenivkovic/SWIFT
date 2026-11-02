@@ -21,7 +21,7 @@ __attribute__((always_inline)) INLINE static void fvpm_reset_centroids(
 /**
  * @brief Normalise the centroids after the density loop.
  *
- * @param p Particle.
+ * @param pind Particle index.
  * @param wcount Wcount for the particle. This is an explicit argument, so that
  * it is clear from the code that wcount needs to be normalised by the time it
  * is used here.
@@ -33,7 +33,7 @@ __attribute__((always_inline)) INLINE static void fvpm_normalise_centroid(
  * @brief Update the centroid with the given contribution, assuming the particle
  * acts as the left particle in the neighbour interaction.
  *
- * @param p Particle (pi).
+ * @param pind Particle index.(pi).
  * @param dx Distance vector between the particle and its neighbour (dx = pi->x
  * - pj->x).
  * @param w Kernel value at position pj->x.
@@ -45,7 +45,7 @@ __attribute__((always_inline)) INLINE static void fvpm_update_centroid_left(
  * @brief Update the centroid with the given contribution, assuming the particle
  * acts as the right particle in the neighbour interaction.
  *
- * @param p Particle (pj).
+ * @param pind Particle index.(pj).
  * @param dx Distance vector between the particle and its neighbour (dx = pi->x
  * - pj->x).
  * @param w Kernel value at position pi->x.
@@ -56,7 +56,7 @@ __attribute__((always_inline)) INLINE static void fvpm_update_centroid_right(
 /**
  * @brief Check if the gradient matrix for this particle is well behaved.
  *
- * @param p Particle.
+ * @param pind Particle index.
  * @return 1 if the gradient matrix is well behaved, 0 otherwise.
  */
 __attribute__((always_inline)) INLINE static int

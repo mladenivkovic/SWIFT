@@ -182,7 +182,7 @@ int cooling_converged(const size_t pind, const size_t pold, const float limit) {
  * @param hydro_properties The #hydro_props.
  * @param cosmo The #cosmology
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 void cooling_compute_equilibrium(const struct phys_const *phys_const,
                                  const struct unit_system *us,
@@ -203,7 +203,7 @@ void cooling_compute_equilibrium(const struct phys_const *phys_const,
  * @param hydro_props The #hydro_props.
  * @param cosmo The #cosmology.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 void cooling_first_init_part(const struct phys_const *phys_const,
                              const struct unit_system *us,
@@ -397,7 +397,7 @@ void cooling_first_init_part(const struct phys_const *phys_const,
  * @param hydro_props The #hydro_props.
  * @param cosmo The #cosmology.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 void cooling_post_init_part(const struct phys_const *phys_const,
                             const struct unit_system *us,
@@ -873,7 +873,7 @@ void cooling_copy_from_grackle(grackle_field_data *data, const size_t pind, gr_f
  *
  * @param cooling The #cooling_function_data used in the run.
  * @param chemistry The chemistry_data structure from grackle.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param cosmo The #cosmology.
  */
 void cooling_apply_self_shielding(
@@ -904,7 +904,7 @@ void cooling_apply_self_shielding(
  * @param cosmo The #cosmology.
  * @param hydro_props The #hydro_props.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param dt The time-step of this particle.
  * @param dt_therm The time-step operator used for thermal quantities.
  *
@@ -985,7 +985,7 @@ gr_float cooling_new_energy(const struct phys_const *phys_const,
  * @param hydro_props The #hydro_props.
  * @param cosmo The #cosmology.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  *
  * @return cooling time
  */
@@ -1063,7 +1063,7 @@ gr_float cooling_time(const struct phys_const *phys_const,
  * @param floor_props Properties of the entropy floor.
  * @param pressure_floor Properties of the pressure floor.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param dt The time-step of this particle.
  * @param dt_therm The time-step operator used for thermal quantities.
  * @param time The current time (since the Big Bang or start of the run) in
@@ -1231,7 +1231,7 @@ double Cooling_get_ycompton(const struct phys_const *phys_const,
  * @param cosmo The #cosmology.
  * @param us The internal system of units.
  * @param hydro_props The #hydro_props.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 float cooling_timestep(const struct cooling_function_data *cooling,
                        const struct phys_const *phys_const,

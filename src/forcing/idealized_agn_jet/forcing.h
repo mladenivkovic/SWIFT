@@ -79,12 +79,11 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   if (terms->enable_hydro_acceleration) {
     /* Skip if not resetting hydro accelerations. */
@@ -95,13 +94,13 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
      kick them; define max_id of particle that should be kicked up to now */
   const float max_id =
       (terms->jet_power * time) /
-      (0.5 * p->mass * terms->jet_velocity * terms->jet_velocity);
+      (0.5 *part_get_mass(pind) * terms->jet_velocity * terms->jet_velocity);
 
-  if ((p->id <= terms->boundary_particle_max_id) && (p->id > max_id)) {
+  if ((part_get_id(pind) <= terms->boundary_particle_max_id) && (part_get_id(pind) > max_id)) {
     /* Reset the hydro accelerations of boundary particles. */
-    p->a_hydro[0] = 0.0f;
-    p->a_hydro[1] = 0.0f;
-    p->a_hydro[2] = 0.0f;
+   part_set_a_hydro_ind(pind, 0, 0.0f);
+   part_set_a_hydro_ind(pind, 1, 0.0f);
+   part_set_a_hydro_ind(pind, 2, 0.0f);
 
 #if defined(GIZMO_MFV_SPH) || defined(GIZMO_MFM_SPH)
 
@@ -114,17 +113,17 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
 
     if (terms->enable_fixed_position) {
       /* Set velocity of fixed boundary particle to zero. */
-      xp->v_full[0] = 0.f;
-      xp->v_full[1] = 0.f;
-      xp->v_full[2] = 0.f;
+      part_set_v_full_ind(pind, 0, 0.f);
+      part_set_v_full_ind(pind, 1, 0.f);
+      part_set_v_full_ind(pind, 2, 0.f);
     }
-  } else if (p->id <= terms->boundary_particle_max_id) {
+  } else if (part_get_id(pind) <= terms->boundary_particle_max_id) {
     /* Launch particles into jets */
 
     /* Particle position relative to the box centre */
-    const double delta_x = (p->x[0] - s->dim[0] / 2.0);
-    const double delta_y = (p->x[1] - s->dim[1] / 2.0);
-    const double delta_z = (p->x[2] - s->dim[2] / 2.0);
+    const double delta_x = (part_get_x_ind(pind, 0) - s->dim[0] / 2.0);
+    const double delta_y = (part_get_x_ind(pind, 1) - s->dim[1] / 2.0);
+    const double delta_z = (part_get_x_ind(pind, 2) - s->dim[2] / 2.0);
 
     const double R =
         sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
@@ -134,25 +133,25 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
                                     terms->jet_velocity * delta_y / R,
                                     terms->jet_velocity * delta_z / R};
 
-    p->v[0] = vel_kick_vec[0];
-    p->v[1] = vel_kick_vec[1];
-    p->v[2] = vel_kick_vec[2];
-    xp->v_full[0] = vel_kick_vec[0];
-    xp->v_full[1] = vel_kick_vec[1];
-    xp->v_full[2] = vel_kick_vec[2];
+    part_set_v_ind(pind, 0, vel_kick_vec[0]);
+    part_set_v_ind(pind, 1, vel_kick_vec[1]);
+    part_set_v_ind(pind, 2, vel_kick_vec[2]);
+    part_set_v_full_ind(pind, 0, vel_kick_vec[0]);
+    part_set_v_full_ind(pind, 1, vel_kick_vec[1]);
+    part_set_v_full_ind(pind, 2, vel_kick_vec[2]);
 
     /* Reset some hydro quantities */
-    hydro_diffusive_feedback_reset(p);
+    hydro_diffusive_feedback_reset(pind);
 
     /* Recompute the signal velocity of the particle */
-    hydro_set_v_sig_based_on_velocity_kick(p, s->e->cosmology,
+    hydro_set_v_sig_based_on_velocity_kick(pind, s->e->cosmology,
                                            terms->jet_velocity);
 
     /* Synchronize the particle on the time-line */
-    timestep_sync_part(p);
+    timestep_sync_part(pind);
 
     /* Increase the particle's id so it's no longer ever kicked */
-    p->id += terms->boundary_particle_max_id;
+    part_set_id(pind, part_get_id(pind) + terms->boundary_particle_max_id);
   }
 }
 
@@ -192,18 +191,16 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {
+    const long long id, const struct forcing_terms *terms, size_t pind) {
 
   if (id <= terms->boundary_particle_max_id && terms->enable_fixed_position) {
     /* Set velocity of fixed boundary particle to zero. */
-    xp->v_full[0] = 0.f;
-    xp->v_full[1] = 0.f;
-    xp->v_full[2] = 0.f;
+    part_set_v_full_ind(pind, 0, 0.f);
+    part_set_v_full_ind(pind, 1, 0.f);
+    part_set_v_full_ind(pind, 2, 0.f);
   }
 }
 
@@ -243,13 +240,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   return FLT_MAX;
 }

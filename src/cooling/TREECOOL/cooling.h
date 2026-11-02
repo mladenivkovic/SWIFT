@@ -237,7 +237,7 @@ __attribute__((always_inline)) INLINE static double treecool_bisection_iter(
  * @param floor_props Properties of the entropy floor.
  * @param pressure_floor The properties of the pressure floor.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param dt The time-step of this particle.
  * @param dt_therm The time-step operator used for thermal quantities.
  * @param time Time since Big Bang (or start of the simulation) in internal
@@ -365,7 +365,7 @@ __attribute__((always_inline)) INLINE static void cooling_cool_part(
  * @param cosmo The current cosmological model.
  * @param us The internal system of units.
  * @param hydro_props The properties of the hydro scheme.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float cooling_timestep(
     const struct cooling_function_data *restrict cooling,
@@ -492,7 +492,7 @@ __attribute__((always_inline)) INLINE static double cooling_get_ycompton(
  * @param hydro_props The properties of the hydro scheme.
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void cooling_first_init_part(
     const struct phys_const *restrict phys_const,
@@ -520,7 +520,7 @@ __attribute__((always_inline)) INLINE static void cooling_first_init_part(
  * @param hydro_props The properties of the hydro scheme.
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void cooling_post_init_part(
     const struct phys_const *restrict phys_const,

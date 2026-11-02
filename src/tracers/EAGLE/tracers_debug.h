@@ -28,7 +28,7 @@
 /**
  * @brief Write the particle-carried tracers field for debugging
  *
- * @param p the #part.
+ * @param pind the particle index.
  */
 __attribute__((always_inline)) INLINE static void tracers_debug_particle(
     const size_t pind) {

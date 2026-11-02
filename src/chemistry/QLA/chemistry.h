@@ -141,7 +141,7 @@ __attribute__((always_inline)) INLINE static void chemistry_prepare_force(
  * @param us The internal system of units.
  * @param hydro_props The properties of the hydro scheme.
  * @param cd The global properties of the chemistry scheme.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float chemistry_timestep(
     const struct phys_const *restrict phys_const,
@@ -175,7 +175,7 @@ chemistry_part_has_no_neighbours(size_t pind, const struct chemistry_global_data
  * @param us The unit system.
  * @param cosmo The current cosmological model.
  * @param data The global chemistry information used for this run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void chemistry_first_init_part(
     const struct phys_const *restrict phys_const,
@@ -189,7 +189,7 @@ __attribute__((always_inline)) INLINE static void chemistry_first_init_part(
  *
  * Nothing to do here.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param data The global chemistry information.
  */
 __attribute__((always_inline)) INLINE static void chemistry_init_part(
@@ -293,7 +293,7 @@ __attribute__((always_inline)) INLINE static void chemistry_split_part(
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_feedback(
@@ -308,7 +308,7 @@ chemistry_get_total_metal_mass_fraction_for_feedback(
  *
  * No metallicity treatment here -> return NULL array.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_feedback(const size_t pind) {
@@ -351,7 +351,7 @@ chemistry_get_star_metal_mass_fraction_for_feedback(const struct spart *sp) {
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_cooling(const size_t pind) {
@@ -365,7 +365,7 @@ chemistry_get_total_metal_mass_fraction_for_cooling(const size_t pind) {
  *
  * No metallicity treatment here -> return NULL array.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
@@ -379,7 +379,7 @@ chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_star_formation(
@@ -394,7 +394,7 @@ chemistry_get_total_metal_mass_fraction_for_star_formation(
  *
  * No metallicity treatment here -> return NULL array.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
@@ -408,7 +408,7 @@ chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_for_stats(const size_t pind) {
@@ -422,7 +422,7 @@ chemistry_get_total_metal_mass_for_stats(const size_t pind) {
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_star_total_metal_mass_for_stats(const struct spart *restrict sp) {
@@ -436,7 +436,7 @@ chemistry_get_star_total_metal_mass_for_stats(const struct spart *restrict sp) {
  *
  * No metallicity treatment here -> return 0.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_bh_total_metal_mass_for_stats(const struct bpart *restrict bp) {
@@ -462,7 +462,7 @@ chemistry_get_star_total_metal_mass_fraction_for_luminosity(
 /**
  * @brief Extra chemistry operations to be done during the drift.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_drift The drift time-step for positions.
  * @param dt_therm The drift time-step for thermal quantities.
  * @param cosmo The current cosmological model.

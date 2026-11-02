@@ -62,12 +62,11 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   const double L = s->dim[0];
   const float u0 = terms->u0;
@@ -82,14 +81,15 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
   /* Eq. 2 of David Galloway (2012) ABC flows then and now, Geophysical &
    * Astrophysical Fluid Dynamics, 106:4-5, 450-467 */
   // Velocity normalized such that <v>rms = u0
-  v_ABC[0] = u0 * Norm * (A * sin(k0 * p->x[2]) + C * cos(k0 * p->x[1]));
-  v_ABC[1] = u0 * Norm * (B * sin(k0 * p->x[0]) + A * cos(k0 * p->x[2]));
-  v_ABC[2] = u0 * Norm * (C * sin(k0 * p->x[1]) + B * cos(k0 * p->x[0]));
+  const double x[3] = { part_get_x_ind(pind, 0), part_get_x_ind(pind, 1), part_get_x_ind(pind, 2)};
+  v_ABC[0] = u0 * Norm * (A * sin(k0 * x[2]) + C * cos(k0 * x[1]));
+  v_ABC[1] = u0 * Norm * (B * sin(k0 * x[0]) + A * cos(k0 * x[2]));
+  v_ABC[2] = u0 * Norm * (C * sin(k0 * x[1]) + B * cos(k0 * x[0]));
 
   /* Force the velocity and possibly scale the z-direction */
-  xp->v_full[0] = v_ABC[0];
-  xp->v_full[1] = v_ABC[1];
-  xp->v_full[2] = v_ABC[2] * Vz_factor;
+  part_set_v_full_ind(pind, 0, v_ABC[0]);
+  part_set_v_full_ind(pind, 1, v_ABC[1]);
+  part_set_v_full_ind(pind, 2, v_ABC[2] * Vz_factor);
 }
 
 /**
@@ -121,12 +121,10 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {}
+    const long long id, const struct forcing_terms *terms, size_t pind) {}
 
 /**
  * @brief Sets the forcing of sparts prior to drift.
@@ -156,13 +154,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   return FLT_MAX;
 }

@@ -38,7 +38,7 @@
  * @param cosmo The current cosmological model.
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * struct).
  */
 static INLINE void tracers_after_init(
@@ -57,7 +57,7 @@ static INLINE void tracers_after_init(
  * @param cosmo The current cosmological model.
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * struct).
  */
 static INLINE void tracers_after_drift(
@@ -171,7 +171,7 @@ static INLINE void tracers_after_recording_trigger_sink(
  * @param cosmo The current cosmological model.
  * @param hydro_props the hydro_props struct
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * struct).
  */
 static INLINE void tracers_first_init_xpart(
@@ -238,7 +238,7 @@ static INLINE void tracers_first_init_sink(struct sink *sink,
  * delta_p_magnitude (internal physical units).
  */
 static INLINE void tracers_after_stellar_winds_feedback_part(
-    const float delta_p_magnitude, const float delta_u,
+    const size_t pind, const float delta_p_magnitude, const float delta_u,
     const float kick_velocity) {}
 
 /**
@@ -304,7 +304,7 @@ static INLINE void tracers_after_snia_event_spart(struct spart *sp,
  *
  * Nothing to do here.
  *
- * @param p Pointer to the basic particle data.
+ * @param pind Index of the particle.
  * (internal physical units)
  */
 static INLINE void tracers_before_black_holes_feedback(
@@ -332,7 +332,7 @@ static INLINE void tracers_after_black_holes_feedback(
  *
  * Nothing to do here.
  *
- * @param p the #part.
+ * @param pind the particle index.
  */
 static INLINE void tracers_after_snapshot_part(const size_t pind) {}
 

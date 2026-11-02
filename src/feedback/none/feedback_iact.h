@@ -56,7 +56,7 @@ runner_iact_nonsym_feedback_density(const float r2, const float dx[3],
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
- * @param pj Second (gas) particle.
+ * @param pindj Index of second (gas) particle.
  * @param cosmo The cosmological model.
  * @param fb_props Properties of the feedback scheme.
  * @param ti_current Current integer time used value for seeding random number

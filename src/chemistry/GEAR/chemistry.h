@@ -446,7 +446,7 @@ chemistry_part_has_no_neighbours(size_t pind, const struct chemistry_global_data
  * @param us The internal system of units.
  * @param hydro_props The properties of the hydro scheme.
  * @param cd The global properties of the chemistry scheme.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float chemistry_timestep(
     const struct phys_const *restrict phys_const,
@@ -465,7 +465,7 @@ __attribute__((always_inline)) INLINE static float chemistry_timestep(
  * @param us The #unit_system.
  * @param cosmo The #cosmology.
  * @param data The global chemistry information.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void chemistry_first_init_part(
     const struct phys_const *restrict phys_const,
@@ -703,7 +703,7 @@ __attribute__((always_inline)) INLINE static void chemistry_split_part(
  *
  * This is unused in GEAR. --> return NULL
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float const *
 chemistry_get_metal_mass_fraction_for_feedback(const size_t pind) {
@@ -717,7 +717,7 @@ chemistry_get_metal_mass_fraction_for_feedback(const size_t pind) {
  *
  * This is unused in GEAR. --> return 0
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_fraction_for_feedback(
@@ -785,7 +785,7 @@ chemistry_get_star_metal_mass_fraction_for_feedback(
  * @brief Returns the total metallicity (metal mass fraction) of the
  * gas particle to be used in cooling related routines.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static double
 chemistry_get_total_metal_mass_fraction_for_cooling(const size_t pind) {
@@ -797,7 +797,7 @@ chemistry_get_total_metal_mass_fraction_for_cooling(const size_t pind) {
  * @brief Returns the abundance array (metal mass fractions) of the
  * gas particle to be used in cooling related routines.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static double const *
 chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
@@ -809,7 +809,7 @@ chemistry_get_metal_mass_fraction_for_cooling(const size_t pind) {
  * @brief Returns the total metallicity (metal mass fraction) of the
  * gas particle to be used in star formation related routines.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static double
 chemistry_get_total_metal_mass_fraction_for_star_formation(
@@ -822,7 +822,7 @@ chemistry_get_total_metal_mass_fraction_for_star_formation(
  * @brief Returns the abundance array (metal mass fractions) of the
  * gas particle to be used in star formation related routines.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static double const *
 chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
@@ -834,7 +834,7 @@ chemistry_get_metal_mass_fraction_for_star_formation(const size_t pind) {
  * @brief Returns the total metallicity (metal mass fraction) of the
  * gas particle to be used in the stats related routines.
  *
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float
 chemistry_get_total_metal_mass_for_stats(const size_t pind) {
@@ -931,7 +931,7 @@ chemistry_set_star_supernovae_ejected_yields(
  *
  * Nothing to do here.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_drift The drift time-step for positions.
  * @param dt_therm The drift time-step for thermal quantities.
  * @param cosmo The current cosmological model.

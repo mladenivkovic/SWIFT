@@ -96,14 +96,14 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   const size_t t_index = terms->t_index;
+  struct forcing_xpart_data *restrict fd = part_get_extra_forcing_data_p(pind);
 
   if ((time >= terms->times[t_index]) && (terms->final_injection == 0)) {
     terms->counter++;
@@ -114,9 +114,9 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const int periodic = s->periodic;
     const double dim[3] = {s->dim[0], s->dim[1], s->dim[2]};
 
-    double dx = SN_loc[0] - p->x[0];
-    double dy = SN_loc[1] - p->x[1];
-    double dz = SN_loc[2] - p->x[2];
+    double dx = SN_loc[0] - part_get_x_ind(pind, 0);
+    double dy = SN_loc[1] - part_get_x_ind(pind, 1);
+    double dz = SN_loc[2] - part_get_x_ind(pind, 2);
 
     if (periodic) {
       dx = nearest(dx, dim[0]);
@@ -127,17 +127,17 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     double distance = sqrtf(dx * dx + dy * dy + dz * dz);
 
     if (distance <= terms->r_inj) {
-      message("applying injection to particle %lld at t: %f", p->id, time);
+      message("applying injection to particle %lld at t: %f",part_get_id(pind), time);
 
       /* store old (physical) specific energy and velocity */
       const float u_old =
-          hydro_get_physical_internal_energy(p, xp, s->e->cosmology);
+          hydro_get_physical_internal_energy(pind, s->e->cosmology);
       const float v_old =
-          sqrtf(xp->v_full[0] * xp->v_full[0] + xp->v_full[1] * xp->v_full[1] +
-                xp->v_full[2] * xp->v_full[2]) /
+          sqrtf(part_get_v_full_ind(pind, 0) * part_get_v_full_ind(pind, 0) + part_get_v_full_ind(pind, 1) * part_get_v_full_ind(pind, 1) +
+                part_get_v_full_ind(pind, 2) * part_get_v_full_ind(pind, 2)) /
           s->e->cosmology->a;
 
-      const float mass = hydro_get_mass(p);
+      const float mass = hydro_get_mass(pind);
 
       /* initialise new internal energy and velocity */
       float u_new;
@@ -154,18 +154,18 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
            * note rho & V are comoving but
            * rho * V is scale factor free */
 
-          u_new = terms->E_inj / (p->rho * terms->V_inj);
+          u_new = terms->E_inj / (part_get_rho(pind) * terms->V_inj);
 
           /* set the specific energy */
-          hydro_set_physical_internal_energy(p, xp, s->e->cosmology, u_new);
+          hydro_set_physical_internal_energy(pind, s->e->cosmology, u_new);
           hydro_set_drifted_physical_internal_energy(
-              p, s->e->cosmology, s->e->pressure_floor_props, u_new);
+              pind, s->e->cosmology, s->e->pressure_floor_props, u_new);
 
           /* store injected energy */
-          xp->forcing_data.forcing_injected_energy += (u_new - u_old) * mass;
+          fd->forcing_injected_energy += (u_new - u_old) * mass;
 
           /* set visocity to maximum */
-          hydro_diffusive_feedback_reset(p);
+          hydro_diffusive_feedback_reset(pind);
           break;
 
         case forcing_balsara_kim_mechanism_set_const_u:
@@ -174,33 +174,32 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
           u_new = terms->u_inj;
 
           /* set the specific energy */
-          hydro_set_physical_internal_energy(p, xp, s->e->cosmology, u_new);
+          hydro_set_physical_internal_energy(pind, s->e->cosmology, u_new);
           hydro_set_drifted_physical_internal_energy(
-              p, s->e->cosmology, s->e->pressure_floor_props, u_new);
+              pind, s->e->cosmology, s->e->pressure_floor_props, u_new);
 
           /* store injected energy */
-          xp->forcing_data.forcing_injected_energy += (u_new - u_old) * mass;
+          fd->forcing_injected_energy += (u_new - u_old) * mass;
 
           /* set visocity to maximum */
-          hydro_diffusive_feedback_reset(p);
+          hydro_diffusive_feedback_reset(pind);
           break;
 
         case forcing_balsara_kim_mechanism_set_v:
 
           /* compute new (physical) velocity */
-          v_new = sqrtf(2 * terms->E_inj / (p->rho * terms->V_inj));
+          v_new = sqrtf(2 * terms->E_inj / (part_get_rho(pind) * terms->V_inj));
 
           /* set the velocity */
-          xp->v_full[0] = (dx / distance) * v_new * s->e->cosmology->a;
-          xp->v_full[1] = (dy / distance) * v_new * s->e->cosmology->a;
-          xp->v_full[2] = (dz / distance) * v_new * s->e->cosmology->a;
+          part_set_v_full_ind(pind, 0, (dx / distance) * v_new * s->e->cosmology->a);
+          part_set_v_full_ind(pind, 1, (dy / distance) * v_new * s->e->cosmology->a);
+          part_set_v_full_ind(pind, 2, (dz / distance) * v_new * s->e->cosmology->a);
 
           /* store injected energy */
-          xp->forcing_data.forcing_injected_energy +=
-              mass * (v_new * v_new - v_old * v_old) / 2;
+          fd->forcing_injected_energy += mass * (v_new * v_new - v_old * v_old) / 2;
 
           /* update signal velocity based on velocity kick */
-          hydro_set_v_sig_based_on_velocity_kick(p, s->e->cosmology, v_new);
+          hydro_set_v_sig_based_on_velocity_kick(pind, s->e->cosmology, v_new);
           break;
 
         case forcing_balsara_kim_mechanism_set_const_v:
@@ -209,16 +208,16 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
           v_new = terms->vel_inj;
 
           /* set the velocity */
-          xp->v_full[0] = (dx / distance) * v_new * s->e->cosmology->a;
-          xp->v_full[1] = (dy / distance) * v_new * s->e->cosmology->a;
-          xp->v_full[2] = (dz / distance) * v_new * s->e->cosmology->a;
+          part_set_v_full_ind(pind, 0, (dx / distance) * v_new * s->e->cosmology->a);
+          part_set_v_full_ind(pind, 1, (dy / distance) * v_new * s->e->cosmology->a);
+          part_set_v_full_ind(pind, 2, (dz / distance) * v_new * s->e->cosmology->a);
 
           /* store injected energy */
-          xp->forcing_data.forcing_injected_energy +=
+          fd->forcing_injected_energy +=
               mass * (v_new * v_new - v_old * v_old) / 2;
 
           /* update signal velocity based on velocity kick */
-          hydro_set_v_sig_based_on_velocity_kick(p, s->e->cosmology, v_new);
+          hydro_set_v_sig_based_on_velocity_kick(pind, s->e->cosmology, v_new);
           break;
 
         default:
@@ -227,7 +226,7 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
       }
 
       /* synchronize particle on timeline */
-      timestep_sync_part(p);
+      timestep_sync_part(pind);
     }
   }
 }
@@ -261,12 +260,10 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {}
+    const long long id, const struct forcing_terms *terms, size_t pind) {}
 
 /**
  * @brief Sets the forcing of sparts prior to drift.
@@ -299,13 +296,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   const size_t t_index = terms->t_index;
 

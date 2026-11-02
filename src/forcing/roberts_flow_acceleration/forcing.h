@@ -73,21 +73,21 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   enum flow Flow_kind = terms->Flow_kind;
   const double L = s->dim[0];
   const float u0 = terms->u0;
-  const float c_s = hydro_get_comoving_soundspeed(p);
+  const float c_s = hydro_get_comoving_soundspeed(pind);
+  const double x[3] = { part_get_x_ind(pind, 0), part_get_x_ind(pind, 1), part_get_x_ind(pind, 2) };
 
   /* Effective viscosity from artificial viscosity, as in eq. 100 from
    * arXiv:1012.1885 */
-  const float nu = terms->nu * p->viscosity.alpha * c_s * p->h /
+  const float nu = terms->nu * part_get_alpha_av(pind) * c_s * part_get_h(pind) /
                    (2.f * (hydro_dimension + 2.f));
 
   const float Vz_factor = terms->Vz_factor;
@@ -100,17 +100,17 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
 
     case Brandenburg_flow:
       /* Eq. 8 of Tilgner & Brandenburg, 2008, MNRAS, 391, 1477 */
-      // Psi = (u0 / k0) * cos(k0 * p->x[0]) * cos(k0 * p->x[1]);
+      // Psi = (u0 / k0) * cos(k0 * x[0]) * cos(k0 * x[1]);
 
       /* Eq. 7 of Tilgner & Brandenburg, 2008, MNRAS, 391, 1477 */
-      // v_Rob[0] = u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
-      // v_Rob[1] = -u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
+      // v_Rob[0] = u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
+      // v_Rob[1] = -u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
       // v_Rob[2] = kf * Psi;
 
       // Velocity used to compare with A.B. runs (from overleaf)
-      Psi = (u0 / k0) * sin(k0 * p->x[0]) * sin(k0 * p->x[1]);
-      v_Rob[0] = u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
-      v_Rob[1] = -u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
+      Psi = (u0 / k0) * sin(k0 * x[0]) * sin(k0 * x[1]);
+      v_Rob[0] = u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
+      v_Rob[1] = -u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
       v_Rob[2] = kf * Psi;
 
       break;
@@ -118,33 +118,33 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     case Roberts_flow_1:
       /* Eq. 5.1 of Roberts, Feb. 3, 1972, Vol. 271, No. 1216 (Feb. 3, 1972),
        * pp. 411-454.*/
-      v_Rob[0] = u0 * sin(k0 * p->x[0]);
-      v_Rob[1] = u0 * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * (cos(k0 * p->x[0]) - cos(k0 * p->x[1]));
+      v_Rob[0] = u0 * sin(k0 * x[0]);
+      v_Rob[1] = u0 * sin(k0 * x[1]);
+      v_Rob[2] = u0 * (cos(k0 * x[0]) - cos(k0 * x[1]));
       break;
 
     case Roberts_flow_2:
       /* Eq. 6.1 of Roberts, Feb. 3, 1972, Vol. 271, No. 1216 (Feb. 3, 1972),
        * pp. 411-454.*/
-      v_Rob[0] = u0 * sin(k0 * p->x[0]);
-      v_Rob[1] = u0 * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * (cos(k0 * p->x[0]) + cos(k0 * p->x[1]));
+      v_Rob[0] = u0 * sin(k0 * x[0]);
+      v_Rob[1] = u0 * sin(k0 * x[1]);
+      v_Rob[2] = u0 * (cos(k0 * x[0]) + cos(k0 * x[1]));
       break;
 
     case Roberts_flow_3:
       /* Eq. 6.2 of Roberts, Feb. 3, 1972, Vol. 271, No. 1216 (Feb. 3, 1972),
        * pp. 411-454.*/
-      v_Rob[0] = u0 * sin(k0 * p->x[0]);
-      v_Rob[1] = u0 * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * 2 * cos(k0 * p->x[0]) * cos(k0 * p->x[1]);
+      v_Rob[0] = u0 * sin(k0 * x[0]);
+      v_Rob[1] = u0 * sin(k0 * x[1]);
+      v_Rob[2] = u0 * 2 * cos(k0 * x[0]) * cos(k0 * x[1]);
       break;
 
     case Roberts_flow_4:
       /* Eq. 6.3 of Roberts, Feb. 3, 1972, Vol. 271, No. 1216 (Feb. 3, 1972),
        * pp. 411-454.*/
-      v_Rob[0] = u0 * sin(k0 * p->x[0]);
-      v_Rob[1] = u0 * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * sin(k0 * (p->x[0] + p->x[1]));
+      v_Rob[0] = u0 * sin(k0 * x[0]);
+      v_Rob[1] = u0 * sin(k0 * x[1]);
+      v_Rob[2] = u0 * sin(k0 * (x[0] + x[1]));
       break;
 
     default:
@@ -159,9 +159,9 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
                        nu * kf * kf * v_Rob[2]};
 
   /* Update the accelerations */
-  p->a_hydro[0] += f[0];
-  p->a_hydro[1] += f[1];
-  p->a_hydro[2] += f[2] * Vz_factor;
+  part_set_a_hydro_ind(pind, 0, part_get_a_hydro_ind(pind, 0) + f[0]);
+  part_set_a_hydro_ind(pind, 1, part_get_a_hydro_ind(pind, 1) + f[1]);
+  part_set_a_hydro_ind(pind, 2, part_get_a_hydro_ind(pind, 2) + f[2] * Vz_factor);
 }
 
 /**
@@ -193,12 +193,10 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {}
+    const long long id, const struct forcing_terms *terms, size_t pind) {}
 
 /**
  * @brief Sets the forcing of sparts prior to drift.
@@ -228,13 +226,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   return FLT_MAX;
 }

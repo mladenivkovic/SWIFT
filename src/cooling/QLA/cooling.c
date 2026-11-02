@@ -548,7 +548,7 @@ static INLINE double bisection_iter(
  * @param floor_props Properties of the entropy floor.
  * @param pressure_floor Properties of the pressure floor.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param dt The cooling time-step of this particle.
  * @param dt_therm The hydro time-step of this particle.
  * @param time Time since Big Bang
@@ -765,7 +765,7 @@ __attribute__((always_inline)) INLINE void cooling_first_init_part(
  * @param hydro_props The properties of the hydro scheme.
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE void cooling_post_init_part(
     const struct phys_const *phys_const, const struct unit_system *us,
@@ -896,7 +896,7 @@ float cooling_get_particle_subgrid_density(
  * @param hydro_props the hydro_props struct
  * @param floor_props Properties of the entropy floor.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 void cooling_set_particle_subgrid_properties(
     const struct phys_const *phys_const, const struct unit_system *us,

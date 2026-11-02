@@ -47,7 +47,7 @@ struct forcing_terms {};
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
@@ -84,7 +84,7 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
     const long long id, const struct forcing_terms *terms, size_t pind) {}
@@ -117,7 +117,7 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,

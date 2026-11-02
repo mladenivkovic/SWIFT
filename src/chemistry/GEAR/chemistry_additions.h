@@ -43,7 +43,7 @@ __attribute__((always_inline)) INLINE static void chemistry_reset_mass_fluxes(
  * @brief Extra operations done during the kick. This needs to be
  * done before the particle mass is updated in the hydro_kick_extra.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_therm Thermal energy time-step @f$\frac{dt}{a^2}@f$.
  * @param dt_grav Gravity time-step @f$\frac{dt}{a}@f$.
  * @param dt_hydro Hydro acceleration time-step

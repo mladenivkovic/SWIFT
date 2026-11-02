@@ -478,7 +478,6 @@ void gravity_exact_force_compute_mapper(void *map_data, int nr_gparts,
   struct gpart *restrict gparts = (struct gpart *)map_data;
   struct exact_force_data *data = (struct exact_force_data *)extra_data;
   const struct space *s = data->s;
-  const struct part *parts = s->parts;
   const struct spart *sparts = s->sparts;
   const struct bpart *bparts = s->bparts;
   const struct engine *e = data->e;
@@ -498,7 +497,7 @@ void gravity_exact_force_compute_mapper(void *map_data, int nr_gparts,
     /* Get the particle ID */
     long long id = 0;
     if (gpi->type == swift_type_gas)
-      id = parts[-gpi->id_or_neg_offset].id;
+      id = part_get_id(-gpi->id_or_neg_offset);
     else if (gpi->type == swift_type_stars)
       id = sparts[-gpi->id_or_neg_offset].id;
     else if (gpi->type == swift_type_black_hole)
@@ -698,7 +697,6 @@ void gravity_exact_force_check(struct space *s, const struct engine *e,
 
 #ifdef SWIFT_GRAVITY_FORCE_CHECKS
 
-  const struct part *parts = s->parts;
   const struct spart *sparts = s->sparts;
   const struct bpart *bparts = s->bparts;
 
@@ -738,7 +736,7 @@ void gravity_exact_force_check(struct space *s, const struct engine *e,
     /* Get the particle ID */
     long long id = 0;
     if (gpi->type == swift_type_gas)
-      id = parts[-gpi->id_or_neg_offset].id;
+      id = part_get_id(-gpi->id_or_neg_offset);
     else if (gpi->type == swift_type_stars)
       id = sparts[-gpi->id_or_neg_offset].id;
     else if (gpi->type == swift_type_black_hole)
@@ -810,7 +808,7 @@ void gravity_exact_force_check(struct space *s, const struct engine *e,
 
       long long id = 0;
       if (gpi->type == swift_type_gas)
-        id = parts[-gpi->id_or_neg_offset].id;
+        id = part_get_id(-gpi->id_or_neg_offset);
       else if (gpi->type == swift_type_stars)
         id = sparts[-gpi->id_or_neg_offset].id;
       else if (gpi->type == swift_type_black_hole)

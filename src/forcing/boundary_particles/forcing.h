@@ -67,23 +67,22 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   if (terms->enable_hydro_acceleration) {
     /* Skip if not resetting hydro accelerations. */
     return;
   }
 
-  if (p->id <= terms->boundary_particle_max_id) {
+  if (part_get_id(pind) <= terms->boundary_particle_max_id) {
     /* Reset the hydro accelerations of boundary particles. */
-    p->a_hydro[0] = 0.0f;
-    p->a_hydro[1] = 0.0f;
-    p->a_hydro[2] = 0.0f;
+   part_set_a_hydro_ind(pind, 0, 0.0f);
+   part_set_a_hydro_ind(pind, 1, 0.0f);
+   part_set_a_hydro_ind(pind, 2, 0.0f);
 
 #if defined(GIZMO_MFV_SPH) || defined(GIZMO_MFM_SPH)
 
@@ -96,9 +95,9 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
 
     if (terms->enable_fixed_position) {
       /* Set velocity of fixed boundary particle to zero. */
-      xp->v_full[0] = 0.f;
-      xp->v_full[1] = 0.f;
-      xp->v_full[2] = 0.f;
+      part_set_v_full_ind(pind, 0, 0.f);
+      part_set_v_full_ind(pind, 1, 0.f);
+      part_set_v_full_ind(pind, 2, 0.f);
     }
   }
 }
@@ -163,18 +162,16 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {
+    const long long id, const struct forcing_terms *terms, size_t pind) {
 
   if (id <= terms->boundary_particle_max_id && terms->enable_fixed_position) {
     /* Set velocity of fixed boundary particle to zero. */
-    xp->v_full[0] = 0.f;
-    xp->v_full[1] = 0.f;
-    xp->v_full[2] = 0.f;
+    part_set_v_full_ind(pind, 0, 0.f);
+    part_set_v_full_ind(pind, 1, 0.f);
+    part_set_v_full_ind(pind, 2, 0.f);
   }
 }
 
@@ -226,13 +223,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   return FLT_MAX;
 }

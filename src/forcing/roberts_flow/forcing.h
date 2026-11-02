@@ -73,18 +73,18 @@ struct forcing_terms {
  * @param terms The properties of the forcing terms.
  * @param s The #space we act on.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     const double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, struct part *p, struct xpart *xp) {
+    const struct phys_const *phys_const, size_t pind) {
 
   enum flow Flow_kind = terms->Flow_kind;
   const double L = s->dim[0];
   const float u0 = terms->u0;
   const float Vz_factor = terms->Vz_factor;
   const double k0 = (2. * M_PI / L) * terms->kv;
+  const double x[3] = { part_get_x_ind(pind, 0), part_get_x_ind(pind, 1), part_get_x_ind(pind, 2) };
   double v_Rob[3];
 
   /* Switching between different kinds of flows */
@@ -102,34 +102,34 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
     case Roberts_flow_1:
       /* Based on Brandenburg & Ntormousi, arxiv 2211.03476, SB4, flow 1 */
 
-      v_Rob[0] = u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
-      v_Rob[1] = -u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * M_SQRT2 * sin(k0 * p->x[0]) * sin(k0 * p->x[1]);
+      v_Rob[0] = u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
+      v_Rob[1] = -u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
+      v_Rob[2] = u0 * M_SQRT2 * sin(k0 * x[0]) * sin(k0 * x[1]);
       break;
 
     case Roberts_flow_2:
       /* Based on Brandenburg & Ntormousi, arxiv 2211.03476, SB4, flow 2 */
 
-      v_Rob[0] = u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
-      v_Rob[1] = -u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * M_SQRT2 * cos(k0 * p->x[0]) * cos(k0 * p->x[1]);
+      v_Rob[0] = u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
+      v_Rob[1] = -u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
+      v_Rob[2] = u0 * M_SQRT2 * cos(k0 * x[0]) * cos(k0 * x[1]);
       break;
 
     case Roberts_flow_3:
       /* Based on Brandenburg & Ntormousi, arxiv 2211.03476, SB4, flow 3 */
 
-      v_Rob[0] = u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
-      v_Rob[1] = -u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
+      v_Rob[0] = u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
+      v_Rob[1] = -u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
       v_Rob[2] =
-          u0 * M_SQRT1_2 * (cos(2 * k0 * p->x[0]) + cos(2 * k0 * p->x[1]));
+          u0 * M_SQRT1_2 * (cos(2 * k0 * x[0]) + cos(2 * k0 * x[1]));
       break;
 
     case Roberts_flow_4:
       /* Based on Brandenburg & Ntormousi, arxiv 2211.03476, SB4, flow 4 */
 
-      v_Rob[0] = u0 * sin(k0 * p->x[0]) * cos(k0 * p->x[1]);
-      v_Rob[1] = -u0 * cos(k0 * p->x[0]) * sin(k0 * p->x[1]);
-      v_Rob[2] = u0 * sin(k0 * p->x[0]);
+      v_Rob[0] = u0 * sin(k0 * x[0]) * cos(k0 * x[1]);
+      v_Rob[1] = -u0 * cos(k0 * x[0]) * sin(k0 * x[1]);
+      v_Rob[2] = u0 * sin(k0 * x[0]);
       break;
 
     default:
@@ -140,9 +140,9 @@ __attribute__((always_inline)) INLINE static void forcing_hydro_terms_apply(
   }
 
   /* Force the velocity and possibly scale the z-direction */
-  xp->v_full[0] = v_Rob[0];
-  xp->v_full[1] = v_Rob[1];
-  xp->v_full[2] = v_Rob[2] * Vz_factor;
+  part_set_v_full_ind(pind, 0, v_Rob[0]);
+  part_set_v_full_ind(pind, 1, v_Rob[1]);
+  part_set_v_full_ind(pind, 2, v_Rob[2] * Vz_factor);
 }
 
 /**
@@ -174,12 +174,10 @@ __attribute__((always_inline)) INLINE static void forcing_gpart_drift_apply(
  *
  * @param id The particle ID.
  * @param terms The properties of the forcing terms.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void forcing_part_drift_apply(
-    const long long id, const struct forcing_terms *terms, struct part *p,
-    struct xpart *xp) {}
+    const long long id, const struct forcing_terms *terms, size_t pind) {}
 
 /**
  * @brief Sets the forcing of sparts prior to drift.
@@ -209,13 +207,11 @@ __attribute__((always_inline)) INLINE static void forcing_bpart_drift_apply(
  * @param time The current time.
  * @param terms The properties of the forcing terms.
  * @param phys_const The physical constants in internal units.
- * @param p Pointer to the particle data.
- * @param xp Pointer to the extended particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static float forcing_terms_timestep(
     double time, const struct forcing_terms *terms, const struct space *s,
-    const struct phys_const *phys_const, const struct part *p,
-    const struct xpart *xp) {
+    const struct phys_const *phys_const, const size_t pind) {
 
   return FLT_MAX;
 }

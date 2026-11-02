@@ -26,6 +26,9 @@
 
 __attribute__((always_inline)) INLINE static void hydro_debug_particle(
     const size_t pind) {
+
+  const struct fvpm_geometry_struct *restrict geometry =
+      part_get_const_fvpm_geometry_p(pind);
   warning(
       "[PID%lld] x=[%.16e,%.16e,%.16e], "
       "v=[%.3e,%.3e,%.3e], "
@@ -62,21 +65,22 @@ __attribute__((always_inline)) INLINE static void hydro_debug_particle(
      part_get_a_hydro_ind(pind, 0),part_get_a_hydro_ind(pind, 1),part_get_a_hydro_ind(pind, 2), part_get_h(pind), part_get_time_bin(pind),
       part_get_const_limiter_data_p(pind)->wakeup, part_get_fluid_v(pind,0), part_get_fluid_v(pind,1), part_get_fluid_v(pind,2),
      part_get_rho(pind), part_get_P(pind), part_get_grad_rho_ind(pind, 0), part_get_grad_rho_ind(pind, 1),
-      part_get_grad_rho_ind(pind, 2), part_get_grad_v_ind(pind, 0, 0), part_get_grad_v_ind(pind, 0, 1),
-      part_get_grad_v_ind(pind, 0, 2), part_get_grad_v_ind(pind, 1, 0), part_get_grad_v_ind(pind, 1, 1),
-      part_get_grad_v_ind(pind, 1, 2), part_get_grad_v_ind(pind, 2, 0), part_get_grad_v_ind(pind, 2, 1),
-      part_get_grad_v_ind(pind, 2, 2), part_get_grad_P_ind(pind, 0), part_get_grad_P_ind(pind, 1),
-      part_get_grad_P_ind(pind, 2), part_get_limiter_rho(pind, 0), part_get_limiter_rho(pind, 1),
+      part_get_grad_rho_ind(pind, 2), part_set_grad_v_ind(pind, 0, 0), part_set_grad_v_ind(pind, 0, 1),
+      part_set_grad_v_ind(pind, 0, 2), part_set_grad_v_ind(pind, 1, 0), part_set_grad_v_ind(pind, 1, 1),
+      part_set_grad_v_ind(pind, 1, 2), part_set_grad_v_ind(pind, 2, 0), part_set_grad_v_ind(pind, 2, 1),
+      part_set_grad_v_ind(pind, 2, 2), part_set_grad_P_ind(pind, 0), part_set_grad_P_ind(pind, 1),
+      part_set_grad_P_ind(pind, 2), part_get_limiter_rho(pind, 0), part_get_limiter_rho(pind, 1),
       part_get_limiter_v(pind, 0, 0), part_get_limiter_v(pind, 0, 1), part_get_limiter_v(pind, 1, 0),
       part_get_limiter_v(pind, 1, 1), part_get_limiter_v(pind, 2, 0), part_get_limiter_v(pind, 2, 1),
-      part_get_limiter_P_ind(pind, 0), part_get_limiter_P_ind(pind, 1), part_get_limiter_maxr(pind),
-      part_get_conserved_momentum(pind, 0), part_get_conserved_momentum(pind, 1),
-      part_get_conserved_momentum(pind, 2), part_get_conserved_mass(pind), part_get_conserved_energy(pind),
-      part_get_geometry_volume(pind), part_get_geometry_matrix_E_ind(pind, 0, 0),
-      part_get_geometry_matrix_E_ind(pind, 0, 1), part_get_geometry_matrix_E_ind(pind, 0, 2),
-      part_get_geometry_matrix_E_ind(pind, 1, 0), part_get_geometry_matrix_E_ind(pind, 1, 1),
-      part_get_geometry_matrix_E_ind(pind, 1, 2), part_get_geometry_matrix_E_ind(pind, 2, 0),
-      part_get_geometry_matrix_E_ind(pind, 2, 1), part_get_geometry_matrix_E_ind(pind, 2, 2),
+      part_set_limiter_P_ind(pind, 0), part_set_limiter_P_ind(pind, 1), part_get_limiter_maxr(pind),
+      part_set_conserved_momentum(pind, 0), part_set_conserved_momentum(pind, 1),
+      part_set_conserved_momentum(pind, 2), part_get_conserved_mass(pind), part_get_conserved_energy(pind),
+      part_get_geometry_volume(pind),
+      geometry->matrix_E[0][0],
+      geometry->matrix_E[0][1], geometry->matrix_E[0][2],
+      geometry->matrix_E[1][0], geometry->matrix_E[1][1],
+      geometry->matrix_E[1][2], geometry->matrix_E[2][0],
+      geometry->matrix_E[2][1], geometry->matrix_E[2][2],
       part_get_timestepvars_vmax(pind), part_get_rho_dh(pind), part_get_wcount(pind));
 }
 

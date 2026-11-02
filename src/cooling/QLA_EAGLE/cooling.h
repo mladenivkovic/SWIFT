@@ -29,7 +29,6 @@
 #include "error.h"
 
 struct part;
-struct xpart;
 struct cosmology;
 struct hydro_props;
 struct entropy_floor_properties;
@@ -96,7 +95,7 @@ void cooling_first_init_part(
  * @param hydro_props The #hydro_props.
  * @param cosmo The #cosmology.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 void cooling_post_init_part(
     const struct phys_const *restrict phys_const,

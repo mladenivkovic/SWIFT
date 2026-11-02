@@ -380,7 +380,7 @@ INLINE static double bisection_iter(
  * @param floor_props Properties of the entropy floor.
  * @param pressure_floor Properties of the pressure floor.
  * @param cooling The #cooling_function_data used in the run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  * @param dt The cooling time-step of this particle.
  * @param dt_therm The hydro time-step of this particle.
  * @param time The current time (since the Big Bang or start of the run) in
@@ -577,7 +577,7 @@ __attribute__((always_inline)) INLINE void cooling_first_init_part(
  * @param hydro_props The properties of the hydro scheme.
  * @param cosmo The current cosmological model.
  * @param cooling The properties of the cooling function.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE void cooling_post_init_part(
     const struct phys_const *restrict phys_const,
