@@ -115,25 +115,21 @@ INLINE static void star_formation_logger_init_log_file(
 /**
  * @brief Add the SFR tracer to the total active SFR of this cell
  *
- * @param p the #part
- * @param xp the #xpart
+ * @param pind the particle index
  * @param sf the SFH logger struct
  */
 INLINE static void star_formation_logger_log_active_part(
-    const struct part *p, const struct xpart *xp,
-    struct star_formation_history *sf, const double dt_star) {}
+    const size_t pind, struct star_formation_history *sf, const double dt_star) {}
 
 /**
  * @brief Add the SFR tracer to the total inactive SFR of this cell as long as
  * the SFR tracer is larger than 0
  *
- * @param p the #part
- * @param xp the #xpart
+ * @param pind the particle index
  * @param sf the SFH logger struct
  */
 INLINE static void star_formation_logger_log_inactive_part(
-    const struct part *p, const struct xpart *xp,
-    struct star_formation_history *sf) {}
+    const size_t pind, struct star_formation_history *sf) {}
 
 /**
  * @brief Add the SFR tracer to the total active SFR of this cell

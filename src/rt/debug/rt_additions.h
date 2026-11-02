@@ -25,6 +25,9 @@
  * moved to separate file to avoid circular inclusions
  * */
 
+#include "inline.h"
+#include <stddef.h>
+
 /**
  * @brief update mass fluxes between two interacting particles during
  * hydro_iact_(non)sym(...) calls.
@@ -36,7 +39,7 @@
  * interaction.
  **/
 __attribute__((always_inline)) INLINE static void rt_part_update_mass_fluxes(
-    struct part *restrict pi, struct part *restrict pj, float mass_flux,
+    size_t pindi, size_t pindj, float mass_flux,
     int mode) {}
 
 #endif /* SWIFT_RT_DEBUG_ADDITIONS_H */

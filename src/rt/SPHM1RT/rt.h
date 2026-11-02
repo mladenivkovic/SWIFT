@@ -40,10 +40,9 @@
  * @brief Initialisation of the RT density loop related particle data.
  * Note: during initalisation (space_init), rt_reset_part and rt_init_part
  * are both called individually.
- * @param p particle to work on
+ * @param pind particle index to work on
  */
-__attribute__((always_inline)) INLINE static void rt_init_part(
-    struct part *restrict p) {}
+__attribute__((always_inline)) INLINE static void rt_init_part(size_t pind) {}
 
 /**
  * @brief Reset the RT hydro particle data not related to the hydro density.
@@ -51,11 +50,11 @@ __attribute__((always_inline)) INLINE static void rt_init_part(
  * are both called individually. To reset RT data needed in each RT sub-cycle,
  * use rt_reset_part_each_subcycle().
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo Cosmology.
  */
 __attribute__((always_inline)) INLINE static void rt_reset_part(
-    struct part *restrict p, const struct cosmology *cosmo) {}
+    size_t pind, const struct cosmology *cosmo) {}
 
 /**
  * @brief Reset RT particle data which needs to be reset each sub-cycle.
@@ -65,9 +64,9 @@ __attribute__((always_inline)) INLINE static void rt_reset_part(
  * @param dt the current particle RT time step
  */
 __attribute__((always_inline)) INLINE static void rt_reset_part_each_subcycle(
-    struct part *restrict p, const struct cosmology *cosmo, double dt) {
+    size_t pind, const struct cosmology *cosmo, double dt) {
 
-  struct rt_part_data *rpd = &p->rt_data;
+  struct rt_part_data *rpd = part_get_rt_data_p(pind);
 
   for (int g = 0; g < RT_NGROUPS; g++) {
     rpd->dconserved_dt[g].urad = 0.0f;
@@ -95,7 +94,7 @@ __attribute__((always_inline)) INLINE static void rt_reset_part_each_subcycle(
   }
 
   float urad_old;
-  const float cred = rt_get_comoving_cred(p, cosmo->a);
+  const float cred = rt_get_comoving_cred(pind, cosmo->a);
   for (int g = 0; g < RT_NGROUPS; g++) {
     /* TK: avoid the radiation flux to violate causality. Impose a limit: F<Ec
      */
@@ -108,15 +107,15 @@ __attribute__((always_inline)) INLINE static void rt_reset_part_each_subcycle(
 /**
  * @brief First initialisation of the RT hydro particle data.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  * @param rt_props RT properties struct
  */
 __attribute__((always_inline)) INLINE static void rt_first_init_part(
-    struct part *restrict p, const struct cosmology *cosmo,
+    size_t pind, const struct cosmology *cosmo,
     const struct rt_props *restrict rt_props) {
 
-  struct rt_part_data *rpd = &p->rt_data;
+  struct rt_part_data *rpd = part_get_rt_data_p(pind);
 
   for (int g = 0; g < RT_NGROUPS; g++) {
     rpd->viscosity[g].alpha = 1.0f;
@@ -132,9 +131,9 @@ __attribute__((always_inline)) INLINE static void rt_first_init_part(
 
   rpd->dt = 1.0f;
 
-  rt_init_part(p);
-  rt_reset_part(p, cosmo);
-  rt_reset_part_each_subcycle(p, cosmo, 0.);
+  rt_init_part(pind);
+  rt_reset_part(pind, cosmo);
+  rt_reset_part_each_subcycle(pind, cosmo, 0.);
 }
 
 /**
@@ -180,10 +179,10 @@ __attribute__((always_inline)) INLINE static void rt_first_init_spart(
 /**
  * @brief Split the RT data of a particle into n pieces
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
-__attribute__((always_inline)) INLINE static void rt_split_part(struct part *p,
+__attribute__((always_inline)) INLINE static void rt_split_part(size_t pind,
                                                                 double n) {
   error("RT can't run with split particles for now.");
 }
@@ -191,10 +190,10 @@ __attribute__((always_inline)) INLINE static void rt_split_part(struct part *p,
 /**
  * @brief Exception handle a hydro part not having any neighbours in ghost task
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void rt_part_has_no_neighbours(
-    struct part *p) {
+    size_t pind) {
   message("WARNING: found particle without neighbours");
 }
 
@@ -211,7 +210,7 @@ __attribute__((always_inline)) INLINE static void rt_spart_has_no_neighbours(
 /**
  * @brief Do checks/conversions on particles on startup.
  *
- * @param p The particle to work on
+ * @param pind Index of the particle to work on
  * @param rt_props The RT properties struct
  * @param hydro_props The hydro properties struct
  * @param phys_const physical constants struct
@@ -219,37 +218,36 @@ __attribute__((always_inline)) INLINE static void rt_spart_has_no_neighbours(
  * @param cosmo cosmology struct
  */
 __attribute__((always_inline)) INLINE static void rt_convert_quantities(
-    struct part *restrict p, const struct rt_props *rt_props,
+    size_t pind, const struct rt_props *rt_props,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo) {
 
-  struct rt_part_data *rpd = &p->rt_data;
+  struct rt_part_data *rpd = part_get_rt_data_p(pind);
   /* Note that in the input, we read radiation energy and flux
    * then we convert these quantities to radiation energy per mass and flux per
    * mass
    */
   for (int g = 0; g < RT_NGROUPS; g++) {
-    rpd->conserved[g].urad = rpd->conserved[g].urad / p->mass;
-    rpd->conserved[g].frad[0] = rpd->conserved[g].frad[0] / p->mass;
-    rpd->conserved[g].frad[1] = rpd->conserved[g].frad[1] / p->mass;
-    rpd->conserved[g].frad[2] = rpd->conserved[g].frad[2] / p->mass;
+    rpd->conserved[g].urad = rpd->conserved[g].urad / part_get_mass(pind);
+    rpd->conserved[g].frad[0] = rpd->conserved[g].frad[0] / part_get_mass(pind);
+    rpd->conserved[g].frad[1] = rpd->conserved[g].frad[1] / part_get_mass(pind);
+    rpd->conserved[g].frad[2] = rpd->conserved[g].frad[2] / part_get_mass(pind);
   }
 
   /* rpd->cred_phys and rt_props->cred_phys are in physical unit */
   rpd->params.cred_phys = rt_props->cred_phys;
 
   /* Initialize element mass fractions accoridng to parameter files. */
-  rt_tchem_first_init_part(p, rt_props, phys_const, us, cosmo);
+  rt_tchem_first_init_part(pind, rt_props, phys_const, us, cosmo);
 }
 
 /**
  * @brief Computes the next radiative transfer time step size
  * of a given particle (during timestep tasks)
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -258,14 +256,14 @@ __attribute__((always_inline)) INLINE static void rt_convert_quantities(
  * @return dt The time-step of this particle.
  */
 __attribute__((always_inline)) INLINE static float rt_compute_timestep(
-    const struct part *restrict p, const struct xpart *restrict xp,
+    const size_t pind,
     struct rt_props *rt_props, const struct cosmology *restrict cosmo,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us) {
 
-  float cred_phys = rt_get_physical_cred(p, cosmo->a);
-  float dt = p->h * cosmo->a / cred_phys * rt_props->CFL_condition;
+  float cred_phys = rt_get_physical_cred(pind, cosmo->a);
+  float dt = part_get_h(pind) * cosmo->a / cred_phys * rt_props->CFL_condition;
 
   return dt;
 }
@@ -318,11 +316,11 @@ __attribute__((always_inline)) INLINE static double rt_part_dt(
 /**
  * @brief This function finalises the injection step.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param props struct #rt_props that contains global RT properties
  */
 __attribute__((always_inline)) INLINE static void rt_finalise_injection(
-    struct part *restrict p, struct rt_props *props) {}
+    size_t pind, struct rt_props *props) {}
 
 /**
  * @brief Compute the photon emission rates for this stellar particle
@@ -365,14 +363,14 @@ rt_compute_stellar_emission_rate(struct spart *restrict sp, double time,
 /**
  * @brief finishes up the gradient computation
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  */
 __attribute__((always_inline)) INLINE static void rt_end_gradient(
-    struct part *restrict p, const struct cosmology *cosmo) {
+    size_t pind, const struct cosmology *cosmo) {
   struct rt_part_data *rpd = &p->rt_data;
   /* artificial diffusion for shock capturing */
-  const float vsig_diss = rt_get_comoving_cred(p, cosmo->a);
+  const float vsig_diss = rt_get_comoving_cred(pind, cosmo->a);
   /* similar to Cullen & Dehnen 2010 switch */
   float divf, divf_previous_step, urad, viscosity_alpha, diffusion_alpha;
   float divf_dt, shockest, alphaflim, alpha_f_diss, alpha_f_diss_loc;
@@ -390,7 +388,7 @@ __attribute__((always_inline)) INLINE static void rt_end_gradient(
     if (urad == 0.f) {
       shockest = FLT_MAX;
     } else {
-      shockest = -p->h * p->h / (vsig_diss) / (vsig_diss)*divf_dt * 200.f;
+      shockest = -part_get_h(pind) * part_get_h(pind) / (vsig_diss) / (vsig_diss)*divf_dt * 200.f;
       shockest /= urad;
     }
     alphaflim = max(shockest, 0.0f); /* should be positive or 0 */
@@ -412,7 +410,7 @@ __attribute__((always_inline)) INLINE static void rt_end_gradient(
       alpha_f_diss = alpha_f_diss_loc +
                      (alpha_f_diss - alpha_f_diss_loc) *
                          expf(-rpd->dt * vsig_diss *
-                              (1.f / p->h + rpd->params.chi[g] * p->rho));
+                              (1.f / part_get_h(pind) + rpd->params.chi[g] *part_get_rho(pind)));
     }
 
     /* alpha inspired by Price 2010: it should vanish where radiation energy
@@ -428,7 +426,7 @@ __attribute__((always_inline)) INLINE static void rt_end_gradient(
       alpha_diss = alpha_diss_loc +
                    (alpha_diss - alpha_diss_loc) *
                        expf(-rpd->dt * vsig_diss *
-                            (0.01f / p->h + rpd->params.chi[g] * p->rho));
+                            (0.01f / part_get_h(pind) + rpd->params.chi[g] *part_get_rho(pind)));
     }
 
     /* Cap the dissipation to avoid instabilities */
@@ -446,12 +444,12 @@ __attribute__((always_inline)) INLINE static void rt_end_gradient(
 /**
  * @brief finishes up the transport step
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param dt the current time step of the particle
  * @param cosmo #cosmology data structure.
  */
 __attribute__((always_inline)) INLINE static void rt_finalise_transport(
-    struct part *restrict p, struct rt_props *rtp, const double dt,
+    size_t pind, struct rt_props *rtp, const double dt,
     const struct cosmology *restrict cosmo) {
   struct rt_part_data *rpd = &p->rt_data;
 
@@ -464,9 +462,9 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
 
   /* add frad source term implicitly */
   float dfrac, cred;
-  cred = rt_get_comoving_cred(p, cosmo->a);
+  cred = rt_get_comoving_cred(pind, cosmo->a);
   for (int g = 0; g < RT_NGROUPS; g++) {
-    dfrac = -rpd->params.chi[g] * p->rho * cred;
+    dfrac = -rpd->params.chi[g] *part_get_rho(pind) * cred;
     rpd->conserved[g].frad[0] *= expf(dfrac * dt);
     rpd->conserved[g].frad[1] *= expf(dfrac * dt);
     rpd->conserved[g].frad[2] *= expf(dfrac * dt);
@@ -502,8 +500,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
 /**
  * @brief Do the thermochemistry on a particle.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -511,7 +508,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
  * @param us The internal system of units.
  * @param dt The time-step of this particle.
  */
-void rt_tchem(struct part *restrict p, struct xpart *restrict xp,
+void rt_tchem(size_t pind,
               struct rt_props *rt_props, const struct cosmology *restrict cosmo,
               const struct hydro_props *hydro_props,
               const struct phys_const *restrict phys_const,
@@ -520,7 +517,7 @@ void rt_tchem(struct part *restrict p, struct xpart *restrict xp,
 /**
  * @brief Extra operations done during the kick.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_therm Thermal energy time-step @f$\frac{dt}{a^2}@f$.
  * @param dt_grav Gravity time-step @f$\frac{dt}{a}@f$.
  * @param dt_hydro Hydro acceleration time-step
@@ -530,7 +527,7 @@ void rt_tchem(struct part *restrict p, struct xpart *restrict xp,
  * @param hydro_props Additional hydro properties.
  */
 __attribute__((always_inline)) INLINE static void rt_kick_extra(
-    struct part *p, float dt_therm, float dt_grav, float dt_hydro,
+    size_t pind, float dt_therm, float dt_grav, float dt_hydro,
     float dt_kick_corr, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props) {}
 
@@ -541,22 +538,22 @@ __attribute__((always_inline)) INLINE static void rt_kick_extra(
  * NOTE: don't call this during rt_init_part or rt_reset_part,
  * follow the hydro_prepare_force logic.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  **/
 __attribute__((always_inline)) INLINE static void rt_prepare_force(
-    struct part *p) {
+    size_t pind) {
 
   struct rt_part_data *rpd = &p->rt_data;
 
   /* Some smoothing length multiples. */
-  const float rho = hydro_get_comoving_density(p);
+  const float rho = hydro_get_comoving_density(pind);
   const float rho_inv = 1.0f / rho; /* 1 / rho */
 
   /* Compute the "grad h" term */
-  float rho_dh = p->density.rho_dh;
+  float rho_dh = part_get_rho_dh(pind);
 
   const float omega_inv =
-      1.f / (1.f + hydro_dimension_inv * p->h * rho_dh * rho_inv);
+      1.f / (1.f + hydro_dimension_inv * part_get_h(pind) * rho_dh * rho_inv);
 
   /* Update variables. */
   rpd->force.f = omega_inv;
@@ -565,12 +562,11 @@ __attribute__((always_inline)) INLINE static void rt_prepare_force(
 /**
  * @brief Extra operations to be done during the drift
  *
- * @param p Particle to act upon.
- * @param xp The extended particle data to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_drift The drift time-step for positions.
  */
 __attribute__((always_inline)) INLINE static void rt_predict_extra(
-    struct part *p, struct xpart *xp, float dt_drift) {}
+    size_t pind, float dt_drift) {}
 
 /**
  * @brief Clean the allocated memory inside the RT properties struct.

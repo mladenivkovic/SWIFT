@@ -53,7 +53,7 @@ chemistry_get_element_name(enum chemistry_element elem) {
  * @brief Copies the chemistry properties of the gas particle over to the
  * star particle.
  *
- * @param p the gas particles.
+ * @param pind Index of the particle.
  * @param sp the new created star particle with its properties.
  */
 INLINE static void chemistry_copy_star_formation_properties(

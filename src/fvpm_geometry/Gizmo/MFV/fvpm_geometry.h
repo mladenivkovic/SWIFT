@@ -12,7 +12,7 @@
  */
 __attribute__((always_inline)) INLINE static void fvpm_reset_centroids(size_t pind) {
 
-  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
+  struct fvpm_geometry_struct *restrict geometry = part_get_geometry_p(pind);
   geometry->centroid[0] = 0.0f;
   geometry->centroid[1] = 0.0f;
   geometry->centroid[2] = 0.0f;
@@ -28,7 +28,7 @@ __attribute__((always_inline)) INLINE static void fvpm_reset_centroids(size_t pi
  */
 __attribute__((always_inline)) INLINE static void fvpm_normalise_centroid(size_t pind, const float wcount) {
 
-  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
+  struct fvpm_geometry_struct *restrict geometry = part_get_geometry_p(pind);
   const float norm = kernel_norm / wcount;
   geometry->centroid[0] *= norm;
   geometry->centroid[1] *= norm;
@@ -47,7 +47,7 @@ __attribute__((always_inline)) INLINE static void fvpm_normalise_centroid(size_t
 __attribute__((always_inline)) INLINE static void fvpm_update_centroid_left(
     size_t pind, const float *dx, const float w) {
 
-  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
+  struct fvpm_geometry_struct *restrict geometry = part_get_geometry_p(pind);
   geometry->centroid[0] -= dx[0] * w;
   geometry->centroid[1] -= dx[1] * w;
   geometry->centroid[2] -= dx[2] * w;
@@ -65,7 +65,7 @@ __attribute__((always_inline)) INLINE static void fvpm_update_centroid_left(
 __attribute__((always_inline)) INLINE static void fvpm_update_centroid_right(
     size_t pind, const float *dx, const float w) {
 
-  struct fvpm_geometry_struct *restrict geometry = part_get_fvpm_geometry_p(pind);
+  struct fvpm_geometry_struct *restrict geometry = part_get_geometry_p(pind);
   geometry->centroid[0] += dx[0] * w;
   geometry->centroid[1] += dx[1] * w;
   geometry->centroid[2] += dx[2] * w;

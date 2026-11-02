@@ -52,7 +52,7 @@ struct pressure_floor_props {};
  * Since this is the 'none' model for floor, there is no floor and
  * we just return the comoving pressure that was received.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param pfloor The pressure floor properties.
  * @param comoving_pressure The comoving pressure without any pressure floor.
  * @param cosmo The #cosmology model.

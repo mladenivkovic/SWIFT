@@ -38,8 +38,7 @@
 /**
  * @brief Main function for the thermochemistry step.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -47,7 +46,7 @@
  * @param us The internal system of units.
  * @param dt The time-step of this particle.
  */
-void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
+void rt_do_thermochemistry(size_t pind,
                            struct rt_props *rt_props,
                            const struct cosmology *restrict cosmo,
                            const struct hydro_props *hydro_props,
@@ -59,9 +58,9 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
   if (rt_props->skip_thermochemistry == 1) return;
   if (dt == 0.0) return;
 
-  rt_check_unphysical_elem_spec(p, rt_props);
+  rt_check_unphysical_elem_spec(pind, rt_props);
 
-  struct rt_part_data *rpd = &p->rt_data;
+  struct rt_part_data *restrict rpd = part_get_rt_data_p(pind);
 
   struct RTUserData data; /* data for CVODE */
 
@@ -112,13 +111,13 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
                          units_cgs_conversion_factor(us, UNIT_CONV_TEMPERATURE);
   data.k_B_cgs = k_B_cgs;
 
-  const double cred_phys = rt_get_physical_cred(p, cosmo->a);
+  const double cred_phys = rt_get_physical_cred(pind, cosmo->a);
   const double cred_cgs =
       cred_phys * units_cgs_conversion_factor(us, UNIT_CONV_VELOCITY);
   data.cred_cgs = cred_cgs;
 
   /* Get particle density [ and convert to g * cm^-3] */
-  const double rho = hydro_get_physical_density(p, cosmo);
+  const double rho = hydro_get_physical_density(pind, cosmo);
   double rho_cgs = rho * units_cgs_conversion_factor(us, UNIT_CONV_DENSITY);
   data.rho_cgs = rho_cgs;
 
@@ -128,7 +127,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
 
   /* Current energy (in internal units) */
   float urad[RT_NGROUPS];
-  rt_get_physical_urad_multifrequency(p, cosmo, urad);
+  rt_get_physical_urad_multifrequency(pind, cosmo, urad);
 
   /* need to convert to cgs */
   double ngamma_cgs[3];
@@ -159,7 +158,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
     data.abundances[spec] = abundances[spec];
   }
 
-  const double u = hydro_get_physical_internal_energy(p, xp, cosmo);
+  const double u = hydro_get_physical_internal_energy(pind, cosmo);
 
   double u_cgs = u * conv_factor_internal_energy_to_cgs;
 
@@ -283,7 +282,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
           u_new = (float)(u_new_cgs / conv_factor_internal_energy_to_cgs);
         }
       }
-      hydro_set_physical_internal_energy(p, xp, cosmo, u_new);
+      hydro_set_physical_internal_energy(pind, cosmo, u_new);
     }
 
     /* set radiation energy */
@@ -309,7 +308,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
         urad_new[i + 1] = urad[i + 1];
       }
     }
-    rt_set_physical_urad_multifrequency(p, cosmo, urad_new);
+    rt_set_physical_urad_multifrequency(pind, cosmo, urad_new);
 
     /* chi is in physical unit (L^2/M) */
     float chi_new[RT_NGROUPS];
@@ -331,9 +330,9 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
         }
       }
     }
-    rt_set_physical_radiation_opacity(p, cosmo, chi_new);
+    rt_set_physical_radiation_opacity(pind, cosmo, chi_new);
 
-    rt_check_unphysical_elem_spec(p, rt_props);
+    rt_check_unphysical_elem_spec(pind, rt_props);
 
     return;
 
@@ -471,7 +470,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
           u_new = (float)(u_new_cgs / conv_factor_internal_energy_to_cgs);
         }
       }
-      hydro_set_physical_internal_energy(p, xp, cosmo, u_new);
+      hydro_set_physical_internal_energy(pind, cosmo, u_new);
     }
     /* set radiation energy */
     float urad_new[RT_NGROUPS];
@@ -496,7 +495,7 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
         urad_new[i + 1] = urad[i + 1];
       }
     }
-    rt_set_physical_urad_multifrequency(p, cosmo, urad_new);
+    rt_set_physical_urad_multifrequency(pind, cosmo, urad_new);
 
     /* chi is in physical unit (L^2/M) */
     float chi_new[RT_NGROUPS];
@@ -518,22 +517,21 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
         }
       }
     }
-    rt_set_physical_radiation_opacity(p, cosmo, chi_new);
+    rt_set_physical_radiation_opacity(pind, cosmo, chi_new);
     SUNLinSolFree(LS_sun);
     SUNMatDestroy(A_sun);
     N_VDestroy_Serial(y);
     N_VDestroy_Serial(abstol_vector);
     CVodeFree(&cvode_mem);
 
-    rt_check_unphysical_elem_spec(p, rt_props);
+    rt_check_unphysical_elem_spec(pind, rt_props);
   }
 }
 
 /**
  * @brief Do the thermochemistry on a particle.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -541,11 +539,11 @@ void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
  * @param us The internal system of units.
  * @param dt The time-step of this particle.
  */
-void rt_tchem(struct part *restrict p, struct xpart *restrict xp,
+void rt_tchem(size_t pind,
               struct rt_props *rt_props, const struct cosmology *restrict cosmo,
               const struct hydro_props *hydro_props,
               const struct phys_const *restrict phys_const,
               const struct unit_system *restrict us, const double dt) {
-  rt_do_thermochemistry(p, xp, rt_props, cosmo, hydro_props, phys_const, us,
+  rt_do_thermochemistry(pind, rt_props, cosmo, hydro_props, phys_const, us,
                         dt);
 }

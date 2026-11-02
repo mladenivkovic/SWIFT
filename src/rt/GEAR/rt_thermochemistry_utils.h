@@ -116,10 +116,10 @@ __attribute__((always_inline)) INLINE static float rt_tchem_internal_energy_dT(
  * @param species_densities array to write densities in
  **/
 __attribute__((always_inline)) INLINE static void
-rt_tchem_get_species_densities(const struct part *restrict p, gr_float rho,
+rt_tchem_get_species_densities(const size_t pind, gr_float rho,
                                gr_float species_densities[6]) {
 
-  const struct rt_part_data *rt_data = part_get_const_rt_data_p(p);
+  const struct rt_part_data *rt_data = part_get_const_rt_data_p(pind);
 
   species_densities[0] = rt_data->tchem.mass_fraction_HI * rho;
   species_densities[1] = rt_data->tchem.mass_fraction_HII * rho;
@@ -172,14 +172,14 @@ rt_tchem_get_ionizing_species_number_densities(
  * @param cosmo cosmology struct
  **/
 __attribute__((always_inline)) INLINE static double
-rt_tchem_get_gas_temperature(const struct part *restrict p,
+rt_tchem_get_gas_temperature(const size_t pind,
                              const struct phys_const *restrict phys_const,
                              const struct cosmology *restrict cosmo) {
 
   const double kB = phys_const->const_boltzmann_k;
   const double mp = phys_const->const_proton_mass;
 
-  const struct rt_part_data *rt_data = part_get_const_rt_data_p(p);
+  const struct rt_part_data *rt_data = part_get_const_rt_data_p(pind);
 
   const float XHI = rt_data->tchem.mass_fraction_HI;
   const float XHII = rt_data->tchem.mass_fraction_HII;
@@ -189,7 +189,7 @@ rt_tchem_get_gas_temperature(const struct part *restrict p,
 
   const double mu =
       rt_tchem_get_mean_molecular_weight(XHI, XHII, XHeI, XHeII, XHeIII);
-  const double u = hydro_get_drifted_physical_internal_energy(p, cosmo);
+  const double u = hydro_get_drifted_physical_internal_energy(pind, cosmo);
 
   double T = rt_tchem_temperature_from_internal_energy(u, mu, kB, mp);
 
@@ -204,7 +204,7 @@ rt_tchem_get_gas_temperature(const struct part *restrict p,
  * temperatures.
  **/
 __attribute__((always_inline)) INLINE static void
-rt_tchem_set_particle_quantities_for_test(struct part *restrict p) {
+rt_tchem_set_particle_quantities_for_test(size_t pind) {
 
 #ifdef GIZMO_MFV_SPH
 
@@ -223,14 +223,14 @@ rt_tchem_set_particle_quantities_for_test(struct part *restrict p) {
   /* float internal_energy = 124.8416491f; */
 
   /* Be vocal, just in case somebody forgets you exist. */
-  if (p->id == 1) message("Setting density from %.3e to %.3e", p->rho, density);
+  if (part_get_id(pind) == 1) message("Setting density from %.3e to %.3e",part_get_rho(pind), density);
 
-  float mass_corr = density / p->rho;
-  p->rho = density;
-  p->conserved.mass *= mass_corr;
+  float mass_corr = density /part_get_rho(pind);
+ part_get_rho(pind) = density;
+  part_get_conserved_mass(pind) *= mass_corr;
   /* This assumes zero velocity */
-  p->conserved.energy = p->conserved.mass * internal_energy;
-  hydro_set_internal_energy(p, internal_energy);
+  part_get_conserved_energy(pind) = part_get_conserved_mass(pind) * internal_energy;
+  hydro_set_internal_energy(pind, internal_energy);
 
 #else
 
@@ -252,7 +252,7 @@ rt_tchem_set_particle_quantities_for_test(struct part *restrict p) {
  **/
 __attribute__((always_inline)) INLINE static void
 rt_tchem_set_particle_radiation_field_for_test(
-    struct part *restrict p, const double time,
+    size_t pind, const double time,
     const struct unit_system *restrict us) {
 
   const double time_to_cgs = units_cgs_conversion_factor(us, UNIT_CONV_TIME);
@@ -264,7 +264,7 @@ rt_tchem_set_particle_radiation_field_for_test(
 
   if (t_Myr < 0.5) {
     /* Be vocal, just in case somebody forgets you exist. */
-    if (part_get_id(p) == 1) message("Setting fixed radiation field.");
+    if (part_get_id(pind) == 1) message("Setting fixed radiation field.");
     /* Set fixed radiation fields, in cgs*/
     fixed_fluxes[0] = 1.350e01;
     fixed_fluxes[1] = 2.779e01;
@@ -278,7 +278,7 @@ rt_tchem_set_particle_radiation_field_for_test(
   /* Note that we inject energy / time / surface, not identical to what */
   /* is in Iliev06 paper */
 
-  struct rt_part_data *rt_data = part_get_rt_data_p(p);
+  struct rt_part_data *rt_data = part_get_rt_data_p(pind);
   for (int g = 0; g < RT_NGROUPS; g++) {
     rt_data->radiation[g].energy_density = fixed_fluxes[g] * cf;
   }
@@ -292,10 +292,10 @@ rt_tchem_set_particle_radiation_field_for_test(
  * a simple manner.
  * */
 __attribute__((always_inline)) INLINE static void
-rt_tchem_set_boundary_particles_for_test(struct part *restrict p) {
+rt_tchem_set_boundary_particles_for_test(size_t pind) {
 
-  if (part_get_id(p) >= 1000000000) {
-    struct rt_part_data *rt_data = part_get_rt_data_p(p);
+  if (part_get_id(pind) >= 1000000000) {
+    struct rt_part_data *rt_data = part_get_rt_data_p(pind);
     for (int g = 0; g < RT_NGROUPS; g++) {
       rt_data->radiation[g].energy_density = 0.f;
       rt_data->radiation[g].flux[0] = 0.f;

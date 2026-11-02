@@ -38,13 +38,13 @@
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_collect(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj) {
+    size_t pindi, size_t pindj) {
 
-  rt_debug_sequence_check(pi, 2, __func__);
-  rt_debug_sequence_check(pj, 2, __func__);
+  rt_debug_sequence_check(pindi, 2, __func__);
+  rt_debug_sequence_check(pindj, 2, __func__);
 
-  pi->rt_data.debug_calls_iact_gradient_interaction += 1;
-  pj->rt_data.debug_calls_iact_gradient_interaction += 1;
+  part_get_rt_data_p(pindi)->debug_calls_iact_gradient_interaction += 1;
+  part_get_rt_data_p(pindj)->debug_calls_iact_gradient_interaction += 1;
 }
 
 /**
@@ -59,10 +59,10 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_nonsym_collect(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj) {
+    size_t pindi, size_t pindj) {
 
-  rt_debug_sequence_check(pi, 2, __func__);
-  pi->rt_data.debug_calls_iact_gradient_interaction += 1;
+  rt_debug_sequence_check(pindi, 2, __func__);
+  part_get_rt_data_p(pindi)->debug_calls_iact_gradient_interaction += 1;
 }
 
 #endif /* SWIFT_RT_GRADIENT_DEBUG_H */

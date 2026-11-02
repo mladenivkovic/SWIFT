@@ -27,7 +27,7 @@
 /**
  * @brief Group all the fields for the star formation together.
  *
- * @param p The #spart
+ * @param sp The #spart
  * @param e The #engine
  * @param buffer Allocated buffer for writing the particle.
  *

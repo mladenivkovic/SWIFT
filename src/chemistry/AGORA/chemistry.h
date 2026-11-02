@@ -55,7 +55,7 @@ static INLINE const char *chemistry_get_element_name(
  * @brief Copies the chemistry properties of the gas particle over to the
  * star particle.
  *
- * @param p the gas particles.
+ * @param pind Index of the particle.
  * @param sp the new created star particle with its properties.
  * @param chem_data The global properties of the chemistry scheme.
  * @param cosmo The current cosmological model.

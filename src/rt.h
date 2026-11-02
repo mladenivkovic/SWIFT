@@ -83,7 +83,7 @@ __attribute__((always_inline)) INLINE static void rt_timestep_prepare_force(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
+ * @param pindi Index of first particle.
  * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
@@ -119,7 +119,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_timebin(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
+ * @param pindi Index of first particle.
  * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.

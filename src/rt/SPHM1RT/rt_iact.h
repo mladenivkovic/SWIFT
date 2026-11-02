@@ -20,7 +20,10 @@
 #ifndef SWIFT_RT_IACT_SPHM1RT_H
 #define SWIFT_RT_IACT_SPHM1RT_H
 
+#include "inline.h"
 #include "rt_gradients.h"
+
+#include <stddef.h>
 
 /**
  * @file src/rt/SPHM1RT/rt_iact.h
@@ -37,7 +40,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle.
- * @param pj Second (gas) particle (not updated).
+ * @param pindj Index of second (gas) particle.(not updated).
  * @param cosmo The cosmological model.
  * @param rt_props Properties of the RT scheme.
  */
@@ -45,7 +48,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
                                      const float hi, const float hj,
-                                     struct spart *si, const struct part *pj,
+                                     struct spart *si, const size_t pindj,
                                      const struct cosmology *cosmo,
                                      const struct rt_props *rt_props) {
 
@@ -54,10 +57,10 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
   if (si->density.wcount == 0.f) return;
 
   /* Compute the weight of the neighbouring particle */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
   const float r = sqrtf(r2);
   /* Get the gas density. */
-  const float rhoj = hydro_get_comoving_density(pj);
+  const float rhoj = hydro_get_comoving_density(pindj);
   /* Compute the kernel function */
   const float hi_inv = 1.0f / hi;
   const float ui = r * hi_inv;
@@ -79,7 +82,7 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
   /* we need it only when we need to redistribute the radiation energy */
   if (rt_props->reinject) {
     float urad[RT_NGROUPS];
-    rt_get_physical_urad_multifrequency(pj, cosmo, urad);
+    rt_get_physical_urad_multifrequency(pindj, cosmo, urad);
     for (int g = 0; g < RT_NGROUPS; g++) {
       si->rt_data.emission_reinject[g] += mj * urad[g];
     }
@@ -101,7 +104,7 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *restrict si, struct part *restrict pj, const float a,
+    struct spart *restrict si, size_t pindj, const float a,
     const float H, const struct rt_props *rt_props) {
 
   /* If the star doesn't have any neighbours, we
@@ -116,11 +119,11 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
                            dx[2] * minus_r_inv};
 
   /* Get particle mass */
-  const float mj = hydro_get_mass(pj);
+  const float mj = hydro_get_mass(pindj);
   const float mj_inv = 1.f / mj;
   /* Get the gas density. */
   /* TK comment: we need to be careful in the cosmological case here: */
-  const float rhoj = hydro_get_comoving_density(pj);
+  const float rhoj = hydro_get_comoving_density(pindj);
   /* Compute the kernel function */
   const float hi_inv = 1.0f / hi;
   const float ui = r * hi_inv;
@@ -146,7 +149,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
   float new_urad, new_frad;
   float urad[RT_NGROUPS];
   float frad[RT_NGROUPS][3];
-  const float cred = rt_get_comoving_cred(pj, a);
+  const float cred = rt_get_comoving_cred(pindj, a);
   for (int g = 0; g < RT_NGROUPS; g++) {
     /* Inject energy. */
     if (rt_props->reinject) {
@@ -169,8 +172,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
     frad[g][2] = new_frad * n_unit[2];
   }
 
-  rt_set_comoving_urad_multifrequency(pj, urad);
-  rt_set_comoving_frad_multifrequency(pj, frad);
+  rt_set_comoving_urad_multifrequency(pindj, urad);
+  rt_set_comoving_frad_multifrequency(pindj, frad);
 }
 
 /**
@@ -180,8 +183,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param mode: mode=1 symmetric, mode=0 non symmetric
@@ -191,8 +194,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
 __attribute__((always_inline)) INLINE static void
 radiation_gradient_loop_function(const float r2, const float dx[3],
                                  const float hi, const float hj,
-                                 struct part *restrict pi,
-                                 struct part *restrict pj, const float a,
+                                 size_t pindi,
+                                 size_t pindj, const float a,
                                  const float H, int mode) {
 
   struct rt_part_data *rpi = &pi->rt_data;
@@ -219,10 +222,10 @@ radiation_gradient_loop_function(const float r2, const float dx[3],
   kernel_deval(xi, &wi, &wi_dx);
 
   /* Get mass */
-  const float mj = hydro_get_mass(pj);
-  const float mi = hydro_get_mass(pi);
-  const float rhoj = hydro_get_comoving_density(pj);
-  const float rhoi = hydro_get_comoving_density(pi);
+  const float mj = hydro_get_mass(pindj);
+  const float mi = hydro_get_mass(pindi);
+  const float rhoj = hydro_get_comoving_density(pindj);
+  const float rhoi = hydro_get_comoving_density(pindi);
   const float hjd_inv = pow_dimension_plus_one(hj_inv); /* 1/h^(d+1) */
   const float hid_inv = pow_dimension_plus_one(hi_inv); /* 1/h^(d+1) */
   const float wj_dr = hjd_inv * wj_dx;
@@ -231,8 +234,8 @@ radiation_gradient_loop_function(const float r2, const float dx[3],
   float uradmfi[RT_NGROUPS];
   float uradmfj[RT_NGROUPS];
 
-  const float credi = rt_get_comoving_cred(pi, a);
-  const float credj = rt_get_comoving_cred(pj, a);
+  const float credi = rt_get_comoving_cred(pindi, a);
+  const float credj = rt_get_comoving_cred(pindj, a);
 
   /* use urad * c instead */
   float uradci;
@@ -254,11 +257,11 @@ radiation_gradient_loop_function(const float r2, const float dx[3],
   /* gas density should not be zero */
   if ((rhoi == 0.f) || (rhoi == 0.f)) return;
 
-  rt_get_comoving_urad_multifrequency(pi, uradmfi);
-  rt_get_comoving_urad_multifrequency(pj, uradmfj);
+  rt_get_comoving_urad_multifrequency(pindi, uradmfi);
+  rt_get_comoving_urad_multifrequency(pindj, uradmfj);
 
-  rt_get_comoving_frad_multifrequency(pi, fradmfi);
-  rt_get_comoving_frad_multifrequency(pj, fradmfj);
+  rt_get_comoving_frad_multifrequency(pindi, fradmfi);
+  rt_get_comoving_frad_multifrequency(pindj, fradmfj);
 
   for (int g = 0; g < RT_NGROUPS; g++) {
 
@@ -306,16 +309,16 @@ radiation_gradient_loop_function(const float r2, const float dx[3],
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
-  radiation_gradient_loop_function(r2, dx, hi, hj, pi, pj, a, H, 1);
+  radiation_gradient_loop_function(r2, dx, hi, hj, pindi, pindj, a, H, 1);
 }
 
 /**
@@ -335,10 +338,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
+                               size_t pindi,
+                               size_t pindj, const float a,
                                const float H) {
-  radiation_gradient_loop_function(r2, dx, hi, hj, pi, pj, a, H, 0);
+  radiation_gradient_loop_function(r2, dx, hi, hj, pindi, pindj, a, H, 0);
 }
 
 /**
@@ -349,8 +352,8 @@ runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param mode: mode=1 symmetric, mode=0 non symmetric
@@ -358,7 +361,7 @@ runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void radiation_force_loop_function(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, int mode) {
 
   struct rt_part_data *rpi = &pi->rt_data;
@@ -385,10 +388,10 @@ __attribute__((always_inline)) INLINE static void radiation_force_loop_function(
   kernel_deval(xi, &wi, &wi_dx);
 
   /* Get mass */
-  const float mj = hydro_get_mass(pj);
-  const float mi = hydro_get_mass(pi);
-  const float rhoj = hydro_get_comoving_density(pj);
-  const float rhoi = hydro_get_comoving_density(pi);
+  const float mj = hydro_get_mass(pindj);
+  const float mi = hydro_get_mass(pindi);
+  const float rhoj = hydro_get_comoving_density(pindj);
+  const float rhoi = hydro_get_comoving_density(pindi);
   const float hjd_inv = pow_dimension_plus_one(hj_inv); /* 1/h^(d+1) */
   const float hid_inv = pow_dimension_plus_one(hi_inv); /* 1/h^(d+1) */
   const float wj_dr = hjd_inv * wj_dx;
@@ -397,17 +400,17 @@ __attribute__((always_inline)) INLINE static void radiation_force_loop_function(
   float uradmfi[RT_NGROUPS];
   float uradmfj[RT_NGROUPS];
 
-  const float credi = rt_get_comoving_cred(pi, a);
-  const float credj = rt_get_comoving_cred(pj, a);
+  const float credi = rt_get_comoving_cred(pindi, a);
+  const float credj = rt_get_comoving_cred(pindj, a);
 
   float fradmfi[RT_NGROUPS][3];
   float fradmfj[RT_NGROUPS][3];
 
-  rt_get_comoving_urad_multifrequency(pi, uradmfi);
-  rt_get_comoving_urad_multifrequency(pj, uradmfj);
+  rt_get_comoving_urad_multifrequency(pindi, uradmfi);
+  rt_get_comoving_urad_multifrequency(pindj, uradmfj);
 
-  rt_get_comoving_frad_multifrequency(pi, fradmfi);
-  rt_get_comoving_frad_multifrequency(pj, fradmfj);
+  rt_get_comoving_frad_multifrequency(pindi, fradmfi);
+  rt_get_comoving_frad_multifrequency(pindj, fradmfj);
 
   /*******************************/
   /* CALCULATIONS OF TWO MOMENT EQUATIONS */
@@ -735,17 +738,17 @@ __attribute__((always_inline)) INLINE static void radiation_force_loop_function(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
-  radiation_force_loop_function(r2, dx, hi, hj, pi, pj, a, H, 1);
+  radiation_force_loop_function(r2, dx, hi, hj, pindi, pindj, a, H, 1);
 }
 
 /**
@@ -757,19 +760,19 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
                                 const float hi, const float hj,
-                                struct part *restrict pi,
-                                struct part *restrict pj, const float a,
+                                size_t pindi,
+                                size_t pindj, const float a,
                                 const float H) {
 
-  radiation_force_loop_function(r2, dx, hi, hj, pi, pj, a, H, 0);
+  radiation_force_loop_function(r2, dx, hi, hj, pindi, pindj, a, H, 0);
 }
 
 #endif /* SWIFT_RT_IACT_SPHM1RT_H */

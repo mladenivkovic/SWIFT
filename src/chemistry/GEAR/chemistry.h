@@ -42,7 +42,7 @@
  * @brief Copies the chemistry properties of the gas particle over to the
  * star particle.
  *
- * @param p the gas particles.
+ * @param pind Index of the particle.
  * @param sp the new created star particle with its properties.
  * @param chem_data The global properties of the chemistry scheme.
  * @param cosmo The current cosmological model.
@@ -88,7 +88,7 @@ INLINE static void chemistry_copy_sink_properties_to_star(struct sink *sink,
  * @brief Copies the chemistry properties of the gas particle over to the
  * sink particle.
  *
- * @param p the gas particles.
+ * @param pind Index of the particle.
  * @param sink the new created star particle with its properties.
  */
 INLINE static void chemistry_copy_sink_properties(const size_t pind,

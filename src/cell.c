@@ -755,7 +755,7 @@ void cell_check_part_drift_point(struct cell *c, void *data) {
   for (size_t i = c->hydro.first; i < c->hydro.first + c->hydro.count; ++i) {
     if (part_get_ti_drift(i) != ti_drift &&
         part_get_time_bin(i) != time_bin_inhibited)
-      error("part in an incorrect time-zone! p->ti_drift=%lld ti_drift=%lld",
+      error("part in an incorrect time-zone! part_get_ti_drift(pind)=%lld ti_drift=%lld",
             part_get_ti_drift(i), ti_drift);
   }
 
@@ -765,7 +765,7 @@ void cell_check_part_drift_point(struct cell *c, void *data) {
     if (depth_h == c->depth) {
       if (!(h >= c->h_min_allowed && h < c->h_max_allowed) && c->split) {
         error(
-            "depth_h set incorrectly! c->depth=%d p->depth_h=%d h=%e h_min=%e "
+            "depth_h set incorrectly! c->depth=%d part_get_depth_h(i)=%d h=%e h_min=%e "
             "h_max=%e",
             c->depth, depth_h, h, c->h_min_allowed, c->h_max_allowed);
       }
@@ -897,13 +897,13 @@ void cell_check_spart_drift_point(struct cell *c, void *data) {
             c->stars.parts[i].ti_drift, ti_drift);
 
   for (int i = 0; i < c->stars.count; ++i) {
-    const struct spart *p = &c->stars.parts[i];
-    if (p->depth_h == c->depth) {
-      if (!(p->h >= c->h_min_allowed && p->h < c->h_max_allowed) && c->split) {
+    const struct spart *sp = &c->stars.parts[i];
+    if (sp->depth_h == c->depth) {
+      if (!(sp->h >= c->h_min_allowed && sp->h < c->h_max_allowed) && c->split) {
         error(
-            "depth_h set incorrectly! c->depth=%d p->depth_h=%d h=%e h_min=%e "
+            "depth_h set incorrectly! c->depth=%d sp->depth_h=%d h=%e h_min=%e "
             "h_max=%e",
-            c->depth, p->depth_h, p->h, c->h_min_allowed, c->h_max_allowed);
+            c->depth, sp->depth_h, sp->h, c->h_min_allowed, c->h_max_allowed);
       }
     }
   }
@@ -950,7 +950,7 @@ void cell_check_bpart_drift_point(struct cell *c, void *data) {
       if (!(bp->h >= c->h_min_allowed && bp->h < c->h_max_allowed) &&
           c->split) {
         error(
-            "depth_h set incorrectly! c->depth=%d p->depth_h=%d h=%e h_min=%e "
+            "depth_h set incorrectly! c->depth=%d part_get_depth_h(pind)=%d h=%e h_min=%e "
             "h_max=%e",
             c->depth, bp->depth_h, bp->h, c->h_min_allowed, c->h_max_allowed);
       }

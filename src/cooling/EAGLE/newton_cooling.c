@@ -597,7 +597,7 @@ INLINE static double eagle_metal_cooling_rate(
    * @param d_He Particle helium fraction offset
    * @param He_reion_heat Heating due to helium reionization
    * (only depends on redshift, so passed as parameter)
-   * @param p #part structure
+   * @param pind Index of the particle structure
    * @param cosmo #cosmology structure
    * @param cooling #cooling_function_data structure
    * @param phys_const #phys_const data structure

@@ -33,11 +33,11 @@
  * This function gets called during the feedback force loop.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (si - pj).
+ * @param dx Comoving vector separating both particles (si - pindj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle.
- * @param pj Second (gas) particle (not updated).
+ * @param pindj Index of second (gas) particle.(not updated).
  * @param cosmo The cosmological model.
  * @param rt_props Properties of the RT scheme.
  */
@@ -45,7 +45,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
                                      const float hi, const float hj,
-                                     struct spart *si, const struct part *pj,
+                                     struct spart *si, const size_t pindj,
                                      const struct cosmology *cosmo,
                                      const struct rt_props *rt_props) {
 
@@ -56,7 +56,7 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
  * @brief Injection step interaction between star and hydro particles.
  *
  * @param r2 Comoving square distance between the two particles.
- * @param dx Comoving vector separating both particles (pi - pj).
+ * @param dx Comoving vector separating both particles (pi - pindj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si Star particle.
@@ -67,7 +67,7 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *restrict si, struct part *restrict pj, const float a,
+    struct spart *restrict si, size_t pindj, const float a,
     const float H, const struct rt_props *rt_props) {
 
   /* If the star doesn't have any neighbours, we
@@ -86,8 +86,9 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
   si->rt_data.debug_iact_hydro_inject += 1;
   si->rt_data.debug_radiation_emitted_tot += 1ULL;
 
-  pj->rt_data.debug_iact_stars_inject += 1;
-  pj->rt_data.debug_radiation_absorbed_tot += 1ULL;
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pindj);
+  rtd->debug_iact_stars_inject += 1;
+  rtd->debug_radiation_absorbed_tot += 1ULL;
 }
 
 /**
@@ -108,16 +109,16 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, int mode) {
 
   const char *func_name = (mode == 1) ? "sym flux iact" : "nonsym flux iact";
-  rt_debug_sequence_check(pi, 3, func_name);
-  pi->rt_data.debug_calls_iact_transport_interaction += 1;
+  rt_debug_sequence_check(pindi, 3, func_name);
+  part_get_rt_data_p(pindi)->debug_calls_iact_transport_interaction += 1;
 
   if (mode == 1) {
-    rt_debug_sequence_check(pj, 3, func_name);
-    pj->rt_data.debug_calls_iact_transport_interaction += 1;
+    rt_debug_sequence_check(pindj, 3, func_name);
+    part_get_rt_data_p(pindj)->debug_calls_iact_transport_interaction += 1;
   }
 }
 
@@ -138,10 +139,10 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
-  runner_iact_rt_flux_common(r2, dx, hi, hj, pi, pj, a, H, 1);
+  runner_iact_rt_flux_common(r2, dx, hi, hj, pindi, pindj, a, H, 1);
 }
 
 /**
@@ -163,11 +164,11 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
                                 const float hi, const float hj,
-                                struct part *restrict pi,
-                                struct part *restrict pj, const float a,
+                                size_t pindi,
+                                size_t pindj, const float a,
                                 const float H) {
 
-  runner_iact_rt_flux_common(r2, dx, hi, hj, pi, pj, a, H, 0);
+  runner_iact_rt_flux_common(r2, dx, hi, hj, pindi, pindj, a, H, 0);
 }
 
 /**
@@ -188,10 +189,10 @@ runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {
 
-  rt_gradients_collect(r2, dx, hi, hj, pi, pj);
+  rt_gradients_collect(r2, dx, hi, hj, pindi, pindj);
 }
 
 /**
@@ -214,11 +215,11 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
+                               size_t pindi,
+                               size_t pindj, const float a,
                                const float H) {
 
-  rt_gradients_nonsym_collect(r2, dx, hi, hj, pi, pj);
+  rt_gradients_nonsym_collect(r2, dx, hi, hj, pindi, pindj);
 }
 
 #endif /* SWIFT_RT_IACT_DEBUG_H */

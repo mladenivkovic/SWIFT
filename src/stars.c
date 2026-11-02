@@ -80,14 +80,12 @@ void stars_exact_density_compute_mapper(void *map_data, int nr_sparts,
       double n_exact = 0.;
 
       /* Interact it with all other particles in the space.*/
-      for (int j = 0; j < (int)s->nr_parts; ++j) {
-
-        const struct part *pj = &s->parts[j];
+      for (size_t j = 0; j < s->nr_parts; ++j) {
 
         /* Compute the pairwise distance. */
-        double dx = pj->x[0] - pix[0];
-        double dy = pj->x[1] - pix[1];
-        double dz = pj->x[2] - pix[2];
+        double dx =part_get_x_ind(pindj, 0) - pix[0];
+        double dy =part_get_x_ind(pindj, 1) - pix[1];
+        double dz =part_get_x_ind(pindj, 2) - pix[2];
 
         /* Now apply periodic BC */
         if (periodic) {
@@ -101,7 +99,7 @@ void stars_exact_density_compute_mapper(void *map_data, int nr_sparts,
         /* Interact loop of type 1? */
         if (r2 < hig2) {
 
-          const float mj = pj->mass;
+          const float mj =part_get_mass(pindj);
 
           float wi, wi_dx;
 

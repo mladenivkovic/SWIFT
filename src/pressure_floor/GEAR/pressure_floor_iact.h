@@ -25,6 +25,10 @@
  * @brief Density computation
  */
 
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief do pressure_floor computation after the runner_iact_density (symmetric
  * version)
@@ -33,15 +37,14 @@
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle.
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_pressure_floor(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
-    const float H) {}
+    size_t pindi, size_t pindj, const float a, const float H) {}
 
 /**
  * @brief do pressure_floor computation after the runner_iact_density (non
@@ -51,16 +54,15 @@ __attribute__((always_inline)) INLINE static void runner_iact_pressure_floor(
  * @param dx Comoving vector separating both particles (pi - pj).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi First particle.
- * @param pj Second particle (not updated).
+ * @param pindi Index of first particle.
+ * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_pressure_floor(const float r2, const float dx[3],
                                   const float hi, const float hj,
-                                  struct part *restrict pi,
-                                  const struct part *restrict pj, const float a,
+                                  size_t pindi, const size_t pindj, const float a,
                                   const float H) {}
 
 #endif /* SWIFT_GEAR_PRESSURE_FLOOR_IACT_H */

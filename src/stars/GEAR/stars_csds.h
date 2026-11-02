@@ -28,7 +28,7 @@
 /**
  * @brief Compute the acceleration and writes it.
  *
- * @param p The #spart
+ * @param sp The #spart
  * @param e The #engine
  * @param buffer Allocated buffer for writing the particle.
  *

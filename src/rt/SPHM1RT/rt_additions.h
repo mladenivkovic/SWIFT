@@ -25,18 +25,22 @@
  * moved to separate file to avoid circular inclusions
  * */
 
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief update mass fluxes between two interacting particles during
  * hydro_iact_(non)sym(...) calls.
  *
- * @param pi first interacting particle
- * @param pj second interacting particle
+ * @param pindi first interacting particle
+ * @param pindj second interacting particle
  * @param mass_flux the mass flux between these two particles
  * @param mode 0: non-symmetric interaction, update i only. 1: symmetric
  * interaction.
  **/
 __attribute__((always_inline)) INLINE static void rt_part_update_mass_fluxes(
-    struct part *restrict pi, struct part *restrict pj, float mass_flux,
+    size_t pindi, size_t pindj, float mass_flux,
     int mode) {}
 
 #endif /* SWIFT_RT_SPHM1RT_ADDITIONS_H */

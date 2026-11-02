@@ -36,12 +36,12 @@
 /**
  * @brief Initialisation of the RT gradient data.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_init(
-    struct part *restrict p) {
+    size_t pind) {
 
-  struct rt_part_data *rtd = part_get_rt_data_p(p);
+  struct rt_part_data *rtd = part_get_rt_data_p(pind);
 
   for (int g = 0; g < RT_NGROUPS; g++) {
     for (int i = 0; i < 3; i++) {
@@ -65,10 +65,10 @@ __attribute__((always_inline)) INLINE static void rt_gradients_init(
  * @param dFz gradient of the z direction flux component
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_update_part(
-    struct part *restrict p, int g, const float dE[3], const float dFx[3],
+    size_t pind, int g, const float dE[3], const float dFx[3],
     const float dFy[3], const float dFz[3]) {
 
-  struct rt_part_data *rtd = part_get_rt_data_p(p);
+  struct rt_part_data *rtd = part_get_rt_data_p(pind);
 
   rtd->gradient[g].energy_density[0] += dE[0];
   rtd->gradient[g].energy_density[1] += dE[1];
@@ -95,25 +95,25 @@ __attribute__((always_inline)) INLINE static void rt_gradients_update_part(
  **/
 
 __attribute__((always_inline)) INLINE static void rt_finalise_gradient_part(
-    struct part *restrict p) {
+    size_t pind) {
 
   /* add kernel normalization to gradients */
-  const float h = part_get_h(p);
+  const float h = part_get_h(pind);
   const float h_inv = 1.0f / h;
 
   float norm;
-  if (fvpm_part_geometry_well_behaved(p)) {
+  if (fvpm_part_geometry_well_behaved(pind)) {
     const float hinvdim = pow_dimension(h_inv);
     norm = hinvdim;
   } else {
     const float hinvdimp1 = pow_dimension_plus_one(h_inv);
-    const struct fvpm_geometry_struct *geometry =
-        part_get_const_fvpm_geometry_p(p);
+    const struct fvpm_geometry_struct *restrict geometry =
+        part_get_const_fvpm_geometry_p(pind);
     const float volume = geometry->volume;
     norm = hinvdimp1 * volume;
   }
 
-  struct rt_part_data *rtd = part_get_rt_data_p(p);
+  struct rt_part_data *rtd = part_get_rt_data_p(pind);
   for (int g = 0; g < RT_NGROUPS; g++) {
     rtd->gradient[g].energy_density[0] *= norm;
     rtd->gradient[g].energy_density[1] *= norm;
@@ -127,7 +127,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_gradient_part(
 
   /* the Gizmo-style slope limiting doesn't help for RT as is,
    * so we're skipping it for now. */
-  /* rt_slope_limit_cell(p); */
+  /* rt_slope_limit_cell(pind); */
 }
 
 /**
@@ -142,19 +142,19 @@ __attribute__((always_inline)) INLINE static void rt_finalise_gradient_part(
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_collect(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj) {
+    size_t pindi, size_t pindj) {
 
-  struct rt_part_data *rt_data_i = part_get_rt_data_p(pi);
-  struct rt_part_data *rt_data_j = part_get_rt_data_p(pj);
+  struct rt_part_data *rt_data_i = part_get_rt_data_p(pindi);
+  struct rt_part_data *rt_data_j = part_get_rt_data_p(pindj);
 
-  const struct fvpm_geometry_struct *geometry_i =
-      part_get_const_fvpm_geometry_p(pi);
-  const struct fvpm_geometry_struct *geometry_j =
-      part_get_const_fvpm_geometry_p(pj);
+  const struct fvpm_geometry_struct *restrict geometry_i =
+      part_get_const_fvpm_geometry_p(pindi);
+  const struct fvpm_geometry_struct *restrict geometry_j =
+      part_get_const_fvpm_geometry_p(pindj);
 
 #ifdef SWIFT_RT_DEBUG_CHECKS
-  rt_debug_sequence_check(pi, 2, __func__);
-  rt_debug_sequence_check(pj, 2, __func__);
+  rt_debug_sequence_check(pindi, 2, __func__);
+  rt_debug_sequence_check(pindj, 2, __func__);
 
   rt_data_i->debug_calls_iact_gradient_interaction += 1;
   rt_data_j->debug_calls_iact_gradient_interaction += 1;
@@ -191,7 +191,7 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
 
   /* Compute psi tilde */
   float psii_tilde[3];
-  if (fvpm_part_geometry_well_behaved(pi)) {
+  if (fvpm_part_geometry_well_behaved(pindi)) {
     psii_tilde[0] =
         wi * (Bi[0][0] * dx[0] + Bi[0][1] * dx[1] + Bi[0][2] * dx[2]);
     psii_tilde[1] =
@@ -206,7 +206,7 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
   }
 
   float psij_tilde[3];
-  if (fvpm_part_geometry_well_behaved(pj)) {
+  if (fvpm_part_geometry_well_behaved(pindj)) {
     psij_tilde[0] =
         wj * (Bj[0][0] * dx[0] + Bj[0][1] * dx[1] + Bj[0][2] * dx[2]);
     psij_tilde[1] =
@@ -224,8 +224,8 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
 
     float Ui[4];
     float Uj[4];
-    rt_part_get_radiation_state_vector(pi, g, Ui);
-    rt_part_get_radiation_state_vector(pj, g, Uj);
+    rt_part_get_radiation_state_vector(pindi, g, Ui);
+    rt_part_get_radiation_state_vector(pindj, g, Uj);
     const float dU[4] = {Ui[0] - Uj[0], Ui[1] - Uj[1], Ui[2] - Uj[2],
                          Ui[3] - Uj[3]};
 
@@ -252,10 +252,10 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
     dFz_i[1] = dU[3] * psii_tilde[1];
     dFz_i[2] = dU[3] * psii_tilde[2];
 
-    rt_gradients_update_part(pi, g, dE_i, dFx_i, dFy_i, dFz_i);
+    rt_gradients_update_part(pindi, g, dE_i, dFx_i, dFy_i, dFz_i);
     /* the Gizmo-style slope limiting doesn't help for RT as is,
      * so we're skipping it for now. */
-    /* rt_slope_limit_cell_collect(pi, pj, g); */
+    /* rt_slope_limit_cell_collect(pindi, pj, g); */
 
     /* Now do the gradients of pj */
     float dE_j[3];
@@ -279,10 +279,10 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
     dFz_j[1] = dU[3] * psij_tilde[1];
     dFz_j[2] = dU[3] * psij_tilde[2];
 
-    rt_gradients_update_part(pj, g, dE_j, dFx_j, dFy_j, dFz_j);
+    rt_gradients_update_part(pindj, g, dE_j, dFx_j, dFy_j, dFz_j);
     /* the Gizmo-style slope limiting doesn't help for RT as is,
      * so we're skipping it for now. */
-    /* rt_slope_limit_cell_collect(pj, pi, g); */
+    /* rt_slope_limit_cell_collect(pindj, pi, g); */
   }
 }
 
@@ -298,14 +298,14 @@ __attribute__((always_inline)) INLINE static void rt_gradients_collect(
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_nonsym_collect(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj) {
+    size_t pindi, size_t pindj) {
 
-  struct rt_part_data *rt_data_i = part_get_rt_data_p(pi);
-  const struct fvpm_geometry_struct *geometry_i =
-      part_get_const_fvpm_geometry_p(pi);
+  struct rt_part_data *rt_data_i = part_get_rt_data_p(pindi);
+  const struct fvpm_geometry_struct *restrict geometry_i =
+      part_get_const_fvpm_geometry_p(pindi);
 
 #ifdef SWIFT_RT_DEBUG_CHECKS
-  rt_debug_sequence_check(pi, 2, __func__);
+  rt_debug_sequence_check(pindi, 2, __func__);
   rt_data_i->debug_calls_iact_gradient_interaction += 1;
 #endif
 
@@ -331,7 +331,7 @@ __attribute__((always_inline)) INLINE static void rt_gradients_nonsym_collect(
 
   /* Compute psi tilde */
   float psii_tilde[3];
-  if (fvpm_part_geometry_well_behaved(pi)) {
+  if (fvpm_part_geometry_well_behaved(pindi)) {
     psii_tilde[0] =
         wi * (Bi[0][0] * dx[0] + Bi[0][1] * dx[1] + Bi[0][2] * dx[2]);
     psii_tilde[1] =
@@ -349,8 +349,8 @@ __attribute__((always_inline)) INLINE static void rt_gradients_nonsym_collect(
 
     float Ui[4];
     float Uj[4];
-    rt_part_get_radiation_state_vector(pi, g, Ui);
-    rt_part_get_radiation_state_vector(pj, g, Uj);
+    rt_part_get_radiation_state_vector(pindi, g, Ui);
+    rt_part_get_radiation_state_vector(pindj, g, Uj);
     const float dU[4] = {Ui[0] - Uj[0], Ui[1] - Uj[1], Ui[2] - Uj[2],
                          Ui[3] - Uj[3]};
 
@@ -376,10 +376,10 @@ __attribute__((always_inline)) INLINE static void rt_gradients_nonsym_collect(
     dFz_i[1] = dU[3] * psii_tilde[1];
     dFz_i[2] = dU[3] * psii_tilde[2];
 
-    rt_gradients_update_part(pi, g, dE_i, dFx_i, dFy_i, dFz_i);
+    rt_gradients_update_part(pindi, g, dE_i, dFx_i, dFy_i, dFz_i);
     /* the Gizmo-style slope limiting doesn't help for RT as is,
      * so we're skipping it for now. */
-    /* rt_slope_limit_cell_collect(pi, pj, g); */
+    /* rt_slope_limit_cell_collect(pindi, pj, g); */
   }
 }
 
@@ -414,12 +414,12 @@ __attribute__((always_inline)) INLINE static float rt_gradients_extrapolate(
  * @param xij_i Position of the "interface" w.r.t. position of particle i
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_predict(
-    const struct part *restrict pi, const struct part *restrict pj, float Ui[4],
+    const size_t pindi, const size_t pindj, float Ui[4],
     float Uj[4], int group, const float dx[3], const float r,
     const float xij_i[3]) {
 
-  rt_part_get_radiation_state_vector(pi, group, Ui);
-  rt_part_get_radiation_state_vector(pj, group, Uj);
+  rt_part_get_radiation_state_vector(pindi, group, Ui);
+  rt_part_get_radiation_state_vector(pindj, group, Uj);
   /* No need to check unphysical state here:
    * they haven't been touched since the call
    * to rt_injection_update_photon_density */
@@ -432,8 +432,8 @@ __attribute__((always_inline)) INLINE static void rt_gradients_predict(
   float dFx_j[3];
   float dFy_j[3];
   float dFz_j[3];
-  rt_part_get_gradients(pi, group, dE_i, dFx_i, dFy_i, dFz_i);
-  rt_part_get_gradients(pj, group, dE_j, dFx_j, dFy_j, dFz_j);
+  rt_part_get_gradients(pindi, group, dE_i, dFx_i, dFy_i, dFz_i);
+  rt_part_get_gradients(pindj, group, dE_j, dFx_j, dFy_j, dFz_j);
 
   /* Compute interface position (relative to pj, since we don't need the actual
    * position) eqn. (8)
@@ -474,16 +474,16 @@ __attribute__((always_inline)) INLINE static void rt_gradients_predict(
  * @brief Gradients reconstruction. Predict the value at point x_ij given
  * current values at particle positions and gradients at particle positions.
  *
- * @param p Particle to work on
+ * @param pind Particle index to work on
  * @param U (return) Resulting predicted and limited radiation state of
  * particle
  * @param group which photon group to use
  * @param dx The drift distance
  */
 __attribute__((always_inline)) INLINE static void rt_gradients_predict_drift(
-    const struct part *restrict p, float U[4], int group, const float dx[3]) {
+    const size_t pind, float U[4], int group, const float dx[3]) {
 
-  rt_part_get_radiation_state_vector(p, group, U);
+  rt_part_get_radiation_state_vector(pind, group, U);
   /* No need to check unphysical state here:
    * they haven't been touched since the call
    * to rt_injection_update_photon_density */
@@ -492,7 +492,7 @@ __attribute__((always_inline)) INLINE static void rt_gradients_predict_drift(
   float dFx[3];
   float dFy[3];
   float dFz[3];
-  rt_part_get_gradients(p, group, dE, dFx, dFy, dFz);
+  rt_part_get_gradients(pind, group, dE, dFx, dFy, dFz);
 
   float dU[4];
   dU[0] = rt_gradients_extrapolate(dE, dx);

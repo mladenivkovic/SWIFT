@@ -225,36 +225,34 @@ INLINE static void star_formation_logger_init_log_file(
 /**
  * @brief Add the SFR tracer to the total active SFR of this cell
  *
- * @param p the #part
- * @param xp the #xpart
+ * @param pind the particle index
  * @param sf the SFH logger struct
  * @param dt_star The length of the time-step in physical internal units.
  */
 INLINE static void star_formation_logger_log_active_part(
-    const struct part *p, const struct xpart *xp,
-    struct star_formation_history *sf, const double dt_star) {
+    const size_t pind, struct star_formation_history *sf, const double dt_star) {
+
+  const struct star_formation_xpart_data *restrict sd = part_get_const_sf_data_p(pind);
 
   /* Add the SFR to the logger file */
-  sf->SFR_active += xp->sf_data.SFR;
+  sf->SFR_active += sd->SFR;
 
   /* Update the active SFR*dt */
-  sf->SFRdt_active += xp->sf_data.SFR * dt_star;
+  sf->SFRdt_active +=sd->SFR * dt_star;
 }
 
 /**
  * @brief Add the SFR tracer to the total inactive SFR of this cell as long as
  * the SFR tracer is larger than 0
  *
- * @param p the #part
- * @param xp the #xpart
+ * @param pind the particle index
  * @param sf the SFH logger struct
  */
 INLINE static void star_formation_logger_log_inactive_part(
-    const struct part *p, const struct xpart *xp,
-    struct star_formation_history *sf) {
+    const size_t pind, struct star_formation_history *sf) {
 
   /* Add the SFR to the logger file */
-  sf->SFR_inactive += max(xp->sf_data.SFR, 0.f);
+  sf->SFR_inactive += max(part_get_const_sf_data_p(pind)->SFR, 0.f);
 }
 
 /**

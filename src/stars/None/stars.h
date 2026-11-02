@@ -146,10 +146,10 @@ __attribute__((always_inline)) INLINE static void stars_spart_has_no_neighbours(
  * This is the equivalent of hydro_reset_acceleration.
  * We do not compute the acceleration on star, therefore no need to use it.
  *
- * @param p The particle to act upon
+ * @param sp The star particle to act upon
  */
 __attribute__((always_inline)) INLINE static void stars_reset_feedback(
-    struct spart *restrict p) {}
+    struct spart *restrict sp) {}
 
 /**
  * @brief Initializes constants related to stellar evolution, initializes imf,

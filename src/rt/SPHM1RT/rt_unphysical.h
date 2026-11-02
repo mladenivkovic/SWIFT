@@ -92,20 +92,22 @@ __attribute__((always_inline)) INLINE static void rt_check_unphysical_state(
  * @brief check whether gas species abundances have physical
  * values and correct small errors if necessary.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  */
 __attribute__((always_inline)) INLINE static void rt_check_unphysical_elem_spec(
-    struct part *restrict p, const struct rt_props *rt_props) {
+    size_t pind, const struct rt_props *rt_props) {
 
   /*************************/
   /* check mass fraction   */
   /*************************/
 
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+
   /* check individual mass fraction */
   char name[10];
   double test_mass_fraction;
   for (int elem = 0; elem < rt_chemistry_element_count; elem++) {
-    test_mass_fraction = p->rt_data.tchem.metal_mass_fraction[elem];
+    test_mass_fraction = rtd->tchem.metal_mass_fraction[elem];
     if (isinf(test_mass_fraction) || isnan(test_mass_fraction))
       error("Got inf/nan test_mass_fraction %d | with value %.6e ", elem,
             test_mass_fraction);
@@ -119,7 +121,7 @@ __attribute__((always_inline)) INLINE static void rt_check_unphysical_elem_spec(
   /* check total mass fraction */
   float mass_fraction_tot = 0.f;
   for (int elem = 0; elem < rt_chemistry_element_count; elem++) {
-    mass_fraction_tot += p->rt_data.tchem.metal_mass_fraction[elem];
+    mass_fraction_tot += rtd->tchem.metal_mass_fraction[elem];
   }
   /* Make sure we sum up to 1. */
   if (fabsf(mass_fraction_tot - 1.f) > 1e-3)
@@ -131,7 +133,7 @@ __attribute__((always_inline)) INLINE static void rt_check_unphysical_elem_spec(
 
   double test_abundance;
   for (int spec = 0; spec < rt_species_count; spec++) {
-    test_abundance = p->rt_data.tchem.abundances[spec];
+    test_abundance = rtd->tchem.abundances[spec];
     if (isinf(test_abundance) || isnan(test_abundance))
       error("Got inf/nan test_abundance %d | with value %.6e ", spec,
             test_abundance);
@@ -140,29 +142,29 @@ __attribute__((always_inline)) INLINE static void rt_check_unphysical_elem_spec(
         sprintf(name, "%s", rt_get_species_name((enum rt_cooling_species)spec));
         message("WARNING: Got negative abundance in %s", name);
       }
-      p->rt_data.tchem.abundances[spec] = 0.f;
+      rtd->tchem.abundances[spec] = 0.f;
     }
   }
 
   /* normalized total abundances summed over many species */
   float abundance_tot_nor = 0.f;
   /* first check Hydrogen */
-  abundance_tot_nor = p->rt_data.tchem.abundances[rt_sp_HI] +
-                      p->rt_data.tchem.abundances[rt_sp_HII];
+  abundance_tot_nor = rtd->tchem.abundances[rt_sp_HI] +
+                      rtd->tchem.abundances[rt_sp_HII];
   /* Make sure we sum up to 1. */
   if (fabsf(abundance_tot_nor - 1.f) > 1e-3)
     error("Got total abundances of hydrogen gas = %.6g", abundance_tot_nor);
 
   /* second check Helium */
-  abundance_tot_nor = p->rt_data.tchem.abundances[rt_sp_HeI] +
-                      p->rt_data.tchem.abundances[rt_sp_HeII] +
-                      p->rt_data.tchem.abundances[rt_sp_HeIII];
+  abundance_tot_nor = rtd->tchem.abundances[rt_sp_HeI] +
+                      rtd->tchem.abundances[rt_sp_HeII] +
+                      rtd->tchem.abundances[rt_sp_HeIII];
   /* Helium is more tricky. We need to check AHe=nHe/nH. */
   /* expected total abundance = MHe/MH / am_He * am_H */
   float abundance_tot_exp;
   abundance_tot_exp =
-      p->rt_data.tchem.metal_mass_fraction[rt_chemistry_element_He] /
-      p->rt_data.tchem.metal_mass_fraction[rt_chemistry_element_H] *
+      rtd->tchem.metal_mass_fraction[rt_chemistry_element_He] /
+      rtd->tchem.metal_mass_fraction[rt_chemistry_element_H] *
       rt_props->atomicmass[rt_chemistry_element_H] *
       rt_props->atomicmass_inv[rt_chemistry_element_He];
   /* Make sure we sum up to expected. */
@@ -171,14 +173,14 @@ __attribute__((always_inline)) INLINE static void rt_check_unphysical_elem_spec(
           abundance_tot_nor, abundance_tot_exp);
 
   /* third check electron density */
-  abundance_tot_exp = p->rt_data.tchem.abundances[rt_sp_HII] +
-                      p->rt_data.tchem.abundances[rt_sp_HeII] +
-                      2.0f * p->rt_data.tchem.abundances[rt_sp_HeIII];
+  abundance_tot_exp = rtd->tchem.abundances[rt_sp_HII] +
+                      rtd->tchem.abundances[rt_sp_HeII] +
+                      2.0f * rtd->tchem.abundances[rt_sp_HeIII];
   /* Make sure we sum up to the expected. */
-  if (fabsf(p->rt_data.tchem.abundances[rt_sp_elec] - abundance_tot_exp) >
+  if (fabsf(rtd->tchem.abundances[rt_sp_elec] - abundance_tot_exp) >
       1e-3 * abundance_tot_exp)
     error("Got total abundances of electron = %.6g; expected = %.6g",
-          p->rt_data.tchem.abundances[rt_sp_elec], abundance_tot_exp);
+          rtd->tchem.abundances[rt_sp_elec], abundance_tot_exp);
 }
 
 #endif /* SWIFT_RT_UNPHYSICAL_SPHM1RT_H */

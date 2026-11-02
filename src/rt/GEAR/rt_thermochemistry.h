@@ -43,17 +43,17 @@
  * @param cosmo cosmology struct
  */
 __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
-    struct part *restrict p, const struct rt_props *rt_props,
+    size_t pind, const struct rt_props *rt_props,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo) {
 
-  struct rt_part_data *rt_data = part_get_rt_data_p(p);
+  struct rt_part_data *rt_data = part_get_rt_data_p(pind);
 
   if (rt_props->set_equilibrium_initial_ionization_mass_fractions) {
     float XHI, XHII, XHeI, XHeII, XHeIII;
-    rt_ion_equil_get_mass_fractions(&XHI, &XHII, &XHeI, &XHeII, &XHeIII, p,
+    rt_ion_equil_get_mass_fractions(&XHI, &XHII, &XHeI, &XHeII, &XHeIII, pind,
                                     rt_props, hydro_props, phys_const, us,
                                     cosmo);
 
@@ -72,10 +72,10 @@ __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
 
   /* pretend you have nonzero density so the check doesn't reset the mass
    * fractions */
-  part_set_rho(p, 1.f);
+  part_set_rho(pind, 1.f);
   /* Check that we didn't do something stupid */
-  rt_check_unphysical_mass_fractions(p);
-  part_set_rho(p, 0.f);
+  rt_check_unphysical_mass_fractions(pind);
+  part_set_rho(pind, 0.f);
 
   /* Check that the Hydrogen and Helium mass fractions correspond to those
    * provided by the user in the parameter file. This mass fraction is also
@@ -97,8 +97,7 @@ __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
 /**
  * @brief Main function for the thermochemistry step.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -108,7 +107,7 @@ __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
  * @param depth recursion depth
  */
 INLINE static void rt_do_thermochemistry(
-    struct part *restrict p, struct xpart *restrict xp,
+    size_t pind,
     struct rt_props *rt_props, const struct cosmology *restrict cosmo,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
@@ -123,12 +122,12 @@ INLINE static void rt_do_thermochemistry(
   /* This is where the fun begins */
   /* ---------------------------- */
 
-  struct rt_part_data *rt_data = part_get_rt_data_p(p);
+  struct rt_part_data *rt_data = part_get_rt_data_p(pind);
 
   /* initialize data so it'll be in scope */
   grackle_field_data particle_grackle_data;
 
-  gr_float density = hydro_get_physical_density(p, cosmo);
+  gr_float density = hydro_get_physical_density(pind, cosmo);
   /* In rare cases, unphysical solutions can arise with negative densities
    * which won't be fixed in the hydro part until further down the dependency
    * graph. Also, we can have vacuum, in which case we have nothing to do here.
@@ -139,16 +138,16 @@ INLINE static void rt_do_thermochemistry(
 
   /* Physical internal energy */
   gr_float internal_energy_phys =
-      hydro_get_physical_internal_energy(p, xp, cosmo);
+      hydro_get_physical_internal_energy(pind, cosmo);
   gr_float internal_energy = max(internal_energy_phys, u_minimal);
 
   const float u_old = internal_energy;
 
   gr_float species_densities[6];
-  rt_tchem_get_species_densities(p, density, species_densities);
+  rt_tchem_get_species_densities(pind, density, species_densities);
 
   float radiation_energy_density[RT_NGROUPS];
-  rt_part_get_physical_radiation_energy_density(p, radiation_energy_density,
+  rt_part_get_physical_radiation_energy_density(pind, radiation_energy_density,
                                                 cosmo);
 
   gr_float iact_rates[5];
@@ -181,18 +180,18 @@ INLINE static void rt_do_thermochemistry(
     /* Note that grackle already has internal "10% rules". But sometimes, they
      * may not suffice. */
     rt_clean_grackle_fields(&particle_grackle_data);
-    rt_do_thermochemistry(p, xp, rt_props, cosmo, hydro_props, phys_const, us,
+    rt_do_thermochemistry(pind, rt_props, cosmo, hydro_props, phys_const, us,
                           0.5 * dt, depth + 1);
-    rt_do_thermochemistry(p, xp, rt_props, cosmo, hydro_props, phys_const, us,
+    rt_do_thermochemistry(pind, rt_props, cosmo, hydro_props, phys_const, us,
                           0.5 * dt, depth + 1);
     return;
   }
 
   /* If we're good, update the particle data from grackle results */
 #ifdef GIZMO_MFV_SPH
-  hydro_set_physical_internal_energy(p, xp, cosmo, u_new);
+  hydro_set_physical_internal_energy(pind, cosmo, u_new);
 #else
-  hydro_set_physical_internal_energy_TESTING_SPH_RT(p, cosmo, u_new);
+  hydro_set_physical_internal_energy_TESTING_SPH_RT(pind, cosmo, u_new);
 #endif
 
   /* Update mass fractions */
@@ -208,7 +207,7 @@ INLINE static void rt_do_thermochemistry(
   rt_data->tchem.mass_fraction_HeIII =
       particle_grackle_data.HeIII_density[0] * one_over_rho;
 
-  rt_check_unphysical_mass_fractions(p);
+  rt_check_unphysical_mass_fractions(pind);
 
   /* Update radiation fields */
   /* First get absorption rates at the start and the end of the step */
@@ -252,8 +251,7 @@ INLINE static void rt_do_thermochemistry(
 /**
  * @brief Main function for the thermochemistry step.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -261,7 +259,7 @@ INLINE static void rt_do_thermochemistry(
  * @param us The internal system of units.
  */
 __attribute__((always_inline)) INLINE static float rt_tchem_get_tchem_time(
-    const struct part *restrict p, const struct xpart *restrict xp,
+    const size_t pind,
     struct rt_props *rt_props, const struct cosmology *restrict cosmo,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
@@ -272,19 +270,19 @@ __attribute__((always_inline)) INLINE static float rt_tchem_get_tchem_time(
   /* initialize data so it'll be in scope */
   grackle_field_data particle_grackle_data;
 
-  gr_float density = hydro_get_physical_density(p, cosmo);
+  gr_float density = hydro_get_physical_density(pind, cosmo);
   const float u_minimal = hydro_props->minimal_internal_energy;
 
   /* Physical internal energy */
   gr_float internal_energy_phys =
-      hydro_get_physical_internal_energy(p, xp, cosmo);
+      hydro_get_physical_internal_energy(pind, cosmo);
   gr_float internal_energy = max(internal_energy_phys, u_minimal);
 
   gr_float species_densities[6];
-  rt_tchem_get_species_densities(p, density, species_densities);
+  rt_tchem_get_species_densities(pind, density, species_densities);
 
   float radiation_energy_density[RT_NGROUPS];
-  rt_part_get_physical_radiation_energy_density(p, radiation_energy_density,
+  rt_part_get_physical_radiation_energy_density(pind, radiation_energy_density,
                                                 cosmo);
 
   gr_float iact_rates[5];

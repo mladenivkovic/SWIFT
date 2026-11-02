@@ -25,6 +25,10 @@
  * interactions.
  */
 
+#include "inline.h"
+
+#include <stddef.h>
+
 /**
  * @brief Preparation step for injection to gather necessary data.
  * This function gets called during the feedback force loop.
@@ -34,7 +38,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle.
- * @param pj Second (gas) particle (not updated).
+ * @param pindj Index of second (gas) particle.(not updated).
  * @param cosmo The cosmological model.
  * @param rt_props Properties of the RT scheme.
  */
@@ -42,7 +46,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
                                      const float hi, const float hj,
-                                     struct spart *si, const struct part *pj,
+                                     struct spart *si, const size_t pindj,
                                      const struct cosmology *cosmo,
                                      const struct rt_props *rt_props) {}
 
@@ -61,7 +65,7 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *restrict si, struct part *restrict pj, const float a,
+    struct spart *restrict si, size_t pindj, const float a,
     const float H, const struct rt_props *rt_props) {}
 
 /**
@@ -79,7 +83,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {}
 
 /**
@@ -99,8 +103,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
                                 const float hi, const float hj,
-                                struct part *restrict pi,
-                                struct part *restrict pj, const float a,
+                                size_t pindi, size_t pindj, const float a,
                                 const float H) {}
 
 /**
@@ -118,7 +121,7 @@ runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H) {}
 
 /**
@@ -138,8 +141,7 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
+                               size_t pindi, size_t pindj, const float a,
                                const float H) {}
 
 #endif /* SWIFT_RT_IACT_NONE_H */

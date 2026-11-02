@@ -19,6 +19,8 @@
 #ifndef SWIFT_GEAR_STARS_IACT_H
 #define SWIFT_GEAR_STARS_IACT_H
 
+#include "hydro.h"
+
 /**
  * @brief Density interaction between two particles (non-symmetric).
  *
@@ -27,7 +29,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First sparticle.
- * @param pj Second particle (not updated).
+ * @param pindj Index of second particle (not updated).
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
@@ -35,7 +37,7 @@ __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_stars_density(const float r2, const float dx[3],
                                  const float hi, const float hj,
                                  struct spart *restrict si,
-                                 const struct part *restrict pj, const float a,
+                                 const size_t pindj, const float a,
                                  const float H) {
 
   float wi, wi_dx;
@@ -55,7 +57,7 @@ runner_iact_nonsym_stars_density(const float r2, const float dx[3],
 #ifdef DEBUG_INTERACTIONS_STARS
   /* Update ngb counters */
   if (si->num_ngb_density < MAX_NUM_OF_NEIGHBOURS_STARS)
-    si->ids_ngbs_density[si->num_ngb_density] = pj->id;
+    si->ids_ngbs_density[si->num_ngb_density] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_density;
@@ -71,7 +73,7 @@ runner_iact_nonsym_stars_density(const float r2, const float dx[3],
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle (not updated).
- * @param pj Second (gas) particle.
+ * @param pindj Index of second (gas) particle.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
@@ -79,12 +81,12 @@ __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_stars_feedback(const float r2, const float dx[3],
                                   const float hi, const float hj,
                                   struct spart *restrict si,
-                                  struct part *restrict pj, const float a,
+                                  size_t pindj, const float a,
                                   const float H) {
 #ifdef DEBUG_INTERACTIONS_STARS
   /* Update ngb counters */
   if (si->num_ngb_force < MAX_NUM_OF_NEIGHBOURS_STARS)
-    si->ids_ngbs_force[si->num_ngb_force] = pj->id;
+    si->ids_ngbs_force[si->num_ngb_force] =part_get_id(pindj);
 
   /* Update ngb counters */
   ++si->num_ngb_force;

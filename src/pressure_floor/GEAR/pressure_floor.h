@@ -24,7 +24,7 @@ struct cosmology;
 struct pressure_floor_props;
 
 __attribute__((always_inline)) static INLINE float
-pressure_floor_get_comoving_pressure(const struct part *p,
+pressure_floor_get_comoving_pressure(const size_t pind,
                                      const struct pressure_floor_props *floor,
                                      const float pressure_comoving,
                                      const struct cosmology *cosmo);
@@ -65,7 +65,7 @@ struct pressure_floor_props {
  * that the floor need not be enforced, since they only ever increase the
  * internal energy. Skip the floor in that case.
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param pflorr The properties of the pressure floor.
  * @param pressure_comoving The comoving pressure without any pressure floor.
  * @param cosmo The #cosmology model.
@@ -73,7 +73,7 @@ struct pressure_floor_props {
  * @return The comoving pressure with the floor applied.
  */
 __attribute__((always_inline)) static INLINE float
-pressure_floor_get_comoving_pressure(const struct part *p,
+pressure_floor_get_comoving_pressure(const size_t pind,
                                      const struct pressure_floor_props *pfloor,
                                      const float pressure_comoving,
                                      const struct cosmology *cosmo) {
@@ -81,10 +81,10 @@ pressure_floor_get_comoving_pressure(const struct part *p,
   if (pfloor == NULL) return pressure_comoving;
 
   const float a_coef = pow_three_gamma_minus_one(cosmo->a);
-  const float rho = hydro_get_comoving_density(p);
+  const float rho = hydro_get_comoving_density(pind);
 
   /* Compute the pressure floor */
-  float floor = kernel_gamma * kernel_gamma * p->h * p->h * rho *
+  float floor = kernel_gamma * kernel_gamma * part_get_h(pind) * part_get_h(pind) * rho *
                 pfloor->constants * cosmo->a_inv;
   floor *= a_coef * rho * hydro_one_over_gamma;
 

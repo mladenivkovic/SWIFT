@@ -37,12 +37,12 @@
  * @param cosmo cosmology struct
  */
 __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
-    struct part *restrict p, const struct rt_props *rt_props,
+    size_t pind, const struct rt_props *rt_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
     const struct cosmology *restrict cosmo) {
 
-  struct rt_part_data *rpd = &p->rt_data;
+  struct rt_part_data *restrict rpd = part_get_rt_data_p(pind);
 
   /* Initialize mass fractions for total metals and each metal individually */
   if (rt_props->initial_metal_mass_fraction_total != -1.f) {
@@ -61,15 +61,14 @@ __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
 
   if (rt_props->skip_thermochemistry != 1) {
     /* Check that we didn't do something stupid */
-    rt_check_unphysical_elem_spec(p, rt_props);
+    rt_check_unphysical_elem_spec(pind, rt_props);
   }
 }
 
 /**
  * @brief Main function for the thermochemistry step.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -77,7 +76,7 @@ __attribute__((always_inline)) INLINE static void rt_tchem_first_init_part(
  * @param us The internal system of units.
  * @param dt The time-step of this particle.
  */
-void rt_do_thermochemistry(struct part *restrict p, struct xpart *restrict xp,
+void rt_do_thermochemistry(size_t pind,
                            struct rt_props *rt_props,
                            const struct cosmology *restrict cosmo,
                            const struct hydro_props *hydro_props,

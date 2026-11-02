@@ -55,10 +55,9 @@ rt_compute_stellar_emission_rate(struct spart *restrict sp, double time,
  * Note: during initalisation (space_init), rt_reset_part and rt_init_part
  * are both called individually.
  *
- * @param p Particle to work on
+ * @param pind Particle index to work on
  */
-__attribute__((always_inline)) INLINE static void rt_init_part(
-    size_t pind) {}
+__attribute__((always_inline)) INLINE static void rt_init_part(size_t pind) {}
 
 /**
  * @brief Reset the RT hydro particle data not related to the hydro density.
@@ -66,7 +65,7 @@ __attribute__((always_inline)) INLINE static void rt_init_part(
  * are both called individually. To reset RT data needed in each RT sub-cycle,
  * use rt_reset_part_each_subcycle().
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo Cosmology.
  */
 __attribute__((always_inline)) INLINE static void rt_reset_part(
@@ -85,7 +84,7 @@ __attribute__((always_inline)) INLINE static void rt_reset_part_each_subcycle(
 /**
  * @brief First initialisation of the RT hydro particle data.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  * @param rt_props RT properties struct
  */
@@ -167,7 +166,7 @@ __attribute__((always_inline)) INLINE static void rt_convert_quantities(
  * @brief Computes the next radiative transfer time step size
  * of a given particle (during timestep tasks)
  *
- * @param p Particle to work on.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -225,7 +224,7 @@ __attribute__((always_inline)) INLINE static double rt_part_dt(
 /**
  * @brief This function finalises the injection step.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param props struct #rt_props that contains global RT properties
  */
 __attribute__((always_inline)) INLINE static void rt_finalise_injection(
@@ -234,7 +233,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_injection(
 /**
  * @brief finishes up the gradient computation
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  */
 __attribute__((always_inline)) INLINE static void rt_end_gradient(
@@ -243,7 +242,7 @@ __attribute__((always_inline)) INLINE static void rt_end_gradient(
 /**
  * @brief finishes up the transport step
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param dt the current time step of the particle
  * @param cosmo #cosmology data structure.
  */
@@ -253,7 +252,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
 /**
  * @brief Do the thermochemistry on a particle.
  *
- * @param p Particle to work on.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -270,7 +269,7 @@ __attribute__((always_inline)) INLINE static void rt_tchem(
 /**
  * @brief Extra operations done during the kick.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_therm Thermal energy time-step @f$\frac{dt}{a^2}@f$.
  * @param dt_grav Gravity time-step @f$\frac{dt}{a}@f$.
  * @param dt_hydro Hydro acceleration time-step
@@ -291,7 +290,7 @@ __attribute__((always_inline)) INLINE static void rt_kick_extra(
  * NOTE: don't call this during rt_init_part or rt_reset_part,
  * follow the hydro_prepare_force logic.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  **/
 __attribute__((always_inline)) INLINE static void rt_prepare_force(
     size_t pind) {}
@@ -299,7 +298,7 @@ __attribute__((always_inline)) INLINE static void rt_prepare_force(
 /**
  * @brief Extra operations to be done during the drift
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_drift The drift time-step for positions.
  */
 __attribute__((always_inline)) INLINE static void rt_predict_extra(

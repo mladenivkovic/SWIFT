@@ -36,8 +36,7 @@
  * interaction.
  **/
 __attribute__((always_inline)) INLINE static void rt_part_update_mass_fluxes(
-    struct part *restrict pi, struct part *restrict pj, float mass_flux,
-    int mode) {
+    size_t pindi, size_t pindj, float mass_flux, int mode) {
 
   /* If a particle is losing mass, then it loses mass according to
    * its own mass fractions. If it's gaining mass, it's gaining mass
@@ -45,47 +44,46 @@ __attribute__((always_inline)) INLINE static void rt_part_update_mass_fluxes(
 
   /* get the time step for the flux exchange. This is always the smallest time
      step among the two particles */
-  const float mindt =
-      (pj->flux.dt > 0.0f) ? fminf(pi->flux.dt, pj->flux.dt) : pi->flux.dt;
+  const float mindt = (part_get_flux_dt(pindj) > 0.0f) ? fminf(part_get_flux_dt(pindi), part_get_flux_dt(pindj)) : part_get_flux_dt(pindi);
 
   const float mdt = mass_flux * mindt;
+  struct rt_part_data* restrict rti = part_get_rt_data_p(pindi);
+  struct rt_part_data* restrict rtj = part_get_rt_data_p(pindj);
 
   /* Convention: negative flux for "left" particle pi */
   if (mass_flux < 0.f) {
     /* "left" particle is gaining mass */
-    pi->rt_data.mass_flux.HI -= pj->rt_data.tchem.mass_fraction_HI * mdt;
-    pi->rt_data.mass_flux.HII -= pj->rt_data.tchem.mass_fraction_HII * mdt;
-    pi->rt_data.mass_flux.HeI -= pj->rt_data.tchem.mass_fraction_HeI * mdt;
-    pi->rt_data.mass_flux.HeII -= pj->rt_data.tchem.mass_fraction_HeII * mdt;
-    pi->rt_data.mass_flux.HeIII -= pj->rt_data.tchem.mass_fraction_HeIII * mdt;
+    rti->mass_flux.HI -= rtj->tchem.mass_fraction_HI * mdt;
+    rti->mass_flux.HII -= rtj->tchem.mass_fraction_HII * mdt;
+    rti->mass_flux.HeI -= rtj->tchem.mass_fraction_HeI * mdt;
+    rti->mass_flux.HeII -= rtj->tchem.mass_fraction_HeII * mdt;
+    rti->mass_flux.HeIII -= rtj->tchem.mass_fraction_HeIII * mdt;
   } else {
     /* "left" particle is losing mass */
-    pi->rt_data.mass_flux.HI -= pi->rt_data.tchem.mass_fraction_HI * mdt;
-    pi->rt_data.mass_flux.HII -= pi->rt_data.tchem.mass_fraction_HII * mdt;
-    pi->rt_data.mass_flux.HeI -= pi->rt_data.tchem.mass_fraction_HeI * mdt;
-    pi->rt_data.mass_flux.HeII -= pi->rt_data.tchem.mass_fraction_HeII * mdt;
-    pi->rt_data.mass_flux.HeIII -= pi->rt_data.tchem.mass_fraction_HeIII * mdt;
+    rti->mass_flux.HI -= rti->tchem.mass_fraction_HI * mdt;
+    rti->mass_flux.HII -= rti->tchem.mass_fraction_HII * mdt;
+    rti->mass_flux.HeI -= rti->tchem.mass_fraction_HeI * mdt;
+    rti->mass_flux.HeII -= rti->tchem.mass_fraction_HeII * mdt;
+    rti->mass_flux.HeIII -= rti->tchem.mass_fraction_HeIII * mdt;
   }
 
-  if (mode == 1 || (pj->flux.dt < 0.f)) {
+  if (mode == 1 || (part_get_flux_dt(pindj) < 0.f)) {
     /* Update right particle as well, even if it's inactive */
 
     if (mass_flux > 0.f) {
       /* "right" particle is gaining mass */
-      pj->rt_data.mass_flux.HI += pi->rt_data.tchem.mass_fraction_HI * mdt;
-      pj->rt_data.mass_flux.HII += pi->rt_data.tchem.mass_fraction_HII * mdt;
-      pj->rt_data.mass_flux.HeI += pi->rt_data.tchem.mass_fraction_HeI * mdt;
-      pj->rt_data.mass_flux.HeII += pi->rt_data.tchem.mass_fraction_HeII * mdt;
-      pj->rt_data.mass_flux.HeIII +=
-          pi->rt_data.tchem.mass_fraction_HeIII * mdt;
+      rtj->mass_flux.HI += rti->tchem.mass_fraction_HI * mdt;
+      rtj->mass_flux.HII += rti->tchem.mass_fraction_HII * mdt;
+      rtj->mass_flux.HeI += rti->tchem.mass_fraction_HeI * mdt;
+      rtj->mass_flux.HeII += rti->tchem.mass_fraction_HeII * mdt;
+      rtj->mass_flux.HeIII += rti->tchem.mass_fraction_HeIII * mdt;
     } else {
       /* "right" particle is losing mass */
-      pj->rt_data.mass_flux.HI += pj->rt_data.tchem.mass_fraction_HI * mdt;
-      pj->rt_data.mass_flux.HII += pj->rt_data.tchem.mass_fraction_HII * mdt;
-      pj->rt_data.mass_flux.HeI += pj->rt_data.tchem.mass_fraction_HeI * mdt;
-      pj->rt_data.mass_flux.HeII += pj->rt_data.tchem.mass_fraction_HeII * mdt;
-      pj->rt_data.mass_flux.HeIII +=
-          pj->rt_data.tchem.mass_fraction_HeIII * mdt;
+      rtj->mass_flux.HI += rtj->tchem.mass_fraction_HI * mdt;
+      rtj->mass_flux.HII += rtj->tchem.mass_fraction_HII * mdt;
+      rtj->mass_flux.HeI += rtj->tchem.mass_fraction_HeI * mdt;
+      rtj->mass_flux.HeII += rtj->tchem.mass_fraction_HeII * mdt;
+      rtj->mass_flux.HeIII += rtj->tchem.mass_fraction_HeIII * mdt;
     }
   }
 }

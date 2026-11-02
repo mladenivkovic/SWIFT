@@ -59,10 +59,10 @@ rt_compute_stellar_emission_rate(struct spart *restrict sp, double time,
  * Note: during initalisation (space_init), rt_reset_part and rt_init_part
  * are both called individually.
  *
- * @param p Particle to work on
+ * @param pind Particle index to work on
  */
 __attribute__((always_inline)) INLINE static void rt_init_part(
-    struct part *restrict p) {}
+    size_t pind) {}
 
 /**
  * @brief Reset the RT hydro particle data not related to the hydro density.
@@ -74,13 +74,15 @@ __attribute__((always_inline)) INLINE static void rt_init_part(
  * @param cosmo Cosmology.
  */
 __attribute__((always_inline)) INLINE static void rt_reset_part(
-    struct part *restrict p, const struct cosmology *cosmo) {
+    size_t pind, const struct cosmology *cosmo) {
+
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
 
   /* reset this here as well as in the rt_debugging_checks_end_of_step()
    * routine to test task dependencies are done right */
-  p->rt_data.debug_iact_stars_inject = 0;
-  p->rt_data.debug_nsubcycles = 0;
-  p->rt_data.debug_kicked = 0;
+  rtd->debug_iact_stars_inject = 0;
+  rtd->debug_nsubcycles = 0;
+  rtd->debug_kicked = 0;
 }
 
 /**
@@ -91,26 +93,27 @@ __attribute__((always_inline)) INLINE static void rt_reset_part(
  * @param dt the current particle RT time step
  */
 __attribute__((always_inline)) INLINE static void rt_reset_part_each_subcycle(
-    struct part *restrict p, const struct cosmology *cosmo, double dt) {
+    size_t pind, const struct cosmology *cosmo, double dt) {
 
-  rt_debugging_reset_each_subcycle(p);
+  rt_debugging_reset_each_subcycle(pind);
 }
 
 /**
  * @brief First initialisation of the RT hydro particle data.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  * @param rt_props RT properties struct
  */
 __attribute__((always_inline)) INLINE static void rt_first_init_part(
-    struct part *restrict p, const struct cosmology *cosmo,
+    size_t pind, const struct cosmology *cosmo,
     const struct rt_props *restrict rt_props) {
 
-  rt_init_part(p);
-  rt_reset_part(p, cosmo);
-  rt_reset_part_each_subcycle(p, cosmo, 0.);
-  p->rt_data.debug_radiation_absorbed_tot = 0ULL;
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+  rt_init_part(pind);
+  rt_reset_part(pind, cosmo);
+  rt_reset_part_each_subcycle(pind, cosmo, 0.);
+  rtd->debug_radiation_absorbed_tot = 0ULL;
 }
 
 /**
@@ -156,10 +159,10 @@ __attribute__((always_inline)) INLINE static void rt_first_init_spart(
 /**
  * @brief Split the RT data of a particle into n pieces
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  * @param n The number of pieces to split into.
  */
-__attribute__((always_inline)) INLINE static void rt_split_part(struct part *p,
+__attribute__((always_inline)) INLINE static void rt_split_part(size_t pind,
                                                                 double n) {
   error("RT can't run with split particles for now.");
 }
@@ -167,10 +170,10 @@ __attribute__((always_inline)) INLINE static void rt_split_part(struct part *p,
 /**
  * @brief Exception handle a hydro part not having any neighbours in ghost task
  *
- * @param p The #part.
+ * @param pind Index of the hydro particle.
  */
 __attribute__((always_inline)) INLINE static void rt_part_has_no_neighbours(
-    struct part *p) {
+    size_t pind) {
   message("WARNING: found particle without neighbours");
 }
 
@@ -185,7 +188,7 @@ __attribute__((always_inline)) INLINE static void rt_spart_has_no_neighbours(
 /**
  * @brief Do checks/conversions on particles on startup.
  *
- * @param p The particle to work on
+ * @param pind Index of the particle to work on
  * @param rtp The RT properties struct
  * @param hydro_props The hydro properties struct
  * @param phys_const physical constants struct
@@ -193,7 +196,7 @@ __attribute__((always_inline)) INLINE static void rt_spart_has_no_neighbours(
  * @param cosmo cosmology struct
  */
 __attribute__((always_inline)) INLINE static void rt_convert_quantities(
-    struct part *restrict p, const struct rt_props *rt_props,
+    size_t pind, const struct rt_props *rt_props,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us,
@@ -203,7 +206,7 @@ __attribute__((always_inline)) INLINE static void rt_convert_quantities(
  * @brief Computes the next radiative transfer time step size
  * of a given particle (during timestep tasks)
  *
- * @param p Particle to work on.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -212,7 +215,7 @@ __attribute__((always_inline)) INLINE static void rt_convert_quantities(
  * @param dt The time-step of this particle.
  */
 __attribute__((always_inline)) INLINE static float rt_compute_timestep(
-    const struct part *restrict p, const struct xpart *restrict xp,
+    const size_t pind,
     struct rt_props *rt_props, const struct cosmology *restrict cosmo,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
@@ -261,56 +264,61 @@ __attribute__((always_inline)) INLINE static double rt_part_dt(
 /**
  * @brief This function finalises the injection step.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param props struct #rt_props that contains global RT properties
  */
 __attribute__((always_inline)) INLINE static void rt_finalise_injection(
-    struct part *restrict p, struct rt_props *props) {
+    size_t pind, struct rt_props *props) {
 
-  rt_debug_sequence_check(p, 1, "rt_ghost1/rt_finalise_injection");
+  rt_debug_sequence_check(pind, 1, "rt_ghost1/rt_finalise_injection");
 
-  p->rt_data.debug_injection_done += 1;
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+  rtd->debug_injection_done += 1;
 }
 
 /**
  * @brief finishes up the gradient computation
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param cosmo #cosmology data structure.
  */
 __attribute__((always_inline)) INLINE static void rt_end_gradient(
-    struct part *restrict p, const struct cosmology *cosmo) {
+    size_t pind, const struct cosmology *cosmo) {
 
-  rt_debug_sequence_check(p, 2, __func__);
+  rt_debug_sequence_check(pind, 2, __func__);
 
-  if (p->rt_data.debug_calls_iact_gradient_interaction == 0)
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+
+  if (rtd->debug_calls_iact_gradient_interaction == 0)
     message(
         "WARNING: Called finalise gradient on particle %lld"
         "with iact gradient count from rt_iact = %d",
-        p->id, p->rt_data.debug_calls_iact_gradient_interaction);
+       part_get_id(pind), rtd->debug_calls_iact_gradient_interaction);
 
-  p->rt_data.debug_gradients_done += 1;
+  rtd->debug_gradients_done += 1;
 }
 
 /**
  * @brief finishes up the transport step
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  * @param dt the current time step of the particle
  * @param cosmo #cosmology data structure.
  */
 __attribute__((always_inline)) INLINE static void rt_finalise_transport(
-    struct part *restrict p, struct rt_props *rtp, const double dt,
+    size_t pind, struct rt_props *rtp, const double dt,
     const struct cosmology *restrict cosmo) {
-  rt_debug_sequence_check(p, 3, __func__);
+  rt_debug_sequence_check(pind, 3, __func__);
 
-  if (p->rt_data.debug_calls_iact_transport_interaction == 0)
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+
+  if (rtd->debug_calls_iact_transport_interaction == 0)
     message(
         "WARNING: Called finalise transport on particle %lld"
         "with iact transport count from rt_iact = %d",
-        p->id, p->rt_data.debug_calls_iact_transport_interaction);
+       part_get_id(pind), rtd->debug_calls_iact_transport_interaction);
 
-  p->rt_data.debug_transport_done += 1;
+  rtd->debug_transport_done += 1;
 }
 
 /**
@@ -318,8 +326,7 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
  *
  * This function wraps around rt_do_thermochemistry function.
  *
- * @param p Particle to work on.
- * @param xp Pointer to the particle' extended data.
+ * @param pind Particle index to work on.
  * @param rt_props RT properties struct
  * @param cosmo The current cosmological model.
  * @param hydro_props The #hydro_props.
@@ -328,23 +335,26 @@ __attribute__((always_inline)) INLINE static void rt_finalise_transport(
  * @param dt The time-step of this particle.
  */
 __attribute__((always_inline)) INLINE static void rt_tchem(
-    struct part *restrict p, struct xpart *restrict xp,
+    size_t pind,
     struct rt_props *rt_props, const struct cosmology *restrict cosmo,
     const struct hydro_props *hydro_props,
     const struct phys_const *restrict phys_const,
     const struct unit_system *restrict us, const double dt) {
 
-  rt_debug_sequence_check(p, 4, __func__);
-  p->rt_data.debug_thermochem_done += 1;
+  rt_debug_sequence_check(pind, 4, __func__);
 
-  /* rt_do_thermochemistry(p); */
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
+
+  rtd->debug_thermochem_done += 1;
+
+  /* rt_do_thermochemistry(pind); */
 }
 
 /**
  * @brief Extra operations done during the kick. This needs to be
  * done before the particle mass is updated in the hydro_kick_extra.
  *
- * @param p Particle to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_therm Thermal energy time-step @f$\frac{dt}{a^2}@f$.
  * @param dt_grav Gravity time-step @f$\frac{dt}{a}@f$.
  * @param dt_hydro Hydro acceleration time-step
@@ -354,16 +364,18 @@ __attribute__((always_inline)) INLINE static void rt_tchem(
  * @param hydro_props Additional hydro properties.
  */
 __attribute__((always_inline)) INLINE static void rt_kick_extra(
-    struct part *p, float dt_therm, float dt_grav, float dt_hydro,
+    size_t pind, float dt_therm, float dt_grav, float dt_hydro,
     float dt_kick_corr, const struct cosmology *cosmo,
     const struct hydro_props *hydro_props) {
+
+  struct rt_part_data *restrict rtd = part_get_rt_data_p(pind);
 
   /* Don't account for timestep_sync backward kicks */
   if (dt_therm >= 0.f && dt_grav >= 0.f && dt_hydro >= 0.f &&
       dt_kick_corr >= 0.f) {
 
-    rt_debug_sequence_check(p, 0, __func__);
-    p->rt_data.debug_kicked += 1;
+    rt_debug_sequence_check(pind, 0, __func__);
+    rtd->debug_kicked += 1;
   }
 }
 
@@ -374,20 +386,19 @@ __attribute__((always_inline)) INLINE static void rt_kick_extra(
  * NOTE: don't call this during rt_init_part or rt_reset_part,
  * follow the hydro_prepare_force logic.
  *
- * @param p particle to work on
+ * @param pind particle index to work on
  **/
 __attribute__((always_inline)) INLINE static void rt_prepare_force(
-    struct part *p) {}
+    size_t pind) {}
 
 /**
  * @brief Extra operations to be done during the drift
  *
- * @param p Particle to act upon.
- * @param xp The extended particle data to act upon.
+ * @param pind Particle index to act upon.
  * @param dt_drift The drift time-step for positions.
  */
 __attribute__((always_inline)) INLINE static void rt_predict_extra(
-    struct part *p, struct xpart *xp, float dt_drift) {}
+    size_t pind, float dt_drift) {}
 
 /**
  * @brief Clean the allocated memory inside the RT properties struct.

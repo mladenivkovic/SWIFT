@@ -159,7 +159,7 @@ rt_ion_equil_mass_fractions_from_T(double T, float X, float Y, float *XHI,
 __attribute__((always_inline)) INLINE static void
 rt_ion_equil_get_mass_fractions(float *XHI, float *XHII, float *XHeI,
                                 float *XHeII, float *XHeIII,
-                                struct part *restrict p,
+                                size_t pind,
                                 const struct rt_props *rt_props,
                                 const struct hydro_props *hydro_props,
                                 const struct phys_const *restrict phys_const,
@@ -180,7 +180,7 @@ rt_ion_equil_get_mass_fractions(float *XHI, float *XHII, float *XHeI,
   const float u_minimal = hydro_props->minimal_internal_energy;
   /* Using 'drifted' version here because I'm lazy and don't want to pass
    * the xpart down to use in this function. */
-  const float u_part = hydro_get_drifted_physical_internal_energy(p, cosmo);
+  const float u_part = hydro_get_drifted_physical_internal_energy(pind, cosmo);
   const double u_expect =
       ((double)max(u_minimal, u_part)) * internal_energy_to_cgs;
   double mu_guess, T_guess;

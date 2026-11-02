@@ -39,7 +39,7 @@
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
  * @param si First (star) particle.
- * @param pj Second (gas) particle (not updated).
+ * @param pindj Index of second (gas) particle.(not updated).
  * @param cosmo The cosmological model.
  * @param rt_props Properties of the RT scheme.
  */
@@ -47,7 +47,7 @@
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
                                      const float hi, const float hj,
-                                     struct spart *si, const struct part *pj,
+                                     struct spart *si, const size_t pindj,
                                      const struct cosmology *cosmo,
                                      const struct rt_props *rt_props) {
 
@@ -98,14 +98,14 @@ runner_iact_nonsym_rt_injection_prep(const float r2, const float dx[3],
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct spart *restrict si, struct part *restrict pj, const float a,
+    struct spart *restrict si, size_t pindj, const float a,
     const float H, const struct rt_props *rt_props) {
 
   /* If the star doesn't have any neighbours, we
    * have nothing to do here. */
   if (si->density.wcount == 0.f) return;
 
-  struct rt_part_data *rt_data = part_get_rt_data_p(pj);
+  struct rt_part_data *rt_data = part_get_rt_data_p(pindj);
 
 #ifdef SWIFT_RT_DEBUG_CHECKS
 
@@ -161,8 +161,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
   /* We might end up in this scenario due to roundoff errors */
   if (psi == 0.f || octw == 0.f) return;
 
-  const struct fvpm_geometry_struct *geometry =
-      part_get_const_fvpm_geometry_p(pj);
+  const struct fvpm_geometry_struct *restrict geometry =
+      part_get_const_fvpm_geometry_p(pindj);
 
   const float weight = psi / (nonempty_octants * octw);
   const float Vinv = 1.f / geometry->volume;
@@ -185,9 +185,9 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
       error(
           "Injecting abnormal energy spart %lld part %lld group %d | %.6e %.6e "
           "%.6e",
-          si->id, part_get_id(pj), g, injected_energy, weight,
-
+          si->id, part_get_id(pindj), g, injected_energy, weight,
           si->rt_data.emission_this_step[g]);
+
     si->rt_data.debug_injected_energy[g] += injected_energy;
     si->rt_data.debug_injected_energy_tot[g] += injected_energy;
   }
@@ -205,31 +205,31 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_inject(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  * @param mode 0 if non-symmetric interaction, 1 if symmetric
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
+    size_t pindi, size_t pindj, const float a,
     const float H, int mode) {
 
-  struct rt_part_data *rt_data_i = part_get_rt_data_p(pi);
-  struct rt_part_data *rt_data_j = part_get_rt_data_p(pj);
-  const struct fvpm_geometry_struct *geometry_i =
-      part_get_const_fvpm_geometry_p(pi);
-  const struct fvpm_geometry_struct *geometry_j =
-      part_get_const_fvpm_geometry_p(pj);
+  struct rt_part_data *rt_data_i = part_get_rt_data_p(pindi);
+  struct rt_part_data *rt_data_j = part_get_rt_data_p(pindj);
+  const struct fvpm_geometry_struct *restrict geometry_i =
+      part_get_const_fvpm_geometry_p(pindi);
+  const struct fvpm_geometry_struct *restrict geometry_j =
+      part_get_const_fvpm_geometry_p(pindj);
 
 #ifdef SWIFT_RT_DEBUG_CHECKS
   const char *func_name = (mode == 1) ? "sym flux iact" : "nonsym flux iact";
-  rt_debug_sequence_check(pi, 3, func_name);
+  rt_debug_sequence_check(pindi, 3, func_name);
   rt_data_i->debug_calls_iact_transport_interaction += 1;
 
   if (mode == 1) {
-    rt_debug_sequence_check(pj, 3, func_name);
+    rt_debug_sequence_check(pindj, 3, func_name);
     rt_data_j->debug_calls_iact_transport_interaction += 1;
   }
 #endif
@@ -270,8 +270,8 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
   /* eqn. (7) */
   float Anorm2 = 0.0f;
   float A[3];
-  if (fvpm_part_geometry_well_behaved(pi) &&
-      fvpm_part_geometry_well_behaved(pj)) {
+  if (fvpm_part_geometry_well_behaved(pindi) &&
+      fvpm_part_geometry_well_behaved(pindj)) {
     /* in principle, we use Vi and Vj as weights for the left and right
      * contributions to the generalized surface vector.
      * However, if Vi and Vj are very different (because they have very
@@ -351,12 +351,12 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
     /* radiation state to be used to compute the flux */
     float Ui[4];
     float Uj[4];
-    rt_gradients_predict(pi, pj, Ui, Uj, g, dx, r, xij_i);
+    rt_gradients_predict(pindi, pj, Ui, Uj, g, dx, r, xij_i);
 
     /* For first order method, skip the gradients */
     /* float Ui[4], Uj[4]; */
-    /* rt_part_get_radiation_state_vector(pi, g, Ui); */
-    /* rt_part_get_radiation_state_vector(pj, g, Uj); */
+    /* rt_part_get_radiation_state_vector(pindi, g, Ui); */
+    /* rt_part_get_radiation_state_vector(pindj, g, Uj); */
     /* No need to check for unphysical quantities, they
      * haven't been touched since
      * rt_injection_update_photon_densities */
@@ -397,17 +397,16 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_flux_common(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
-  runner_iact_rt_flux_common(r2, dx, hi, hj, pi, pj, a, H, 1);
+  runner_iact_rt_flux_common(r2, dx, hi, hj, pindi, pindj, a, H, 1);
 }
 
 /**
@@ -421,19 +420,19 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_transport(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
                                 const float hi, const float hj,
-                                struct part *restrict pi,
-                                struct part *restrict pj, const float a,
+                                size_t pindi,
+                                size_t pindj, const float a,
                                 const float H) {
 
-  runner_iact_rt_flux_common(r2, dx, hi, hj, pi, pj, a, H, 0);
+  runner_iact_rt_flux_common(r2, dx, hi, hj, pindi, pindj, a, H, 0);
 }
 
 /**
@@ -447,17 +446,16 @@ runner_iact_nonsym_rt_transport(const float r2, const float dx[3],
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
     const float r2, const float dx[3], const float hi, const float hj,
-    struct part *restrict pi, struct part *restrict pj, const float a,
-    const float H) {
+    size_t pindi, size_t pindj, const float a, const float H) {
 
-  rt_gradients_collect(r2, dx, hi, hj, pi, pj);
+  rt_gradients_collect(r2, dx, hi, hj, pindi, pindj);
 }
 
 /**
@@ -472,19 +470,17 @@ __attribute__((always_inline)) INLINE static void runner_iact_rt_gradient(
  * pj->x).
  * @param hi Comoving smoothing-length of particle i.
  * @param hj Comoving smoothing-length of particle j.
- * @param pi Particle i.
- * @param pj Particle j.
+ * @param pindi Particle i.
+ * @param pindj Particle j.
  * @param a Current scale factor.
  * @param H Current Hubble parameter.
  */
 __attribute__((always_inline)) INLINE static void
 runner_iact_nonsym_rt_gradient(const float r2, const float dx[3],
                                const float hi, const float hj,
-                               struct part *restrict pi,
-                               struct part *restrict pj, const float a,
-                               const float H) {
+                               size_t pindi, size_t pindj, const float a, const float H) {
 
-  rt_gradients_nonsym_collect(r2, dx, hi, hj, pi, pj);
+  rt_gradients_nonsym_collect(r2, dx, hi, hj, pindi, pindj);
 }
 
 #endif /* SWIFT_RT_IACT_GEAR_H */

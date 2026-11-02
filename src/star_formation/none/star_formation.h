@@ -45,7 +45,7 @@ struct star_formation {};
  * No star formation should occur, so return 0.
  *
  * @param starform the star formation law properties to use.
- * @param p the gas particles.
+ * @param pind Index of the particle.
  * @param phys_const the physical constants in internal units.
  * @param cosmo the cosmological parameters and properties.
  * @param hydro_props The properties of the hydro scheme.
@@ -244,8 +244,8 @@ star_formation_part_has_no_neighbours(size_t pind, const struct star_formation *
  *
  * Nothing to do here.
  *
+ * @param pind Index of the particle.
  * @param data The global star_formation information used for this run.
- * @param p Pointer to the particle data.
  */
 __attribute__((always_inline)) INLINE static void star_formation_init_part(
     size_t pind, const struct star_formation *data) {}
@@ -260,7 +260,7 @@ __attribute__((always_inline)) INLINE static void star_formation_init_part(
  * @param us The unit system.
  * @param cosmo The current cosmological model.
  * @param data The global star_formation information used for this run.
- * @param p Pointer to the particle data.
+ * @param pind Index of the particle.
  */
 __attribute__((always_inline)) INLINE static void
 star_formation_first_init_part(const struct phys_const *phys_const,

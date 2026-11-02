@@ -34,10 +34,9 @@
 /**
  * @brief Initialize variables for the cell wide slope limiter
  *
- * @param p Particle.
+ * @param pind Particle index.
  */
-__attribute__((always_inline)) INLINE static void rt_slope_limit_cell_init(
-    struct part *p) {
+__attribute__((always_inline)) INLINE static void rt_slope_limit_cell_init(size_t pind) {
 
   for (int g = 0; g < RT_NGROUPS; g++) {
     p->rt_data.limiter[g].energy_density[0] = FLT_MAX;
@@ -51,7 +50,7 @@ __attribute__((always_inline)) INLINE static void rt_slope_limit_cell_init(
   }
 
   /* just use the hydro one */
-  /* p->limiter.maxr = -FLT_MAX; */
+  /* part_get_limiter_maxr(pind) = -FLT_MAX; */
 }
 
 /**
@@ -64,7 +63,7 @@ __attribute__((always_inline)) INLINE static void rt_slope_limit_cell_init(
  * @param g index of photon group
  */
 __attribute__((always_inline)) INLINE static void rt_slope_limit_cell_collect(
-    struct part *restrict pi, struct part *restrict pj, int g) {
+    size_t pindi, size_t pindj, int g) {
 
   struct rt_part_data *rtdi = &pi->rt_data;
   struct rt_part_data *rtdj = &pj->rt_data;
@@ -89,7 +88,7 @@ __attribute__((always_inline)) INLINE static void rt_slope_limit_cell_collect(
   rtdi->limiter[g].flux[2][1] =
       max(rtdj->radiation[g].flux[2], rtdi->limiter[g].flux[2][1]);
   /* just use the hydro one */
-  /* pi->limiter.maxr = max(r, pi->limiter.maxr); */
+  /* part_get_limiter_maxr(pindi) = max(r, part_get_limiter_maxr(pindi)); */
 }
 
 /**
@@ -128,12 +127,11 @@ __attribute__((always_inline)) INLINE static void rt_slope_limit_quantity(
  * @brief Slope limit cell gradients.
  * This is done in rt_gradients_finalise().
  *
- * @param p Particle.
+ * @param pind Particle index.
  */
-__attribute__((always_inline)) INLINE static void rt_slope_limit_cell(
-    struct part *p) {
+__attribute__((always_inline)) INLINE static void rt_slope_limit_cell(size_t pind) {
 
-  const float maxr = p->limiter.maxr;
+  const float maxr = part_get_limiter_maxr(pind);
   struct rt_part_data *rtd = &p->rt_data;
 
   for (int g = 0; g < RT_NGROUPS; g++) {

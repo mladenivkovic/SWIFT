@@ -40,12 +40,11 @@
 /**
  * @brief Reset the fluxes for the given particle.
  *
- * @param p Particle.
+ * @param pind Particle index.
  */
-__attribute__((always_inline)) INLINE static void rt_part_reset_fluxes(
-    struct part *restrict p) {
+__attribute__((always_inline)) INLINE static void rt_part_reset_fluxes(size_t pind) {
 
-  struct rt_part_data *rt_data = part_get_rt_data_p(p);
+  struct rt_part_data *rt_data = part_get_rt_data_p(pind);
 
   for (int g = 0; g < RT_NGROUPS; g++) {
     rt_data->flux[g].energy = 0.f;
@@ -100,10 +99,9 @@ __attribute__((always_inline)) INLINE static void rt_compute_flux(
 /**
  * @brief reset the mass fluxes of constituent species for a particle.
  *
- * @param p particle to work on.
+ * @param pind particle index to work on.
  **/
-__attribute__((always_inline)) INLINE static void rt_part_reset_mass_fluxes(
-    struct part *restrict p) {
+__attribute__((always_inline)) INLINE static void rt_part_reset_mass_fluxes(size_t pind) {
 #ifdef GIZMO_MFV_SPH
   p->rt_data.mass_flux.HI = 0.f;
   p->rt_data.mass_flux.HII = 0.f;
